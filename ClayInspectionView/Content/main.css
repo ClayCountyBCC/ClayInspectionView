@@ -1,0 +1,60 @@
+﻿#mapContainer {
+  height: calc(100% - 64px);
+  width: calc(100%);
+}
+
+body, .esriMapContainer, #map, #map_root, esri-map {
+  width: 100%;
+  height: 100%;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+ol {
+  -webkit-padding-start: 20px;
+  padding-left: 20px;
+}
+#legend {
+  position: absolute;
+  top: 95px;
+  right: 20px;
+  z-index: 50;
+  background-color: white;
+  border: 1px solid black;
+  border-radius: 4px;
+}
+#legend ol {
+  list-style: none;
+  list-style-type: none;
+  padding-right: 20px;
+}
+#legend li span {
+  margin-right: 5px;
+}
+#legend li {
+  margin-top: 5px;
+  padding: 3px 3px 3px 3px;
+  cursor: pointer;
+}
+md-checkbox {
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+/*ol.mapAddress {
+  width: 100%;
+  font-size: inherit;
+  border: none;
+  list-style: none;
+  list-style-type: none;
+}*/
+
+/*ol.mapAddress li {
+  border: 1px solid black;
+  padding-left: .5em;
+  list-style: none;
+  list-style-type: none;
+}*/

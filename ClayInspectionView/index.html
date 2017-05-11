@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+<html ng-app="InspectionView">
+<head>
+  <title>Inspection View</title>
+	<meta charset="utf-8" />
+  <!--<meta http-equiv="X-UA-Compatible" content="IE=11" />-->
+  <script src="Scripts/angular.min.js"></script>
+  <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular.js"></script>-->
+  <link href="Content/main.css" rel="stylesheet" />
+  <link href="Content/angular-material.min.css" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="//js.arcgis.com/3.16/esri/css/esri.css">
+  <!--<link rel="stylesheet" href="https://js.arcgis.com/3.16compact/esri/css/esri.css">-->
+  <link rel="icon" type="image/png" href="Content/favico-iv.png" />
+</head>
+<body ng-cloak
+      layout="column"
+      layout-align="center center"
+      ng-controller="MainController as main">
+
+  <md-toolbar>
+    <div class="md-toolbar-tools">
+      <h1>
+          Inspection View
+      </h1>
+      <span flex="5"></span>      
+      <md-radio-group ng-change="main.updateData()"
+                      ng-model="main.viewDay"
+                      layout="row">        
+        <md-radio-button ng-value="'Today'">
+          Today
+        </md-radio-button>
+        <md-radio-button ng-value="'Tomorrow'">
+          Tomorrow
+        </md-radio-button>
+      </md-radio-group>
+      <span flex>
+      </span>
+      <span>
+        Invalid Locations: {{ main.invalidLocationsData.length }}
+      </span>
+      <span flex="5"></span>
+      <span>
+        Open Inspections: {{ main.inspections.length }} of {{ main.totalInspections.length }}
+      </span>
+      <span flex="5"></span>
+    </div>
+  </md-toolbar>
+  
+  <div id="mapContainer">
+    <esri-map id="map"
+              center="main.map.center"
+              basemap="streets"              
+              zoom="main.map.zoom"
+              map-options="main.map.mapOptions"
+              load="main.mapLoaded"
+              register-as="myMap">
+
+      <esri-dynamic-map-service-layer visible-layers="0"
+                                      url="https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer">
+      </esri-dynamic-map-service-layer>
+
+      <esri-dynamic-map-service-layer visible-layers="1"
+                                      opacity=".3"
+                                      url="https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer">
+      </esri-dynamic-map-service-layer>
+    </esri-map>
+  </div>
+  <div ng-if="main.inspectorData.length > 0"
+       id="legend">
+    <ol layout="column">
+      <li layout="row"
+          layout-align="start center"
+          ng-repeat="inspector in main.inspectionGroupLayers track by $index"
+          style="background-color: {{ inspector.color }};"
+          ng-click="main.toggleVisibility(inspector)">
+        <md-checkbox ng-click="main.toggleVisibility(inspector)"
+                     aria-label="visibility"
+                     ng-model="inspector.visible">
+        </md-checkbox>
+        <span>
+          {{ inspector.id }}
+        </span>
+        <span flex></span>
+        <span>
+          {{ inspector.numberInspections }}
+        </span>
+        
+      </li>
+    </ol>
+  </div>
+  <script src="//js.arcgis.com/3.16compact/"></script>  
+  <script src="Scripts/angular-material/angular-material.min.js"></script>
+  <script src="Scripts/angular-esri-map.min.js"></script>
+  <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular-animate.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular-aria.js"></script>-->
+  <script src="Scripts/angular-animate.min.js"></script>
+  <script src="Scripts/angular-aria.min.js"></script>
+  <script src="Scripts/app/app.js"></script>
+  <script src="Scripts/app/data/appData.service.js"></script>
+  <script src="Scripts/app/main/main.controller.js"></script>
+</body>
+
+</html>
