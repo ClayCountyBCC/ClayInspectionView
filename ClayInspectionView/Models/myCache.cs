@@ -10,6 +10,7 @@ namespace ClayInspectionView.Models
   {
     private static MemoryCache _cache = new MemoryCache("myCache");
 
+ 
     public static object GetItem(string key)
     {
       return GetOrAddExisting(key, () => InitItem(key));
@@ -18,6 +19,16 @@ namespace ClayInspectionView.Models
     public static object GetItem(string key, CacheItemPolicy CIP)
     {
       return GetOrAddExisting(key, () => InitItem(key), CIP);
+    }
+
+    public static T GetItem<T>(string key, Func<T> valuefactory, CacheItemPolicy CIP)
+    {
+      return GetOrAddExisting(key, valuefactory, CIP);
+    }
+
+    public static void UpdateItem(string key, object newvalue, CacheItemPolicy CIP)
+    {
+      _cache.Set(key, newvalue, CIP);
     }
 
     private static T GetOrAddExisting<T>(string key, Func<T> valueFactory, CacheItemPolicy CIP)
@@ -56,8 +67,10 @@ namespace ClayInspectionView.Models
 
     private static CacheItemPolicy GetCIP()
     {
-      CacheItemPolicy CIP = new CacheItemPolicy();
-      CIP.AbsoluteExpiration = DateTime.Now.AddHours(4); 
+      CacheItemPolicy CIP = new CacheItemPolicy()
+      {
+        AbsoluteExpiration = DateTime.Now.AddHours(4)
+      };
       return CIP;
     }
 
@@ -65,16 +78,14 @@ namespace ClayInspectionView.Models
     {
       switch (key.Trim().ToLower())
       {
-        case "address":
-          return Address.GetAddresses();
         case "inspections":
           return Inspection.GetInspections(0);
         case "tomorrowinspections":
           return Inspection.GetInspections(1);
-        case "totalinspections":
-          return Inspection.GetTotalInspections(0);
-        case "tomorrowtotalinspections":
-          return Inspection.GetTotalInspections(1);
+        //case "totalinspections":
+        //  return Inspection.GetTotalInspections(0);
+        //case "tomorrowtotalinspections":
+        //  return Inspection.GetTotalInspections(1);
         //case "inspectiongroups":
         //  return InspectionData.GetInspectionGroups();
         default:

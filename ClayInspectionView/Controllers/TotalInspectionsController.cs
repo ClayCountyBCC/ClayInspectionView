@@ -14,23 +14,45 @@ namespace ClayInspectionView.Controllers
     // GET: api/TotalInspections
     // GET: api/Inspections
     [HttpGet]
-    public List<Inspection> Today()
+    public IHttpActionResult Today()
     {
       CacheItemPolicy CIP = new CacheItemPolicy()
       {
         AbsoluteExpiration = DateTime.Now.AddMinutes(10)
       };
-      return (List<Inspection>)myCache.GetItem("totalinspections", CIP);
+      try
+      {
+        List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
+        return Ok((from i in li
+                   where i.ScheduledDate.Date == DateTime.Today.Date
+                   select i).ToList());
+      }
+      catch (Exception ex)
+      {
+        new ErrorLog(ex);
+        return InternalServerError();
+      }
     }
 
     [HttpGet]
-    public List<Inspection> Tomorrow()
+    public IHttpActionResult Tomorrow()
     {
       CacheItemPolicy CIP = new CacheItemPolicy()
       {
         AbsoluteExpiration = DateTime.Now.AddMinutes(10)
       };
-      return (List<Inspection>)myCache.GetItem("tomorrowtotalinspections", CIP);
+      try
+      {
+        List<Inspection> li = (List<Inspection>)myCache.GetItem("tomorrowinspections", CIP);
+        return Ok((from i in li
+                   where i.ScheduledDate.Date == DateTime.Today.AddDays(1).Date
+                   select i).ToList());
+      }
+      catch(Exception ex)
+      {
+        new ErrorLog(ex);
+        return InternalServerError();
+      }
     }
 
 

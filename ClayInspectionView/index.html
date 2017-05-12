@@ -3,48 +3,52 @@
 <head>
   <title>Inspection View</title>
 	<meta charset="utf-8" />
-  <!--<meta http-equiv="X-UA-Compatible" content="IE=11" />-->
-  <script src="Scripts/angular.min.js"></script>
-  <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular.js"></script>-->
   <link href="Content/main.css" rel="stylesheet" />
-  <link href="Content/angular-material.min.css" rel="stylesheet" />
-  <link rel="stylesheet" type="text/css" href="//js.arcgis.com/3.16/esri/css/esri.css">
-  <!--<link rel="stylesheet" href="https://js.arcgis.com/3.16compact/esri/css/esri.css">-->
   <link rel="icon" type="image/png" href="Content/favico-iv.png" />
+  <link rel="stylesheet" href="https://js.arcgis.com/3.20/esri/css/esri.css">
+  <script src="https://js.arcgis.com/3.20/"></script>
+  <link href="Content/bootstrap.min.css" rel="stylesheet" />
+  <link href="Content/bootstrap-theme.min.css" rel="stylesheet" />
 </head>
-<body ng-cloak
-      layout="column"
-      layout-align="center center"
-      ng-controller="MainController as main">
+<body class="container">
 
-  <md-toolbar>
-    <div class="md-toolbar-tools">
-      <h1>
-          Inspection View
-      </h1>
-      <span flex="5"></span>      
-      <md-radio-group ng-change="main.updateData()"
-                      ng-model="main.viewDay"
-                      layout="row">        
-        <md-radio-button ng-value="'Today'">
-          Today
-        </md-radio-button>
-        <md-radio-button ng-value="'Tomorrow'">
-          Tomorrow
-        </md-radio-button>
-      </md-radio-group>
-      <span flex>
+  <nav id="navTopMenu"
+       class="navbar navbar-default container">
+    <div class="navbar-header">
+      <span class="hidden-sm hidden-xs hidden-md navbar-brand">
+        Inspection View
       </span>
-      <span>
-        Invalid Locations: {{ main.invalidLocationsData.length }}
+      <span class="hidden-lg navbar-brand">
+        Inspections
       </span>
-      <span flex="5"></span>
-      <span>
-        Open Inspections: {{ main.inspections.length }} of {{ main.totalInspections.length }}
-      </span>
-      <span flex="5"></span>
     </div>
-  </md-toolbar>
+    <ul class="nav nav-tabs navbar-nav">
+      <li id="nav-home"
+          class="active">
+        <a onclick="IView.toggleNavDisplay('today')"
+           aria-controls="today"
+           role="tab">
+          Home
+        </a>
+      </li>
+      <li id="nav-permit">
+        <a onclick="IView.toggleNavDisplay('Tomorrow')"
+           aria-controls="tomorrow"
+           role="tab">
+          Tomorrow
+        </a>
+      </li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right">
+      <li id="nav-cart">
+        <span id="OpenInspectionsNav"
+           role="tab">
+          Open Inspections: X of Y
+        </span>
+      </li>
+
+    </ul>
+  </nav>
   
   <div id="mapContainer">
     <esri-map id="map"
@@ -65,8 +69,7 @@
       </esri-dynamic-map-service-layer>
     </esri-map>
   </div>
-  <div ng-if="main.inspectorData.length > 0"
-       id="legend">
+  <div id="legend">
     <ol layout="column">
       <li layout="row"
           layout-align="start center"
@@ -88,16 +91,23 @@
       </li>
     </ol>
   </div>
-  <script src="//js.arcgis.com/3.16compact/"></script>  
-  <script src="Scripts/angular-material/angular-material.min.js"></script>
-  <script src="Scripts/angular-esri-map.min.js"></script>
-  <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular-animate.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular-aria.js"></script>-->
-  <script src="Scripts/angular-animate.min.js"></script>
-  <script src="Scripts/angular-aria.min.js"></script>
-  <script src="Scripts/app/app.js"></script>
-  <script src="Scripts/app/data/appData.service.js"></script>
-  <script src="Scripts/app/main/main.controller.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function (event)
+    {
+      IView.start();
+    });
+
+    //function preventSubmit(e)
+    //{
+    //  e.preventDefault();
+    //};
+
+  </script>
+  <script src="Scripts/app.js"></script>
+  <script src="Scripts/map.js"></script>
+  <script src="Scripts/UI.js"></script>
+  <script src="Scripts/XHR.js"></script>
+  <script src="Scripts/es6-promise.min.js"></script>
 </body>
 
 </html>

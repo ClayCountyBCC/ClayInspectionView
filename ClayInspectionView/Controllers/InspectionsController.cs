@@ -13,19 +13,48 @@ namespace ClayInspectionView.Controllers
   {
     // GET: api/Inspections
     [HttpGet]
-    public List<Inspection> Today()
+    public IHttpActionResult Today()
     {
-      CacheItemPolicy CIP = new CacheItemPolicy();
-      CIP.AbsoluteExpiration = DateTime.Now.AddMinutes(1);
-      return (List<Inspection>)myCache.GetItem("inspections", CIP);
+      CacheItemPolicy CIP = new CacheItemPolicy()
+      {
+        AbsoluteExpiration = DateTime.Now.AddMinutes(1)
+      };
+      List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
+      try
+      {
+        return Ok((from i in li
+                where i.ScheduledDate.Date == DateTime.Today.Date &&
+                i.ScheduledDate == null
+                select i).ToList());
+      }
+      catch(Exception ex)
+      {
+        new ErrorLog(ex);
+        return InternalServerError();
+      }
+
     }
 
     [HttpGet]
-    public List<Inspection> Tomorrow()
+    public IHttpActionResult Tomorrow()
     {
-      CacheItemPolicy CIP = new CacheItemPolicy();
-      CIP.AbsoluteExpiration = DateTime.Now.AddMinutes(1);
-      return (List<Inspection>)myCache.GetItem("tomorrowinspections", CIP);
+      CacheItemPolicy CIP = new CacheItemPolicy()
+      {
+        AbsoluteExpiration = DateTime.Now.AddMinutes(1)
+      };
+      try
+      {
+        List<Inspection> li = (List<Inspection>)myCache.GetItem("tomorrowinspections", CIP);
+        return Ok((from i in li
+                where i.ScheduledDate.Date == DateTime.Today.AddDays(1).Date &&
+                i.ScheduledDate == null
+                select i).ToList());
+      }
+      catch (Exception ex)
+      {
+        new ErrorLog(ex);
+        return InternalServerError();
+      }
     }
 
 

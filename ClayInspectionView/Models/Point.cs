@@ -7,8 +7,15 @@ namespace ClayInspectionView.Models
 {
   public class Point
   {
-    public double X { get; set; }
-    public double Y { get; set; }
+    public double X { get; set; } = double.MinValue;
+    public double Y { get; set; } = double.MinValue;
+    public bool IsValid
+    {
+      get
+      {
+        return X != double.MinValue;
+      }
+    }
     public Point()
     {
 
