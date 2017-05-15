@@ -1,9 +1,9 @@
-﻿#mapContainer {
-  height: calc(100% - 64px);
+﻿#map {
+  height: calc(100% - 54px);
   width: calc(100%);
 }
 
-body, .esriMapContainer, #map, #map_root, esri-map {
+html, body {
   width: 100%;
   height: 100%;
   -moz-box-sizing: border-box;
@@ -12,7 +12,10 @@ body, .esriMapContainer, #map, #map_root, esri-map {
   margin: 0;
   padding: 0;
 }
-
+nav ul
+{
+  cursor: pointer;
+}
 ol {
   -webkit-padding-start: 20px;
   padding-left: 20px;
@@ -39,10 +42,7 @@ ol {
   padding: 3px 3px 3px 3px;
   cursor: pointer;
 }
-md-checkbox {
-  margin-top: 8px !important;
-  margin-bottom: 8px !important;
-}
+
 
 /*ol.mapAddress {
   width: 100%;

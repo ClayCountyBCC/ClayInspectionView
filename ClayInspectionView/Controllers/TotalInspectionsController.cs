@@ -43,18 +43,17 @@ namespace ClayInspectionView.Controllers
       };
       try
       {
-        List<Inspection> li = (List<Inspection>)myCache.GetItem("tomorrowinspections", CIP);
+        List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
         return Ok((from i in li
                    where i.ScheduledDate.Date == DateTime.Today.AddDays(1).Date
                    select i).ToList());
       }
-      catch(Exception ex)
+      catch (Exception ex)
       {
         new ErrorLog(ex);
         return InternalServerError();
       }
     }
-
 
   }
 }

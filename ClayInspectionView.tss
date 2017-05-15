@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<ArrayOfArrayOfArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ArrayOfArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\controllers\inspectionscontroller.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\controllers\totalinspectionscontroller.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\lookup.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\inspection.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\mycache.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\constants.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\point.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\errorlog.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\connectionstrings.config</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\index.html</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\app.ts</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>C:\Users\mccartneyd\Documents\Visual Studio 2017\Projects\ClayInspectionView\ClayInspectionView\Scripts\map.ts</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\xhr.ts</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\ui.ts</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\old\appdata.service.js</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\old\main.controller.js</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\tsconfig.json</string>
+    </ArrayOfString>
+  </ArrayOfArrayOfString>
+</ArrayOfArrayOfArrayOfString>

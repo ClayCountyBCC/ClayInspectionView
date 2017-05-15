@@ -98,4 +98,4 @@ var XHR;
     }
     XHR.Delete = Delete;
 })(XHR || (XHR = {}));
-//# sourceMappingURL=xhr.js.map
+//# sourceMappingURL=XHR.js.map

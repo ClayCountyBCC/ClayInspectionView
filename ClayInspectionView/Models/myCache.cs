@@ -78,16 +78,13 @@ namespace ClayInspectionView.Models
     {
       switch (key.Trim().ToLower())
       {
+        case "inspectors":
+          return Inspector.Get();
+
         case "inspections":
-          return Inspection.GetInspections(0);
         case "tomorrowinspections":
-          return Inspection.GetInspections(1);
-        //case "totalinspections":
-        //  return Inspection.GetTotalInspections(0);
-        //case "tomorrowtotalinspections":
-        //  return Inspection.GetTotalInspections(1);
-        //case "inspectiongroups":
-        //  return InspectionData.GetInspectionGroups();
+          return Inspection.GetInspections();        
+
         default:
           return null;
       }

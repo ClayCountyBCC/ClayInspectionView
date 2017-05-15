@@ -2,18 +2,18 @@
 <html ng-app="InspectionView">
 <head>
   <title>Inspection View</title>
-	<meta charset="utf-8" />
-  <link href="Content/main.css" rel="stylesheet" />
+	<meta charset="utf-8" />  
   <link rel="icon" type="image/png" href="Content/favico-iv.png" />
   <link rel="stylesheet" href="https://js.arcgis.com/3.20/esri/css/esri.css">
-  <script src="https://js.arcgis.com/3.20/"></script>
+  <script defer src="https://js.arcgis.com/3.20/"></script>
   <link href="Content/bootstrap.min.css" rel="stylesheet" />
   <link href="Content/bootstrap-theme.min.css" rel="stylesheet" />
+  <link href="Content/main.css" rel="stylesheet" />
 </head>
-<body class="container">
-
-  <nav id="navTopMenu"
-       class="navbar navbar-default container">
+<body>
+  <nav style="z-index:1; margin: 0;"
+       id="navTopMenu"
+       class="navbar navbar-default container-fluid">
     <div class="navbar-header">
       <span class="hidden-sm hidden-xs hidden-md navbar-brand">
         Inspection View
@@ -28,7 +28,7 @@
         <a onclick="IView.toggleNavDisplay('today')"
            aria-controls="today"
            role="tab">
-          Home
+          Today
         </a>
       </li>
       <li id="nav-permit">
@@ -39,18 +39,21 @@
         </a>
       </li>
     </ul>
-    <ul class="nav navbar-nav navbar-right">
+    <ul style="margin-right: 2em;"
+        class="nav navbar-nav nav-tabs navbar-right">
       <li id="nav-cart">
-        <span id="OpenInspectionsNav"
+        <a id="OpenInspectionsNav"
            role="tab">
           Open Inspections: X of Y
-        </span>
+        </a>
       </li>
-
     </ul>
   </nav>
-  
-  <div id="mapContainer">
+  <div id="map">
+
+  </div>
+  <div id="legend"></div>
+  <!--<div id="mapContainer">
     <esri-map id="map"
               center="main.map.center"
               basemap="streets"              
@@ -59,14 +62,7 @@
               load="main.mapLoaded"
               register-as="myMap">
 
-      <esri-dynamic-map-service-layer visible-layers="0"
-                                      url="https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer">
-      </esri-dynamic-map-service-layer>
 
-      <esri-dynamic-map-service-layer visible-layers="1"
-                                      opacity=".3"
-                                      url="https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer">
-      </esri-dynamic-map-service-layer>
     </esri-map>
   </div>
   <div id="legend">
@@ -90,23 +86,22 @@
         
       </li>
     </ol>
-  </div>
+  </div>-->
   <script>
+
     document.addEventListener("DOMContentLoaded", function (event)
     {
-      IView.start();
+      IView.Start();
     });
 
-    //function preventSubmit(e)
-    //{
-    //  e.preventDefault();
-    //};
-
   </script>
-  <script src="Scripts/app.js"></script>
+  
   <script src="Scripts/map.js"></script>
   <script src="Scripts/UI.js"></script>
   <script src="Scripts/XHR.js"></script>
+  <script src="Scripts/Inspection.js"></script>
+  <script src="Scripts/Point.js"></script>
+  <script src="Scripts/app.js"></script>
   <script src="Scripts/es6-promise.min.js"></script>
 </body>
 

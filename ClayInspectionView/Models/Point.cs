@@ -20,10 +20,13 @@ namespace ClayInspectionView.Models
     {
 
     }
-    public Point(double NewX, double NewY)
+    public Point(double? NewX, double? NewY)
     {
-      X = NewX;
-      Y = NewY;
+      if(NewX.HasValue && NewY.HasValue)
+      {
+        X = NewX.Value;
+        Y = NewY.Value;
+      }      
     }
   }
 }

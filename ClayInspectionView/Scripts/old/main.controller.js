@@ -56,8 +56,8 @@
 
             main.inspections = response.data;
 
-            main.inspectors = main.inspections.map(function (n) { return n.InspectorName });
-            main.inspectors = main.inspectors.filter(function (v, i) { return main.inspectors.indexOf(v) == i });
+            main.inspectors = main.inspections.map(function (n) { return n.InspectorName }); // get list of inspectors
+            main.inspectors = main.inspectors.filter(function (v, i) { return main.inspectors.indexOf(v) == i }); // remove the duplicates from the list
 
             buildInspectorData();
             buildAddressData();

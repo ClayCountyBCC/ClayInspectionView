@@ -18,10 +18,10 @@ namespace ClayInspectionView.Models
     public string InspectionDescription { get; set; }
     public string PermitNo { get; set; }
     public string Color { get; set; }
-    public string Parcel { get; set; }
+    public string ParcelNo { get; set; }
     public string InspectionCode { get; set; }
     public DateTime ScheduledDate { get; set; }
-    public DateTime InspDateTime { get; set; }
+    public DateTime? InspDateTime { get; set; }
     public Point AddressPoint { get; set; } = new Point();
     public Point ParcelPoint { get; set; } = new Point();
 
@@ -30,10 +30,8 @@ namespace ClayInspectionView.Models
 
     }
 
-    public static List<Inspection> GetInspections(int numDays = 0)
+    public static List<Inspection> GetInspections()
     {
-      var dbArgs = new DynamicParameters();
-      dbArgs.Add("@NumDays", numDays);
       string query = @"
         USE WATSC;
 
@@ -63,7 +61,7 @@ namespace ClayInspectionView.Models
           CAST(IR.SchecDateTime AS DATE) BETWEEN @Today AND @Tomorrow";
       try
       {
-        var li = Constants.Get_Data<Inspection>(query, dbArgs, Constants.csWATSC);
+        var li = Constants.Get_Data<Inspection>(query, Constants.csWATSC);
         var CIP = new System.Runtime.Caching.CacheItemPolicy() { AbsoluteExpiration = DateTime.Today.AddDays(1) };
         Dictionary<string, Point> points = myCache.GetItem("address", () => Lookup.GetPoints(li), CIP);
         li = UpdatePoints(li, points);
@@ -103,9 +101,9 @@ namespace ClayInspectionView.Models
           }
           else
           {
-            if (points.ContainsKey(i.Parcel))
+            if (points.ContainsKey(i.ParcelNo))
             {
-              i.ParcelPoint = points[i.Parcel];
+              i.ParcelPoint = points[i.ParcelNo];
             }
           }
         }

@@ -19,12 +19,13 @@ namespace ClayInspectionView.Controllers
       {
         AbsoluteExpiration = DateTime.Now.AddMinutes(1)
       };
-      List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
+
       try
       {
+        List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
         return Ok((from i in li
                 where i.ScheduledDate.Date == DateTime.Today.Date &&
-                i.ScheduledDate == null
+                !i.InspDateTime.HasValue
                 select i).ToList());
       }
       catch(Exception ex)
@@ -47,7 +48,7 @@ namespace ClayInspectionView.Controllers
         List<Inspection> li = (List<Inspection>)myCache.GetItem("tomorrowinspections", CIP);
         return Ok((from i in li
                 where i.ScheduledDate.Date == DateTime.Today.AddDays(1).Date &&
-                i.ScheduledDate == null
+                !i.InspDateTime.HasValue
                 select i).ToList());
       }
       catch (Exception ex)

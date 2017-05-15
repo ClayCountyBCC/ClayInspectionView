@@ -1,5 +1,6 @@
-﻿
-namespace IView.UI
+﻿/// <reference path="app.ts" />
+
+namespace IView
 {
 
 }

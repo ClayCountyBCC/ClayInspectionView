@@ -5,6 +5,7 @@ using System.Web;
 using Dapper;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text;
 
 namespace ClayInspectionView.Models
 {
@@ -22,13 +23,13 @@ namespace ClayInspectionView.Models
     {
       var addresslist = (from i in inspections
                          where !i.AddressPoint.IsValid && !i.ParcelPoint.IsValid
-                         select i.LookupKey).ToList();
+                         select i.LookupKey).Distinct().ToList();
 
       var addresspoints = GetAddressPoints(addresslist);
 
       var parcellist = (from i in inspections
                         where !addresspoints.ContainsKey(i.LookupKey)
-                        select i.Parcel).ToList();
+                        select i.ParcelNo).ToList();
 
       var parcelpoints = GetParcelPoints(parcellist);
 
@@ -51,16 +52,17 @@ namespace ClayInspectionView.Models
         WHERE CAST(House AS VARCHAR(50)) + 
             CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END + '-' + 
             StreetName + '-' + 
-            CAST(Zip AS VARCHAR(50)) IN @LookupKeys";
+            CAST(Zip AS VARCHAR(50)) IN @Keys";
       try
       {
         using (IDbConnection db =
           new SqlConnection(
             Constants.Get_ConnStr(Constants.csGIS)))
         {
-          return db.Query(query, LookupKeys).ToDictionary(
-            row => (string)row.AddressKey,
-            row => new Point(row.XCoord, row.YCoord));
+          return db.Query(query, new { Keys = LookupKeys  })
+            .ToDictionary(
+            row => (string)row.LookupKey,
+            row => new Point((double)row.XCoord, (double)row.YCoord));
         }
       }
       catch (Exception ex)
@@ -131,16 +133,17 @@ namespace ClayInspectionView.Models
           YCoord
         FROM PIN_NoDupe_CTE
         ) TT
-        WHERE LookupKey IN @LookupKeys";
+        WHERE LookupKey IN @Keys";
       try
       {
         using (IDbConnection db =
           new SqlConnection(
             Constants.Get_ConnStr(Constants.csGIS)))
         {
-          return db.Query(query, LookupKeys).ToDictionary(
-            row => (string)row.AddressKey,
-            row => new Point(row.XCoord, row.YCoord));
+          return db.Query(query, new { Keys = LookupKeys })
+            .ToDictionary(
+            row => (string)row.LookupKey,
+            row => new Point((double)row.XCoord, (double)row.YCoord));
         }
       }
       catch (Exception ex)
