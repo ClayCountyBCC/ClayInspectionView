@@ -7,7 +7,7 @@ using System.Runtime.Caching;
 using Dapper;
 using System.Data;
 using System.Data.SqlClient;
-
+using System.DirectoryServices;
 
 namespace ClayInspectionView.Models
 {
@@ -16,6 +16,41 @@ namespace ClayInspectionView.Models
     public const string csWATSC = "IVWATSC";
     public const string csGIS = "IVGIS";
     public const string csError = "LOG";
+
+    public static bool CheckAccess(string UserName)
+    {
+      if (UserName.Contains("\\"))
+      {
+        UserName = UserName.Split('\\')[1].ToLower();
+      }
+      string defaultPath = "LDAP://OU=DomainUsers,DC=CLAYBCC,DC=local";
+      DirectoryEntry de = new DirectoryEntry();
+      de.AuthenticationType = AuthenticationTypes.Secure;
+      de.Path = defaultPath;
+      DirectorySearcher ds = new DirectorySearcher(de);
+      ds.Filter = "(sAMAccountName=" + UserName + ")";
+      SearchResult sr = ds.FindOne();
+      var distinguishedName = GetADProperty_string(sr, "distinguishedName");
+      var memberOf = GetADProperty_string(sr, "memberOf");
+      return (
+        UserName.ToLower() == "parkern" |
+        distinguishedName.Contains("OU=MIS") |
+        distinguishedName.Contains("OU=GIS") |
+        memberOf.Contains("CN=Building Inspectors")
+        );
+    }
+
+    private static string GetADProperty_string(SearchResult sr, string propertyName)
+    {
+      if (sr == null)
+      {
+        return "";
+      }
+      else
+      {
+        return sr.Properties[propertyName].Count > 0 ? sr.Properties[propertyName][0].ToString() : "";
+      }
+    }
 
     public static List<T> Get_Data<T>(string query, string cs)
     {

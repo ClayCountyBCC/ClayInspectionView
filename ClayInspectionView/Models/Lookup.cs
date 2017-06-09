@@ -39,19 +39,30 @@ namespace ClayInspectionView.Models
 
     private static Dictionary<string, Point> GetAddressPoints(List<string> LookupKeys)
     {
+      StringBuilder keys = new StringBuilder();
+      foreach(string l in LookupKeys)
+      {
+        keys.Append("'").Append(l).AppendLine("', ");
+      }     
+
       string query = @"
         USE Clay; 
         SELECT 
-          CAST(House AS VARCHAR(50)) + 
-            CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END + '-' + 
+          CAST(House AS VARCHAR(50)) + '-' +
+            CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END  + 
+            CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
             StreetName + '-' + 
+            CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
             CAST(Zip AS VARCHAR(50)) LookupKey,
           XCoord, 
           YCoord 
         FROM ADDRESS_SITE
-        WHERE CAST(House AS VARCHAR(50)) + 
-            CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END + '-' + 
+        WHERE 
+          CAST(House AS VARCHAR(50)) + '-' +
+            CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END  + 
+            CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
             StreetName + '-' + 
+            CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
             CAST(Zip AS VARCHAR(50)) IN @Keys";
       try
       {

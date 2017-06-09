@@ -6,8 +6,8 @@ var IView;
     var Inspector = (function () {
         function Inspector() {
         }
-        Inspector.prototype.GetInspectors = function () {
-            var x = XHR.Get("/API/Inspectors/");
+        Inspector.prototype.GetAllInspectors = function () {
+            var x = XHR.Get("API/Inspectors/");
             return new Promise(function (resolve, reject) {
                 x.then(function (response) {
                     var ar = JSON.parse(response.Text);

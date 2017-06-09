@@ -13,51 +13,45 @@ namespace ClayInspectionView.Controllers
   {
     // GET: api/Inspections
     [HttpGet]
-    public IHttpActionResult Today()
+    public IHttpActionResult Get()
     {
-      CacheItemPolicy CIP = new CacheItemPolicy()
-      {
-        AbsoluteExpiration = DateTime.Now.AddMinutes(1)
-      };
-
       try
       {
-        List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
-        return Ok((from i in li
-                where i.ScheduledDate.Date == DateTime.Today.Date &&
-                !i.InspDateTime.HasValue
-                select i).ToList());
-      }
-      catch(Exception ex)
+        CacheItemPolicy CIP = new CacheItemPolicy();
+        if (DateTime.Now.Hour > 5 && DateTime.Now.Hour < 8)
+        {
+          CIP.AbsoluteExpiration = DateTime.Now.AddMinutes(1);
+        }
+        else
+        {
+          CIP.AbsoluteExpiration = DateTime.Now.AddMinutes(5);
+        }
+
+        try
+        {
+
+          List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
+          bool CanBeAssigned = Constants.CheckAccess(User.Identity.Name);
+          foreach (var i in li)
+          {
+            i.CanBeAssigned = CanBeAssigned;
+          }
+          return Ok(li);
+
+        }
+        catch (Exception ex)
+        {
+          new ErrorLog(ex);
+          return InternalServerError();
+        }
+      }catch(Exception ex)
       {
         new ErrorLog(ex);
         return InternalServerError();
       }
 
-    }
 
-    [HttpGet]
-    public IHttpActionResult Tomorrow()
-    {
-      CacheItemPolicy CIP = new CacheItemPolicy()
-      {
-        AbsoluteExpiration = DateTime.Now.AddMinutes(1)
-      };
-      try
-      {
-        List<Inspection> li = (List<Inspection>)myCache.GetItem("tomorrowinspections", CIP);
-        return Ok((from i in li
-                where i.ScheduledDate.Date == DateTime.Today.AddDays(1).Date &&
-                !i.InspDateTime.HasValue
-                select i).ToList());
-      }
-      catch (Exception ex)
-      {
-        new ErrorLog(ex);
-        return InternalServerError();
-      }
     }
-
 
   }
 }

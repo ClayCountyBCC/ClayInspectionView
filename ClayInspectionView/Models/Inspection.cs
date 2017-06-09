@@ -22,8 +22,29 @@ namespace ClayInspectionView.Models
     public string InspectionCode { get; set; }
     public DateTime ScheduledDate { get; set; }
     public DateTime? InspDateTime { get; set; }
+    public bool CanBeAssigned { get; set; }
+    public string ScheduledDay
+    {
+      get
+      {
+        return ScheduledDate.Date == DateTime.Today.Date ? "Today" : "Tomorrow";
+      }
+    }
+    public bool IsCompleted {
+      get
+      {
+        return InspDateTime.HasValue;
+      }
+    }
     public Point AddressPoint { get; set; } = new Point();
     public Point ParcelPoint { get; set; } = new Point();
+    public Point PointToUse
+    {
+      get
+      {
+        return AddressPoint.IsValid ? AddressPoint : ParcelPoint;
+      }
+    }
 
     public Inspection()
     {
@@ -39,7 +60,11 @@ namespace ClayInspectionView.Models
         DECLARE @Tomorrow DATE = DATEADD(dd, 1, @Today);
 
         SELECT 
-          B.ProjAddrNumber + '-' + B.ProjStreet + '-' + B.ProjZip LookupKey,
+          B.ProjAddrNumber + '-' + 
+            CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
+            B.ProjStreet + '-' + 
+            CASE WHEN LEN(LTRIM(RTRIM(B.ProjPostDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPostDir)) ELSE '' END + 
+            B.ProjZip LookupKey,
           B.ProjAddrNumber AddressNumber, 
           B.ProjStreet StreetName, 
           B.ProjAddrCombined StreetAddressCombined,
@@ -109,6 +134,63 @@ namespace ClayInspectionView.Models
         }
       }
       return inspections;
+    }
+
+    public static bool Assign(string LookupKey, int InspectorId, string Day)
+    {
+      string Inspector = "";
+      if (InspectorId == 0) // how we handle the Unassigned
+      {
+        Inspector = null;
+      }
+      else
+      {
+        Inspector = (
+          from i in (List<Inspector>)myCache.GetItem("inspectors")
+          where i.Id == InspectorId
+          select i.Intl
+          ).First();
+      }
+      var d = DateTime.Today.Date;
+      if(Day.ToLower() != "today")
+      {
+        d = DateTime.Today.AddDays(1).Date;
+      }
+
+
+      var dp = new DynamicParameters();
+      dp.Add("@Inspector", Inspector);
+      dp.Add("@LookupKey", LookupKey);
+      dp.Add("@DateToUse", d);
+
+      string sql = @"
+        USE WATSC;
+
+        DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+        DECLARE @Tomorrow DATE = DATEADD(dd, 1, @Today);
+
+        UPDATE IR
+          SET Inspector = @Inspector
+        FROM bpINS_REQUEST IR
+        LEFT OUTER JOIN bp_INSPECTORS I ON IR.Inspector = I.Intl
+        LEFT OUTER JOIN bpINS_REF IREF ON IR.InspectionCode = IREF.InspCd
+        INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
+        WHERE 
+          CAST(IR.SchecDateTime AS DATE) = CAST(@DateToUse AS DATE)
+          AND B.ProjAddrNumber + '-' + 
+            CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
+            B.ProjStreet + '-' + 
+            CASE WHEN LEN(LTRIM(RTRIM(B.ProjPostDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPostDir)) ELSE '' END + 
+            B.ProjZip = @LookupKey;";
+      try
+      {
+        var i = Constants.Exec_Query(sql, dp, Constants.csWATSC);
+        return i > 0;
+      }catch(Exception ex)
+      {
+        new ErrorLog(ex, sql);
+        return false;
+      }
     }
 
   }

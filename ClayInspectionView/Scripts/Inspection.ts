@@ -18,13 +18,18 @@ namespace IView
     PermitNo: string;
     Color: string;
     Parcel: string;
+    IsCompleted: boolean;
     InspectionCode: string;
     ScheduledDate: Date;
     InspDateTime: Date;
+    ScheduledDay: string;
+    CanBeAssigned: boolean;
     AddressPoint: Point;
     ParcelPoint: Point;
+    PointToUse: Point;
 
-    GetInspections(Day:string, Total:string): Promise<Array<Inspection>>;
+    GetInspections(Day: string, Total: string): Promise<Array<Inspection>>;
+    Assign(InspectorId: number, LookupKey: string, Day: string): void;
   }
   export class Inspection implements IInspection
   {
@@ -39,20 +44,24 @@ namespace IView
     public PermitNo: string;
     public Color: string;
     public Parcel: string;
+    public IsCompleted: boolean;
     public InspectionCode: string;
+    public CanBeAssigned: boolean;
     ScheduledDate: Date;
     InspDateTime: Date;
+    public ScheduledDay: string;
     public AddressPoint: Point;
     public ParcelPoint: Point;
+    public PointToUse: Point;
 
     constructor()
     {
 
     }
 
-    GetInspections(Day:string, Total: string): Promise<Array<Inspection>>
+    GetInspections(): Promise<Array<Inspection>>
     {
-      var x = XHR.Get("/API/" + Total + "Inspections/" + Day);
+      var x = XHR.Get("API/Inspections");
       return new Promise<Array<Inspection>>(function (resolve, reject)
       {
         x.then(function (response)
@@ -61,12 +70,25 @@ namespace IView
           return resolve(ar);
         }).catch(function ()
         {
-          console.log("error in Get " + Total + "Inspections for " + Day);
+          console.log("error in Get Inspections");
           return reject(null);
         });
       });
     }
 
+    Assign(InspectorId: number, LookupKey: string, Day: string): void
+    {
+      var x = XHR.Put("API/Assign/" + LookupKey + "/" + InspectorId.toString() + "/" + Day);
+      new Promise<boolean>(function (resolve, reject)
+      {
+        x.then(function (response)
+        {
+        }).catch(function ()
+        {
+          console.log("error in Assign Inspections");
+        });
+      });
+    }
   }
 
 

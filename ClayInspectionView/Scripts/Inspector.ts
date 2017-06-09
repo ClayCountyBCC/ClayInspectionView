@@ -7,24 +7,28 @@ namespace IView
 {
   interface IInspector
   {
+    Id: number;
     Name: string;
     Color: string;
+    Inspections: Array<Inspection>;
 
-    GetInspectors(): Promise<Array<Inspector>>;
+    GetAllInspectors(): Promise<Array<Inspector>>;
   }
   export class Inspector implements IInspector
   {
+    public Id: number;
     public Name: string;
     public Color: string;
+    public Inspections: Array<Inspection>;
 
     constructor()
     {
 
     }
 
-    GetInspectors(): Promise<Array<Inspector>>
+    GetAllInspectors(): Promise<Array<Inspector>>
     {
-      var x = XHR.Get("/API/Inspectors/");
+      var x = XHR.Get("API/Inspectors/");
       return new Promise<Array<Inspector>>(function (resolve, reject)
       {
         x.then(function (response)

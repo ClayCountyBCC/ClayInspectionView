@@ -8,6 +8,9 @@
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\controllers\totalinspectionscontroller.cs</string>
     </ArrayOfString>
     <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\controllers\inspectorscontroller.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\lookup.cs</string>
     </ArrayOfString>
     <ArrayOfString>
@@ -26,6 +29,9 @@
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\errorlog.cs</string>
     </ArrayOfString>
     <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\models\inspector.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\connectionstrings.config</string>
     </ArrayOfString>
     <ArrayOfString>
@@ -35,7 +41,7 @@
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\app.ts</string>
     </ArrayOfString>
     <ArrayOfString>
-      <string>C:\Users\mccartneyd\Documents\Visual Studio 2017\Projects\ClayInspectionView\ClayInspectionView\Scripts\map.ts</string>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\map.ts</string>
     </ArrayOfString>
     <ArrayOfString>
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\xhr.ts</string>
@@ -44,13 +50,31 @@
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\ui.ts</string>
     </ArrayOfString>
     <ArrayOfString>
-      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\old\appdata.service.js</string>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\inspection.ts</string>
     </ArrayOfString>
     <ArrayOfString>
-      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\old\main.controller.js</string>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\inspector.ts</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\point.ts</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>C:\Users\mccartneyd\Documents\Visual Studio 2017\Projects\ClayInspectionView\ClayInspectionView\Scripts\old\main.controller.js</string>
     </ArrayOfString>
     <ArrayOfString>
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\scripts\tsconfig.json</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\clayinspectionview\clayinspectionview\content\main.css</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>C:\Users\mccartneyd\Documents\Visual Studio 2017\Projects\ClayInspectionView\ClayInspectionView\App_Start\WebApiConfig.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>ClayInspectionView\ClayInspectionView.csproj</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>C:\Users\mccartneyd\Documents\Visual Studio 2017\Projects\ClayInspectionView\ClayInspectionView\Web.config</string>
     </ArrayOfString>
   </ArrayOfArrayOfString>
 </ArrayOfArrayOfArrayOfString>

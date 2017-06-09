@@ -1,8 +1,9 @@
 ﻿<!DOCTYPE html>
-<html ng-app="InspectionView">
+<html>
 <head>
   <title>Inspection View</title>
 	<meta charset="utf-8" />  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"> 
   <link rel="icon" type="image/png" href="Content/favico-iv.png" />
   <link rel="stylesheet" href="https://js.arcgis.com/3.20/esri/css/esri.css">
   <script defer src="https://js.arcgis.com/3.20/"></script>
@@ -15,78 +16,50 @@
        id="navTopMenu"
        class="navbar navbar-default container-fluid">
     <div class="navbar-header">
-      <span class="hidden-sm hidden-xs hidden-md navbar-brand">
-        Inspection View
-      </span>
-      <span class="hidden-lg navbar-brand">
+      <span class="hidden-sm hidden-xs navbar-brand">
         Inspections
       </span>
     </div>
     <ul class="nav nav-tabs navbar-nav">
-      <li id="nav-home"
+      <li id="nav-Today-incomplete"
           class="active">
-        <a onclick="IView.toggleNavDisplay('today')"
+        <a onclick="IView.toggleNavDisplay('Today', false)"
            aria-controls="today"
            role="tab">
-          Today
+          Today - Open
         </a>
       </li>
-      <li id="nav-permit">
-        <a onclick="IView.toggleNavDisplay('Tomorrow')"
+      <li id="nav-Today-all">
+        <a onclick="IView.toggleNavDisplay('Today', true)"
+           aria-controls="today"
+           role="tab">
+          Today - All
+        </a>
+      </li>
+      <li id="nav-Tomorrow-all">
+        <a onclick="IView.toggleNavDisplay('Tomorrow', true)"
            aria-controls="tomorrow"
            role="tab">
           Tomorrow
         </a>
       </li>
     </ul>
-    <ul style="margin-right: 2em;"
-        class="nav navbar-nav nav-tabs navbar-right">
+    <ul style="margin-right: 2em; cursor: auto;"
+        class="nav navbar-nav nav-tabs navbar-right hidden-sm hidden-xs">
       <li id="nav-cart">
         <a id="OpenInspectionsNav"
-           role="tab">
-          Open Inspections: X of Y
+           role="tab">          
         </a>
       </li>
     </ul>
   </nav>
   <div id="map">
-
-  </div>
-  <div id="legend"></div>
-  <!--<div id="mapContainer">
-    <esri-map id="map"
-              center="main.map.center"
-              basemap="streets"              
-              zoom="main.map.zoom"
-              map-options="main.map.mapOptions"
-              load="main.mapLoaded"
-              register-as="myMap">
-
-
-    </esri-map>
+    
   </div>
   <div id="legend">
-    <ol layout="column">
-      <li layout="row"
-          layout-align="start center"
-          ng-repeat="inspector in main.inspectionGroupLayers track by $index"
-          style="background-color: {{ inspector.color }};"
-          ng-click="main.toggleVisibility(inspector)">
-        <md-checkbox ng-click="main.toggleVisibility(inspector)"
-                     aria-label="visibility"
-                     ng-model="inspector.visible">
-        </md-checkbox>
-        <span>
-          {{ inspector.id }}
-        </span>
-        <span flex></span>
-        <span>
-          {{ inspector.numberInspections }}
-        </span>
-        
-      </li>
-    </ol>
-  </div>-->
+
+  </div>
+
   <script>
 
     document.addEventListener("DOMContentLoaded", function (event)
@@ -100,6 +73,7 @@
   <script src="Scripts/UI.js"></script>
   <script src="Scripts/XHR.js"></script>
   <script src="Scripts/Inspection.js"></script>
+  <script src="Scripts/Inspector.js"></script>
   <script src="Scripts/Point.js"></script>
   <script src="Scripts/app.js"></script>
   <script src="Scripts/es6-promise.min.js"></script>
