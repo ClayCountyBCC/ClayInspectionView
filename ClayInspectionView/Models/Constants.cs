@@ -48,7 +48,18 @@ namespace ClayInspectionView.Models
       }
       else
       {
-        return sr.Properties[propertyName].Count > 0 ? sr.Properties[propertyName][0].ToString() : "";
+        string s = "";
+        var tmp = sr.Properties[propertyName];
+        for (int v = 0; v < tmp.Count; v++)
+        {
+          s += tmp[v].ToString();
+          //if (tmp[v].ToString().Contains(adLibraryGroups[i]))
+          //{
+          //  return (libraryAccess)i;
+          //}
+        }
+        return s;
+        //return sr.Properties[propertyName].Count > 0 ? sr.Properties[propertyName][0].ToString() : "";
       }
     }
 
