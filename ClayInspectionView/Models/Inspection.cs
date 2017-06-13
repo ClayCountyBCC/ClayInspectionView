@@ -53,18 +53,30 @@ namespace ClayInspectionView.Models
 
     public static List<Inspection> GetInspections()
     {
+      var dp = new DynamicParameters();
+      DateTime d = DateTime.Today.AddDays(1).Date;
+      switch (d.DayOfWeek) // if Tomorrow is:
+      {
+        case DayOfWeek.Saturday:
+          d = d.AddDays(2).Date;
+          break;
+        case DayOfWeek.Sunday:
+          d = d.AddDays(1).Date;
+          break;
+      }      
+      dp.Add("@Tomorrow", d);
       string query = @"
         USE WATSC;
 
         DECLARE @Today DATE = CAST(GETDATE() AS DATE);
-        DECLARE @Tomorrow DATE = DATEADD(dd, 1, @Today);
 
         SELECT 
           B.ProjAddrNumber + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
             B.ProjStreet + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPostDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPostDir)) ELSE '' END + 
-            B.ProjZip LookupKey,
+            B.ProjCity + 
+            CASE WHEN LEN(LTRIM(RTRIM(B.ProjZip))) > 0 THEN B.ProjZip ELSE '99999' END LookupKey,
           B.ProjAddrNumber AddressNumber, 
           B.ProjStreet StreetName, 
           B.ProjAddrCombined StreetAddressCombined,
@@ -86,7 +98,7 @@ namespace ClayInspectionView.Models
           CAST(IR.SchecDateTime AS DATE) BETWEEN @Today AND @Tomorrow";
       try
       {
-        var li = Constants.Get_Data<Inspection>(query, Constants.csWATSC);
+        var li = Constants.Get_Data<Inspection>(query, dp, Constants.csWATSC);
         var CIP = new System.Runtime.Caching.CacheItemPolicy() { AbsoluteExpiration = DateTime.Today.AddDays(1) };
         Dictionary<string, Point> points = myCache.GetItem("address", () => Lookup.GetPoints(li), CIP);
         li = UpdatePoints(li, points);
@@ -154,7 +166,18 @@ namespace ClayInspectionView.Models
       var d = DateTime.Today.Date;
       if(Day.ToLower() != "today")
       {
-        d = DateTime.Today.AddDays(1).Date;
+        switch (d.DayOfWeek) // if Tomorrow is:
+        {
+          case DayOfWeek.Saturday:
+            d = d.AddDays(2).Date;
+            break;
+          case DayOfWeek.Sunday:
+            d = d.AddDays(1).Date;
+            break;
+          default:
+            d = DateTime.Today.AddDays(1).Date;
+            break;
+        }
       }
 
 
@@ -166,9 +189,6 @@ namespace ClayInspectionView.Models
       string sql = @"
         USE WATSC;
 
-        DECLARE @Today DATE = CAST(GETDATE() AS DATE);
-        DECLARE @Tomorrow DATE = DATEADD(dd, 1, @Today);
-
         UPDATE IR
           SET Inspector = @Inspector
         FROM bpINS_REQUEST IR
@@ -177,10 +197,12 @@ namespace ClayInspectionView.Models
         INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
         WHERE 
           CAST(IR.SchecDateTime AS DATE) = CAST(@DateToUse AS DATE)
+          AND IR.InspDateTime IS NULL
           AND B.ProjAddrNumber + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
             B.ProjStreet + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPostDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPostDir)) ELSE '' END + 
+            B.ProjCity + 
             B.ProjZip = @LookupKey;";
       try
       {

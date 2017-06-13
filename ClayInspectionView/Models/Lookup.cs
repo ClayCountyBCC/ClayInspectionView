@@ -53,6 +53,7 @@ namespace ClayInspectionView.Models
             CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
             StreetName + '-' + 
             CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
+            CAST(Community AS VARCHAR(50)) +
             CAST(Zip AS VARCHAR(50)) LookupKey,
           XCoord, 
           YCoord 
@@ -63,6 +64,7 @@ namespace ClayInspectionView.Models
             CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
             StreetName + '-' + 
             CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
+            CAST(Community AS VARCHAR(50)) +
             CAST(Zip AS VARCHAR(50)) IN @Keys";
       try
       {
