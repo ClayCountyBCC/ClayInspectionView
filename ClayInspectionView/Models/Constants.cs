@@ -67,9 +67,7 @@ namespace ClayInspectionView.Models
     {
       try
       {
-        using (IDbConnection db =
-          new SqlConnection(
-            Get_ConnStr(cs)))
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
         {
           return (List<T>)db.Query<T>(query);
         }

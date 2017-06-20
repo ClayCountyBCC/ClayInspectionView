@@ -19,6 +19,18 @@ namespace ClayInspectionView.Models
 
     }
 
+    public Lookup(string Key, double x, double y)
+    {
+      LookupKey = Key;
+      Point = new Point(x, y);
+    }
+
+    public Lookup(string Key, Point p)
+    {
+      LookupKey = Key;
+      Point = p;
+    }
+
     public static Dictionary<string, Point> GetPoints(List<Inspection> inspections)
     {
       var addresslist = (from i in inspections
@@ -39,40 +51,45 @@ namespace ClayInspectionView.Models
 
     private static Dictionary<string, Point> GetAddressPoints(List<string> LookupKeys)
     {
-      StringBuilder keys = new StringBuilder();
-      foreach(string l in LookupKeys)
-      {
-        keys.Append("'").Append(l).AppendLine("', ");
-      }     
-
       string query = @"
-        USE Clay; 
-        SELECT 
-          CAST(House AS VARCHAR(50)) + '-' +
-            CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END  + 
-            CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
-            StreetName + '-' + 
-            CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
-            CAST(Community AS VARCHAR(50)) +
-            CAST(Zip AS VARCHAR(50)) LookupKey,
-          XCoord, 
-          YCoord 
-        FROM ADDRESS_SITE
-        WHERE 
-          CAST(House AS VARCHAR(50)) + '-' +
-            CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END  + 
-            CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
-            StreetName + '-' + 
-            CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
-            CAST(Community AS VARCHAR(50)) +
-            CAST(Zip AS VARCHAR(50)) IN @Keys";
+        SELECT
+          LookupKey,
+          XCoord,
+          YCoord
+        FROM Address_SITE A
+        INNER JOIN (
+          SELECT 
+            LookupKey,
+            MAX(OBJECTID) OBJECTID
+          FROM (
+          SELECT
+            OBJECTID,
+            CAST(House AS VARCHAR(50)) + '-' +
+              CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END  + 
+              CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
+              StreetName + '-' + 
+              CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
+              CAST(Community AS VARCHAR(50)) +
+              CAST(Zip AS VARCHAR(50)) LookupKey  
+          FROM ADDRESS_SITE
+          WHERE 
+            CAST(House AS VARCHAR(50)) + '-' +
+              CASE WHEN LEN(Unit) > 0 THEN '-' + LTRIM(RTRIM(Unit)) ELSE '' END  + 
+              CASE WHEN LEN(PreDir) > 0 THEN '-' + LTRIM(RTRIM(PreDir)) ELSE '' END + 
+              StreetName + '-' + 
+              CASE WHEN LEN(SuffixDir) > 0 THEN '-' + LTRIM(RTRIM(SuffixDir)) ELSE '' END + 
+              CAST(Community AS VARCHAR(50)) +
+              CAST(Zip AS VARCHAR(50)) IN @Keys
+          ) AS T
+          GROUP BY LookupKey
+        ) AS AA ON A.OBJECTID = AA.OBJECTID";
       try
       {
         using (IDbConnection db =
           new SqlConnection(
             Constants.Get_ConnStr(Constants.csGIS)))
         {
-          return db.Query(query, new { Keys = LookupKeys  })
+          return db.Query(query, new { Keys = LookupKeys })
             .ToDictionary(
             row => (string)row.LookupKey,
             row => new Point((double)row.XCoord, (double)row.YCoord));
@@ -83,23 +100,6 @@ namespace ClayInspectionView.Models
         new ErrorLog(ex, query);
         return null;
       }
-
-
-    //  var dict = conn.Query(sql, args).ToDictionary(
-    //row => (string)row.UniqueString,
-    //row => (int)row.Id);
-
-      //return InspectionData.Get_Data<Address>(query, dbArgs, InspectionData.csWATSC);
-      //var d = new Dictionary<string, LatLong>();
-      //var la = db.Get_List<Address>(query);
-      //foreach (Address a in la)
-      //{
-      //  if (!d.ContainsKey(a.AddressKey))
-      //  {
-      //    d.Add(a.AddressKey, new LatLong(a.XCoord, a.YCoord));
-      //  }
-      //}
-      //return d;
     }
 
     private static Dictionary<string, Point> GetParcelPoints(List<string> LookupKeys)
