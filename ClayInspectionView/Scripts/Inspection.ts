@@ -61,7 +61,7 @@ namespace IView
 
     GetInspections(): Promise<Array<Inspection>>
     {
-      var x = XHR.Get("API/Inspections");
+      var x = XHR.Get("API/Inspections/GetInspections");
       return new Promise<Array<Inspection>>(function (resolve, reject)
       {
         x.then(function (response)

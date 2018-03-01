@@ -1,9 +1,10 @@
 /// <reference path="Typings/arcgis-js-api.d.ts" />
 var IView;
 (function (IView) {
-    var MapController = (function () {
+    var MapController = /** @class */ (function () {
         function MapController(mapDiv) {
             this.mapDiv = mapDiv;
+            this.isDrawing = false;
             var mapController = this;
             require([
                 "esri/map",
@@ -12,16 +13,20 @@ var IView;
                 "dojo/_base/array",
                 "dojo/parser",
                 "dijit/layout/BorderContainer",
+                "esri/toolbars/draw",
                 "dojo/domReady!"
-            ], function (Map, ArcGISDynamicMapServiceLayer, Legend, arrayUtils, Parser) {
+            ], function (Map, ArcGISDynamicMapServiceLayer, Legend, arrayUtils, Parser, BorderContainer, Draw) {
                 var mapOptions = {
                     basemap: "osm",
                     zoom: 11,
                     logo: false,
                     center: [-81.80, 29.950]
+                    //showInfoWindowOnClick: false
                 };
                 mapController.map = new Map(mapDiv, mapOptions);
                 mapController.map.on("load", function (evt) {
+                    mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
+                    mapController.drawToolbar.on("DrawEnd", IView.FindItemsInExtent);
                     IView.mapLoadCompleted();
                 });
                 var dynamicLayerOptions = {
@@ -31,6 +36,31 @@ var IView;
                 mapController.map.addLayers([BuildingLayer]);
             });
         }
+        MapController.prototype.ToggleDraw = function () {
+            var mapController = this;
+            require(["esri/toolbars/draw"], function (Draw) {
+                mapController.isDrawing = !mapController.isDrawing;
+                if (mapController.isDrawing) {
+                    mapController.drawToolbar.activate(Draw.EXTENT);
+                }
+                else {
+                    mapController.drawToolbar.deactivate();
+                }
+            });
+        };
+        MapController.prototype.findPointsInExtent = function (extent) {
+            console.log('graphics', IView.mapController.map.graphics);
+            //(mapController.map.graphics.graphics, function (graphic) {
+            //  if (extent.contains(graphic.geometry)) {
+            //    graphic.setSymbol(highlightSymbol);
+            //    results.push(graphic.getContent());
+            //  }
+            //  //else if point was previously highlighted, reset its symbology
+            //  else if (graphic.symbol == highlightSymbol) {
+            //    graphic.setSymbol(defaultSymbol);
+            //  }
+            //});
+        };
         MapController.prototype.CreateLayers = function (inspectorData, day, completed, isVisible) {
             if (inspectorData.length === 0)
                 return [];
@@ -130,9 +160,46 @@ var IView;
         };
         MapController.prototype.ClearLayers = function () {
             var m = this.map;
-            this.map.graphicsLayerIds.forEach(function (layerId) {
-                m.removeLayer(m.getLayer(layerId));
+            if (!m.graphicsLayerIds)
+                return;
+            while (m.graphicsLayerIds.length > 0) {
+                for (var _i = 0, _a = m.graphicsLayerIds; _i < _a.length; _i++) {
+                    var glid = _a[_i];
+                    m.removeLayer(m.getLayer(glid));
+                }
+            }
+        };
+        MapController.prototype.FindItemsInExtent = function (extent) {
+            var mapController = this;
+            var m = this.map;
+            var lookupKeys = [];
+            require([
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/Color"
+            ], function (SimpleMarkerSymbol, SimpleLineSymbol, Color) {
+                m.graphicsLayerIds.forEach(function (layerId) {
+                    var l = m.getLayer(layerId);
+                    if (l.visible) {
+                        for (var _i = 0, _a = l.graphics; _i < _a.length; _i++) {
+                            var g = _a[_i];
+                            if (extent.contains(g.geometry)) {
+                                var fluxSymbol = new SimpleMarkerSymbol();
+                                fluxSymbol.color = g.symbol.color;
+                                fluxSymbol.size = g.symbol.size;
+                                fluxSymbol.style = SimpleMarkerSymbol.STYLE_SQUARE;
+                                fluxSymbol.outline = g.symbol.outline;
+                                g.setSymbol(fluxSymbol);
+                                lookupKeys.push(g.attributes.LookupKey);
+                            }
+                        }
+                    }
+                });
             });
+            console.log(lookupKeys);
+            mapController.isDrawing = false;
+            mapController.drawToolbar.deactivate();
+            return lookupKeys;
         };
         return MapController;
     }());

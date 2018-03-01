@@ -53,17 +53,73 @@ ol {
   }
 
 
-/*ol.mapAddress {
-  width: 100%;
-  font-size: inherit;
-  border: none;
-  list-style: none;
-  list-style-type: none;
-}*/
+.glyphicon-refresh-animate
+{
+  -webkit-animation: spinw .7s infinite linear;
+  -moz-animation: spin .7s infinite linear;
+  -o-animation: spin .7s infinite linear;
+  animation: spin .7s infinite linear;
+}
 
-/*ol.mapAddress li {
-  border: 1px solid black;
-  padding-left: .5em;
-  list-style: none;
-  list-style-type: none;
-}*/
+@keyframes spin
+{
+  from
+  {
+    -moz-transform: scale(1) rotate(0deg);
+    -ms-transform: scale(1) rotate(0deg);
+    -o-transform: scale(1) rotate(0deg);
+    -webkit-transform: scale(1) rotate(0deg);
+    transform: scale(1) rotate(0deg);
+  }
+
+  to
+  {
+    -moz-transform: scale(1) rotate(360deg);
+    -ms-transform: scale(1) rotate(360deg);
+    -o-transform: scale(1) rotate(360deg);
+    -webkit-transform: scale(1) rotate(360deg);
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+@-webkit-keyframes spinw
+{
+  from
+  {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+
+  to
+  {
+    -webkit-transform: rotate(360deg);
+    -moz-transform: rotate(360deg);
+    -ms-transform: rotate(360deg);
+    -o-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
+@-moz-keyframes spinm
+{
+  from
+  {
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+
+  to
+  {
+    -moz-transform: rotate(360deg);
+    -ms-transform: rotate(360deg);
+    -o-transform: rotate(360deg);
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}

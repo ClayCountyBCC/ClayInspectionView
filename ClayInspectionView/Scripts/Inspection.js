@@ -3,11 +3,11 @@
 /// <reference path="app.ts" />
 var IView;
 (function (IView) {
-    var Inspection = (function () {
+    var Inspection = /** @class */ (function () {
         function Inspection() {
         }
         Inspection.prototype.GetInspections = function () {
-            var x = XHR.Get("API/Inspections");
+            var x = XHR.Get("API/Inspections/GetInspections");
             return new Promise(function (resolve, reject) {
                 x.then(function (response) {
                     var ar = JSON.parse(response.Text);

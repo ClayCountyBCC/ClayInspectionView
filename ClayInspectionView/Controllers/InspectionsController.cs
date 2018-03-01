@@ -13,24 +13,14 @@ namespace ClayInspectionView.Controllers
   {
     // GET: api/Inspections
     [HttpGet]
-    public IHttpActionResult Get()
+    public IHttpActionResult GetInspections()
     {
       try
       {
-        CacheItemPolicy CIP = new CacheItemPolicy();
-        if (DateTime.Now.Hour > 5 && DateTime.Now.Hour < 8)
-        {
-          CIP.AbsoluteExpiration = DateTime.Now.AddMinutes(1);
-        }
-        else
-        {
-          CIP.AbsoluteExpiration = DateTime.Now.AddMinutes(5);
-        }
-
         try
         {
 
-          List<Inspection> li = (List<Inspection>)myCache.GetItem("inspections", CIP);
+          List<Inspection> li = Inspection.GetInspections();
           bool CanBeAssigned = Constants.CheckAccess(User.Identity.Name);
           foreach (var i in li)
           {

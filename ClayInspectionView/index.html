@@ -5,8 +5,8 @@
 	<meta charset="utf-8" />  
   <meta http-equiv="X-UA-Compatible" content="IE=edge"> 
   <link rel="icon" type="image/png" href="Content/favico-iv.png" />
-  <link rel="stylesheet" href="https://js.arcgis.com/3.20/esri/css/esri.css">
-  <script defer src="https://js.arcgis.com/3.20/"></script>
+  <link rel="stylesheet" href="https://js.arcgis.com/3.23/esri/css/esri.css">
+  <script defer src="https://js.arcgis.com/3.23/"></script>
   <link href="Content/bootstrap.min.css" rel="stylesheet" />
   <link href="Content/bootstrap-theme.min.css" rel="stylesheet" />
   <link href="Content/main.css" rel="stylesheet" />
@@ -42,6 +42,36 @@
            role="tab">
           Tomorrow
         </a>
+      </li>
+      <li class="">
+        <button id="refreshButton"
+                style="margin-top: .5em;"
+                class="btn-success btn"
+                onclick="IView.GetAllInspections()">
+          Refresh Inspections
+        </button>
+        <div style="display: none; margin-top: .5em;"
+             id="showSpin">
+          <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+        </div>
+      </li>
+      <li style="margin-left: 1em;"
+          class="">
+        <div style="margin-top: .5em;">
+          <select onchange="BulkAssignChange()"
+                  id="BulkAssignSelect">
+            <option value="" selected>No Inspector Selected</option>
+          </select>
+          <button id="BulkAssignButton"
+                  class="btn-warning btn"
+                  onclick="IView.DrawToggle()">
+            Bulk Assign
+          </button>
+        </div>
+        <div style="display: none;"
+             id="showSpin">
+          <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+        </div>
       </li>
     </ul>
     <ul style="margin-right: 2em; cursor: auto;"

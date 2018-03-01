@@ -12,7 +12,6 @@ var IView;
         IView.mapController = new IView.MapController("map");
         // get the data for today/tomorrow
         UpdateInspectors();
-        setInterval(GetAllInspections, 59000);
     }
     IView.Start = Start;
     function mapLoadCompleted() {
@@ -92,7 +91,17 @@ var IView;
             IView.mapController.ToggleLayers(i.Id, IView.currentDay, IView.currentIsComplete, false);
         }
     }
+    function DrawToggle() {
+        IView.mapController.ToggleDraw();
+    }
+    IView.DrawToggle = DrawToggle;
+    function toggle(id, show) {
+        document.getElementById(id).style.display = show ? "inline-block" : "none";
+    }
     function GetAllInspections() {
+        toggle('showSpin', true);
+        var button = document.getElementById("refreshButton");
+        button.disabled = true;
         console.log('GetallInspections');
         var i = new IView.Inspection();
         i.GetInspections()
@@ -102,11 +111,16 @@ var IView;
             BuildAndLoadInitialLayers();
             // update the counts
             UpdateCounts(IView.currentDay);
+            toggle('showSpin', false);
+            button.disabled = false;
         }, function () {
             console.log('error getting All inspections');
             IView.allInspections = [];
+            toggle('showSpin', false);
+            button.disabled = false;
         });
     }
+    IView.GetAllInspections = GetAllInspections;
     function UpdateCounts(day) {
         var i = IView.allInspections.filter(function (k) { return k.ScheduledDay === day; }); // our total
         var total = i.length;
@@ -121,6 +135,7 @@ var IView;
         var i = new IView.Inspector();
         i.GetAllInspectors().then(function (inspectors) {
             IView.allInspectors = inspectors;
+            BuildBulkInspectorSelect();
             GetAllInspections();
         }, function () {
             console.log('error getting inspectors');
@@ -128,6 +143,23 @@ var IView;
             IView.allInspectors = [];
         });
     }
+    function BuildBulkInspectorSelect() {
+        var select = document.getElementById("BulkAssignSelect");
+        for (var _i = 0, allInspectors_1 = IView.allInspectors; _i < allInspectors_1.length; _i++) {
+            var i = allInspectors_1[_i];
+            var o = document.createElement("option");
+            o.value = i.Id.toString();
+            o.label = i.Name;
+            select.options.add(o);
+        }
+    }
+    function BulkAssignChange() {
+        var select = document.getElementById("BulkAssignSelect");
+        var button = document.getElementById("BulkAssignButton");
+        if (select.selectedIndex === 0) {
+        }
+    }
+    IView.BulkAssignChange = BulkAssignChange;
     function buildInspectorData(inspections) {
         var iData = IView.allInspectors.map(function (i) {
             var x = new IView.Inspector();
@@ -169,6 +201,7 @@ var IView;
         var i = new IView.Inspection();
         i.Assign(assignedTo, e.id, IView.currentDay);
         UpdateInspectionAssignments(e.id, assignedTo, IView.currentDay);
+        GetAllInspections();
     }
     IView.Assign = Assign;
     function UpdateInspectionAssignments(lookupKey, assignedTo, day) {
@@ -243,5 +276,9 @@ var IView;
         }
     }
     IView.clearElement = clearElement;
+    function FindItemsInExtent(extent) {
+        IView.mapController.FindItemsInExtent(extent);
+    }
+    IView.FindItemsInExtent = FindItemsInExtent;
 })(IView || (IView = {}));
 //# sourceMappingURL=app.js.map

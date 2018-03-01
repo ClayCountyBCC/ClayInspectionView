@@ -33,6 +33,10 @@ namespace ClayInspectionView.Models
 
     public static Dictionary<string, Point> GetPoints(List<Inspection> inspections)
     {
+      try
+      {
+
+      
       var addresslist = (from i in inspections
                          where !i.AddressPoint.IsValid && !i.ParcelPoint.IsValid
                          select i.LookupKey).Distinct().ToList();
@@ -47,10 +51,23 @@ namespace ClayInspectionView.Models
 
       parcelpoints.ToList().ForEach(x => addresspoints.Add(x.Key, x.Value));
       return addresspoints;
+      }
+      catch(Exception ex)
+      {
+        new ErrorLog(ex);
+        return new Dictionary<string, Point>();
+      }
     }
 
     private static Dictionary<string, Point> GetAddressPoints(List<string> LookupKeys)
     {
+      StringBuilder sb = new StringBuilder();
+      foreach(string s in LookupKeys)
+      {
+        sb.Append("'").Append(s).AppendLine("', ");
+      }
+
+
       string query = @"
         SELECT
           LookupKey,

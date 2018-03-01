@@ -40,9 +40,10 @@ namespace ClayInspectionView.Models
       {
         return (oldValue ?? newValue).Value;
       }
-      catch
+      catch(Exception ex)
       {
         // Handle cached lazy exception by evicting from cache. Thanks to Denis Borovnev for pointing this out!
+        new ErrorLog(ex);
         _cache.Remove(key);
         throw;
       }
@@ -80,10 +81,6 @@ namespace ClayInspectionView.Models
       {
         case "inspectors":
           return Inspector.Get();
-
-        case "inspections":
-        case "tomorrowinspections":
-          return Inspection.GetInspections();        
 
         default:
           return null;

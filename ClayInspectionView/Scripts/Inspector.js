@@ -3,7 +3,7 @@
 /// <reference path="app.ts" />
 var IView;
 (function (IView) {
-    var Inspector = (function () {
+    var Inspector = /** @class */ (function () {
         function Inspector() {
         }
         Inspector.prototype.GetAllInspectors = function () {

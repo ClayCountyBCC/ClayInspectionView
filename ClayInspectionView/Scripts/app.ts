@@ -21,7 +21,6 @@ namespace IView
     mapController = new MapController("map");
     // get the data for today/tomorrow
     UpdateInspectors();
-    setInterval(GetAllInspections, 59000);
   }
 
   export function mapLoadCompleted()
@@ -137,8 +136,21 @@ namespace IView
     }
   }
 
-  function GetAllInspections(): void
+  export function DrawToggle():void
   {
+    mapController.ToggleDraw();
+  }
+
+  function toggle(id: string, show: boolean): void
+  {
+    document.getElementById(id).style.display = show ? "inline-block" : "none";
+  }
+
+  export function GetAllInspections(): void
+  {
+    toggle('showSpin', true);
+    let button = (<HTMLButtonElement>document.getElementById("refreshButton"));
+    button.disabled = true;
     console.log('GetallInspections');
     var i = new Inspection();
     i.GetInspections()
@@ -150,10 +162,14 @@ namespace IView
         BuildAndLoadInitialLayers();
         // update the counts
         UpdateCounts(currentDay);
+        toggle('showSpin', false);
+        button.disabled = false;
       }, function (): void
       {
         console.log('error getting All inspections');
         allInspections = [];
+        toggle('showSpin', false);
+        button.disabled = false;
       });
   }
 
@@ -175,6 +191,7 @@ namespace IView
     i.GetAllInspectors().then(function (inspectors: Array<Inspector>)
     {
       allInspectors = inspectors;
+      BuildBulkInspectorSelect();
       GetAllInspections();
     }, function ()
       {
@@ -182,6 +199,27 @@ namespace IView
         // do something with the error here
         allInspectors = [];
       });
+  }
+
+  function BuildBulkInspectorSelect():void
+  {
+    let select:HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
+    for (let i of allInspectors)
+    {
+      let o = document.createElement("option");
+      o.value = i.Id.toString();
+      o.label = i.Name;
+      select.options.add(o);
+    }
+  }
+  export function BulkAssignChange()
+  {
+    let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
+    let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
+    if (select.selectedIndex === 0)
+    {
+      
+    }
   }
 
   function buildInspectorData(inspections): Array<Inspector>
@@ -236,6 +274,7 @@ namespace IView
     let i = new Inspection();
     i.Assign(assignedTo, e.id, currentDay);   
     UpdateInspectionAssignments(e.id, assignedTo, currentDay);
+    GetAllInspections();
   }
 
   function UpdateInspectionAssignments(lookupKey: string, assignedTo: number, day: string)
@@ -328,4 +367,12 @@ namespace IView
       node.removeChild(node.firstChild);
     }
   }
+
+  export function FindItemsInExtent(extent: any): void
+  {
+    mapController.FindItemsInExtent(extent);
+    
+
+  }
+
 }

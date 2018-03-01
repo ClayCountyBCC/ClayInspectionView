@@ -79,7 +79,7 @@ namespace ClayInspectionView.Models
       }
     }
 
-    public static List<T> Get_Data<T>(string query, DynamicParameters dbA, string cs)
+    public static List<T> Get_Data<T>(string query, DynamicParameters dbA, string cs, int timeOut = 60)
     {
       try
       {
@@ -87,7 +87,7 @@ namespace ClayInspectionView.Models
           new SqlConnection(
             Get_ConnStr(cs)))
         {
-          return (List<T>)db.Query<T>(query, dbA);
+          return (List<T>)db.Query<T>(query, dbA, commandTimeout: timeOut);
         }
       }
       catch (Exception ex)

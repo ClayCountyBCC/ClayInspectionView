@@ -37,7 +37,11 @@ namespace ClayInspectionView.Models
       }
     }
     public Point AddressPoint { get; set; } = new Point();
+    public double Project_Address_X { get; set; } = 0;
+    public double Project_Address_Y { get; set; } = 0;
     public Point ParcelPoint { get; set; } = new Point();
+    public double Parcel_Centroid_X { get; set; } = 0;
+    public double Parcel_Centroid_Y { get; set; } = 0;
     public Point PointToUse
     {
       get
@@ -71,14 +75,14 @@ namespace ClayInspectionView.Models
         DECLARE @Today DATE = CAST(GETDATE() AS DATE);
 
         SELECT 
-          B.ProjAddrNumber + '-' + 
+          ISNULL(B.ProjAddrNumber, '') + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
-            B.ProjStreet + '-' + 
+            ISNULL(B.ProjStreet, '') + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPostDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPostDir)) ELSE '' END + 
-            B.ProjCity + 
-            CASE WHEN LEN(LTRIM(RTRIM(B.ProjZip))) > 0 THEN B.ProjZip ELSE '99999' END LookupKey,
-          B.ProjAddrNumber AddressNumber, 
-          B.ProjStreet StreetName, 
+            ISNULL(B.ProjCity, '') + 
+            CASE WHEN LEN(LTRIM(RTRIM(ISNULL(B.ProjZip, '')))) > 0 THEN B.ProjZip ELSE '99999' END LookupKey,
+          ISNULL(B.ProjAddrNumber, '') AddressNumber, 
+          ISNULL(B.ProjStreet, '') StreetName, 
           B.ProjAddrCombined StreetAddressCombined,
           B.ProjCity City, 
           B.ProjZip Zip,
@@ -89,7 +93,11 @@ namespace ClayInspectionView.Models
           IR.InspectionCode, 
           IR.SchecDateTime AS ScheduledDate,
           B.ParcelNo,
-          IR.InspDateTime
+          IR.InspDateTime,
+          Project_Address_X,
+          Project_Address_Y,
+          Parcel_Centroid_X,
+          Parcel_Centroid_Y
         FROM bpINS_REQUEST IR
         LEFT OUTER JOIN bp_INSPECTORS I ON IR.Inspector = I.Intl
         LEFT OUTER JOIN bpINS_REF IREF ON IR.InspectionCode = IREF.InspCd
@@ -99,22 +107,10 @@ namespace ClayInspectionView.Models
       try
       {
         var li = Constants.Get_Data<Inspection>(query, dp, Constants.csWATSC);
-        var CIP = new System.Runtime.Caching.CacheItemPolicy() { AbsoluteExpiration = DateTime.Today.AddDays(1) };
-        Dictionary<string, Point> points = myCache.GetItem("address", () => Lookup.GetPoints(li), CIP);
-        li = UpdatePoints(li, points);
-        // at this point none of the inspections should have an invalid address unless we used the cache and they weren't in it
-        // if there are any, we'll basically run the same function again, but only for the missing
-        var missing = (from i in li
-                       where !i.AddressPoint.IsValid &&
-                       !i.ParcelPoint.IsValid
-                       select i).ToList();
-
-        if (missing.Count() > 0)
+        foreach(Inspection i in li)
         {
-          var missingpoints = Lookup.GetPoints(missing);
-          missingpoints.ToList().ForEach(x => points.Add(x.Key, x.Value));
-          myCache.UpdateItem("address", points, CIP);
-          UpdatePoints(li, points);
+          i.AddressPoint = new Point(i.Project_Address_X, i.Project_Address_Y);
+          i.ParcelPoint = new Point(i.Parcel_Centroid_X, i.Parcel_Centroid_Y);
         }
         return li;
       }
@@ -126,27 +122,7 @@ namespace ClayInspectionView.Models
 
     }
 
-    private static List<Inspection> UpdatePoints(List<Inspection> inspections, Dictionary<string, Point> points)
-    {
-      foreach (Inspection i in inspections)
-      {
-        if (!i.AddressPoint.IsValid && !i.ParcelPoint.IsValid)
-        {
-          if (points.ContainsKey(i.LookupKey))
-          {
-            i.AddressPoint = points[i.LookupKey];
-          }
-          else
-          {
-            if (points.ContainsKey(i.ParcelNo))
-            {
-              i.ParcelPoint = points[i.ParcelNo];
-            }
-          }
-        }
-      }
-      return inspections;
-    }
+
 
     public static bool Assign(string LookupKey, int InspectorId, string Day)
     {
