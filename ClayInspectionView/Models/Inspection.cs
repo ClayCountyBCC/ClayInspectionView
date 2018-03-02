@@ -42,13 +42,22 @@ namespace ClayInspectionView.Models
     public Point ParcelPoint { get; set; } = new Point();
     public double Parcel_Centroid_X { get; set; } = 0;
     public double Parcel_Centroid_Y { get; set; } = 0;
-    public Point PointToUse
-    {
-      get
-      {
-        return AddressPoint.IsValid ? AddressPoint : ParcelPoint;
-      }
-    }
+    public Point PointToUse { get; set; }
+    //{
+    //  get
+    //  {
+    //    var p =  AddressPoint.IsValid ? AddressPoint : ParcelPoint;
+    //    if (!p.IsValid)
+    //    {
+    //      p = new Point(440000, 2100000);
+    //    }
+    //    else
+    //    {
+    //      p = new Point(440000, 2100000);
+    //    }
+    //    return p;
+    //  }
+    //}
 
     public Inspection()
     {
@@ -107,10 +116,17 @@ namespace ClayInspectionView.Models
       try
       {
         var li = Constants.Get_Data<Inspection>(query, dp, Constants.csWATSC);
+        int badPointCount = 0;
         foreach(Inspection i in li)
         {
           i.AddressPoint = new Point(i.Project_Address_X, i.Project_Address_Y);
           i.ParcelPoint = new Point(i.Parcel_Centroid_X, i.Parcel_Centroid_Y);
+          i.PointToUse = i.AddressPoint.IsValid ? i.AddressPoint : i.ParcelPoint;
+          if (!i.PointToUse.IsValid)
+          {
+            i.PointToUse = new Point(440000, 2100000 - (25 * badPointCount));
+            badPointCount += 1;
+          }
         }
         return li;
       }
