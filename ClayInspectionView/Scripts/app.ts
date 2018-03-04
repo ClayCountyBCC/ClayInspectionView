@@ -5,8 +5,8 @@
 namespace IView
 {
   export let mapController: MapController;
-  export let allInspections: Array<Inspection>; // populated from web service
-  export let allInspectors: Array<Inspector>; // populated from web service
+  export let allInspections: Array<Inspection> =[];// populated from web service
+  export let allInspectors: Array<Inspector> = []; // populated from web service
   export let allLayers: Array<any>; // all of the layers created.
   export let currentDay: string = "";
   export let currentIsComplete: boolean = false;
@@ -138,10 +138,21 @@ namespace IView
 
   export function DrawToggle():void
   {
+    let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
+    let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
+    let o = select.selectedOptions[0];
+    if (!button.disabled)
+    {
+      button.textContent = "Bulk Assigning to: " + o.label;
+    }
+    else
+    {
+      button.textContent = "Bulk Assign";
+    }
     mapController.ToggleDraw();
   }
 
-  function toggle(id: string, show: boolean): void
+  export function toggle(id: string, show: boolean): void
   {
     document.getElementById(id).style.display = show ? "inline-block" : "none";
   }
@@ -157,6 +168,7 @@ namespace IView
       .then(
       function (inspections: Array<Inspection>): void
       {
+        console.log('inspections', inspections);
         allInspections = inspections;
         dataLoaded = true;
         BuildAndLoadInitialLayers();
@@ -174,7 +186,7 @@ namespace IView
   }
 
   function UpdateCounts(day: string)
-  {
+  {    
     let i = allInspections.filter(function (k) { return k.ScheduledDay === day }); // our total
     let total = i.length;
     i = i.filter(function (k) { return !k.IsCompleted }); // let's weed out the ones that are completed.'
@@ -212,14 +224,15 @@ namespace IView
       select.options.add(o);
     }
   }
+
   export function BulkAssignChange()
   {
     let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
     let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
-    if (select.selectedIndex === 0)
-    {
-      
-    }
+    let o = select.selectedOptions[0];
+    button.disabled = (o.value === "");
+    button.textContent = "Bulk Assign";
+    mapController.ToggleDraw(false);
   }
 
   function buildInspectorData(inspections): Array<Inspector>
@@ -258,51 +271,56 @@ namespace IView
     x.push("</span></li>");
     i.map(function (n)
     {
-      x.push("<li><a href='http://claybccims/WATSWeb/Permit/Inspection/Inspection.aspx?PermitNo=");
+      x.push("<li><a target='clayinspections' href='http://apps.claycountygov.com/InspectionScheduler/#permit=");
       x.push(n.PermitNo);
+      x.push("&inspectionid=")
+      x.push(n.InspReqID)
       x.push("'>");
       x.push(n.PermitNo);
       x.push(" - ");
       x.push(n.InspectionDescription);
+      x.push(" - ");
+      x.push(n.IsCommercial ? "Commercial" : "Residential");
+      x.push(" - ");
+      x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
       x.push("</a></li>");
     });
     return x.join('');
   }
 
-  export function Assign(e: HTMLSelectElement, assignedTo:number)
+  export function Assign(e: HTMLElement, InspectorId:number)
   {
-    let i = new Inspection();
-    i.Assign(assignedTo, e.id, currentDay);   
-    UpdateInspectionAssignments(e.id, assignedTo, currentDay);
-    GetAllInspections();
+    let LookupKey = e.id;
+    let lk: Array<string> = [LookupKey];
+    BulkAssign(InspectorId, lk);
   }
 
-  function UpdateInspectionAssignments(lookupKey: string, assignedTo: number, day: string)
-  {
-    let currentInspector = allInspectors.filter(function (k)
-    {
-      return k.Id == assignedTo;
-    })[0];
-    console.log(currentInspector);
-    let inspections: Array<Inspection> = allInspections.filter(
-      function (k: Inspection)
-      {
-        return k.LookupKey === lookupKey && k.ScheduledDay === day;
-      });
-    inspections.forEach(function (i)
-    {
-      i.InspectorName = currentInspector.Name;
-      i.Color = currentInspector.Color;
-    });
-    BuildAndLoadInitialLayers();
-  }
+  //function UpdateInspectionAssignments(lookupKey: string, assignedTo: number, day: string)
+  //{
+  //  let currentInspector = allInspectors.filter(function (k)
+  //  {
+  //    return k.Id == assignedTo;
+  //  })[0];
+  //  console.log(currentInspector);
+  //  let inspections: Array<Inspection> = allInspections.filter(
+  //    function (k: Inspection)
+  //    {
+  //      return k.LookupKey === lookupKey && k.ScheduledDay === day;
+  //    });
+  //  inspections.forEach(function (i)
+  //  {
+  //    i.InspectorName = currentInspector.Name;
+  //    i.Color = currentInspector.Color;
+  //  });
+  //  BuildAndLoadInitialLayers();
+  //}
 
   function buildInspectorAssign(assignedTo: string, lookupKey: string)
   {
     var x = [];
     x.push("<li style='margin-bottom: .5em;'><span>Assigned to:</span>");
-    x.push("<select id='");
-    x.push(lookupKey);
+    x.push("<select id='")
+    x.push(lookupKey)    
     x.push("' onchange='IView.Assign(this, this.value);'>");
     allInspectors.forEach(function (i)
     {
@@ -370,9 +388,26 @@ namespace IView
 
   export function FindItemsInExtent(extent: any): void
   {
-    mapController.FindItemsInExtent(extent);
-    
-
+    let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
+    let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("BulkAssignSelect")).value);
+    BulkAssign(InspectorId, LookupKeys);
   }
 
+  function BulkAssign(InspectorId: number, LookupKeys: Array<string>)
+  {
+    let InspectionIds: Array<number> = [];
+    for (let i of allInspections)
+    {
+      if (LookupKeys.indexOf(i.LookupKey) !== -1 &&
+        i.ScheduledDay === currentDay)
+      {
+        if (currentIsComplete || (!currentIsComplete && !i.IsCompleted))
+        {
+          InspectionIds.push(i.InspReqID);
+        }
+      }
+    }
+    let i = new Inspection();
+    i.BulkAssign(InspectorId, InspectionIds);
+  }
 }

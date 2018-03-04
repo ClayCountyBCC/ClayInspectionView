@@ -21,7 +21,7 @@ namespace ClayInspectionView.Controllers
         {
 
           List<Inspection> li = Inspection.GetInspections();
-          bool CanBeAssigned = Constants.CheckAccess(User.Identity.Name);
+          bool CanBeAssigned = UserAccess.GetUserAccess(User.Identity.Name).current_access == UserAccess.access_type.inspector_access;
           foreach (var i in li)
           {
             i.CanBeAssigned = CanBeAssigned;

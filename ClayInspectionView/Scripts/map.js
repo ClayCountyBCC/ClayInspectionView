@@ -36,10 +36,16 @@ var IView;
                 mapController.map.addLayers([BuildingLayer]);
             });
         }
-        MapController.prototype.ToggleDraw = function () {
+        MapController.prototype.ToggleDraw = function (toggle) {
+            if (toggle === void 0) { toggle = null; }
             var mapController = this;
             require(["esri/toolbars/draw"], function (Draw) {
-                mapController.isDrawing = !mapController.isDrawing;
+                if (toggle !== null) {
+                    mapController.isDrawing = toggle;
+                }
+                else {
+                    mapController.isDrawing = !mapController.isDrawing;
+                }
                 if (mapController.isDrawing) {
                     mapController.drawToolbar.activate(Draw.EXTENT);
                 }
@@ -47,19 +53,6 @@ var IView;
                     mapController.drawToolbar.deactivate();
                 }
             });
-        };
-        MapController.prototype.findPointsInExtent = function (extent) {
-            console.log('graphics', IView.mapController.map.graphics);
-            //(mapController.map.graphics.graphics, function (graphic) {
-            //  if (extent.contains(graphic.geometry)) {
-            //    graphic.setSymbol(highlightSymbol);
-            //    results.push(graphic.getContent());
-            //  }
-            //  //else if point was previously highlighted, reset its symbology
-            //  else if (graphic.symbol == highlightSymbol) {
-            //    graphic.setSymbol(defaultSymbol);
-            //  }
-            //});
         };
         MapController.prototype.CreateLayers = function (inspectorData, day, completed, isVisible) {
             if (inspectorData.length === 0)
@@ -196,7 +189,6 @@ var IView;
                     }
                 });
             });
-            console.log(lookupKeys);
             mapController.isDrawing = false;
             mapController.drawToolbar.deactivate();
             return lookupKeys;

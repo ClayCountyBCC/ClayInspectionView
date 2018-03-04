@@ -81,7 +81,8 @@ namespace ClayInspectionView.Models
       {
         case "inspectors":
           return Inspector.Get();
-
+        case "useraccess":
+          return UserAccess.GetAllUserAccess();
         default:
           return null;
       }

@@ -18,12 +18,23 @@ var IView;
                 });
             });
         };
-        Inspection.prototype.Assign = function (InspectorId, LookupKey, Day) {
-            var x = XHR.Put("API/Assign/" + LookupKey + "/" + InspectorId.toString() + "/" + Day);
+        Inspection.prototype.BulkAssign = function (InspectorId, InspectionIds) {
+            var button = document.getElementById("BulkAssignButton");
+            IView.toggle('showSpin', true);
+            var AssignData = {
+                InspectorId: InspectorId,
+                InspectionIds: InspectionIds
+            };
+            var x = XHR.Post("API/Assign/BulkAssign/", JSON.stringify(AssignData));
             new Promise(function (resolve, reject) {
                 x.then(function (response) {
+                    IView.GetAllInspections();
+                    IView.toggle('showSpin', false);
+                    button.textContent = "Bulk Assign";
                 }).catch(function () {
-                    console.log("error in Assign Inspections");
+                    console.log("error in Bulk Assign Inspections");
+                    IView.toggle('showSpin', false);
+                    button.textContent = "Bulk Assign";
                 });
             });
         };

@@ -7,6 +7,9 @@ namespace IView
 {
   interface IInspection
   {
+    InspReqID: number;
+    IsCommercial: boolean;
+    IsPrivateProvider: boolean;
     LookupKey: string;
     AddressNumber: string;
     StreetName: string;
@@ -29,10 +32,13 @@ namespace IView
     PointToUse: Point;
 
     GetInspections(Day: string, Total: string): Promise<Array<Inspection>>;
-    Assign(InspectorId: number, LookupKey: string, Day: string): void;
+    BulkAssign(InspectorId: number, InspectionIds: Array<number>);
   }
   export class Inspection implements IInspection
   {
+    public InspReqID: number;
+    public IsCommercial: boolean;
+    public IsPrivateProvider: boolean;
     public LookupKey: string;
     public AddressNumber: string;
     public StreetName: string;
@@ -76,16 +82,27 @@ namespace IView
       });
     }
 
-    Assign(InspectorId: number, LookupKey: string, Day: string): void
+    BulkAssign(InspectorId: number, InspectionIds: Array<number>): void
     {
-      var x = XHR.Put("API/Assign/" + LookupKey + "/" + InspectorId.toString() + "/" + Day);
+      let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
+      IView.toggle('showSpin', true);
+      let AssignData = {
+        InspectorId: InspectorId,
+        InspectionIds: InspectionIds
+      }
+      var x = XHR.Post("API/Assign/BulkAssign/",  JSON.stringify(AssignData));
       new Promise<boolean>(function (resolve, reject)
       {
         x.then(function (response)
         {
+          IView.GetAllInspections();
+          IView.toggle('showSpin', false);
+          button.textContent = "Bulk Assign";
         }).catch(function ()
         {
-          console.log("error in Assign Inspections");
+          console.log("error in Bulk Assign Inspections");
+          IView.toggle('showSpin', false);
+          button.textContent = "Bulk Assign";
         });
       });
     }

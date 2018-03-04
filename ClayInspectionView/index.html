@@ -58,12 +58,13 @@
       <li style="margin-left: 1em;"
           class="">
         <div style="margin-top: .5em;">
-          <select onchange="BulkAssignChange()"
+          <select onchange="IView.BulkAssignChange()"
                   id="BulkAssignSelect">
             <option value="" selected>No Inspector Selected</option>
           </select>
-          <button id="BulkAssignButton"
-                  class="btn-warning btn"
+          <button disabled
+                  id="BulkAssignButton"
+                  class="btn-danger btn"
                   onclick="IView.DrawToggle()">
             Bulk Assign
           </button>

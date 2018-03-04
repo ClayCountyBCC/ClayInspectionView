@@ -8,6 +8,15 @@ namespace ClayInspectionView.Models
 {
   public class Inspection
   {
+    public bool IsCommercial { get; set; }
+    public bool IsPrivateProvider
+    {
+      get
+      {
+        return PrivateProviderInspectionRequestId > 0; 
+      }
+    }
+    public int PrivateProviderInspectionRequestId { get; set; } = 0;
     public string LookupKey { get; set; }
     public string AddressNumber { get; set; }
     public string StreetName { get; set; }
@@ -19,6 +28,7 @@ namespace ClayInspectionView.Models
     public string PermitNo { get; set; }
     public string Color { get; set; }
     public string ParcelNo { get; set; }
+    public int InspReqID {get;set;}
     public string InspectionCode { get; set; }
     public DateTime ScheduledDate { get; set; }
     public DateTime? InspDateTime { get; set; }
@@ -66,22 +76,29 @@ namespace ClayInspectionView.Models
 
     public static List<Inspection> GetInspections()
     {
-      var dp = new DynamicParameters();
-      DateTime d = DateTime.Today.AddDays(1).Date;
-      switch (d.DayOfWeek) // if Tomorrow is:
-      {
-        case DayOfWeek.Saturday:
-          d = d.AddDays(2).Date;
-          break;
-        case DayOfWeek.Sunday:
-          d = d.AddDays(1).Date;
-          break;
-      }      
-      dp.Add("@Tomorrow", d);
+      //var dp = new DynamicParameters();
+      //DateTime d = DateTime.Today.AddDays(1).Date;
+      //switch (d.DayOfWeek) // if Tomorrow is:
+      //{
+      //  case DayOfWeek.Saturday:
+      //    d = d.AddDays(2).Date;
+      //    break;
+      //  case DayOfWeek.Sunday:
+      //    d = d.AddDays(1).Date;
+      //    break;
+      //}      
+      //dp.Add("@Tomorrow", d);
       string query = @"
         USE WATSC;
 
         DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+        DECLARE @Tomorrow DATE = (
+          SELECT TOP 1 calendar_date 
+          FROM Calendar.dbo.Dates
+          WHERE calendar_date > @Today
+          AND day_of_week NOT IN (1, 7)
+          AND observed_holiday = 0
+        );
 
         SELECT 
           ISNULL(B.ProjAddrNumber, '') + '-' + 
@@ -102,20 +119,25 @@ namespace ClayInspectionView.Models
           IR.InspectionCode, 
           IR.SchecDateTime AS ScheduledDate,
           B.ParcelNo,
+          IR.InspReqID,
           IR.InspDateTime,
           Project_Address_X,
           Project_Address_Y,
           Parcel_Centroid_X,
-          Parcel_Centroid_Y
+          Parcel_Centroid_Y,
+          ISNULL(M.Comm, A.Comm) IsCommercial,
+          PrivProvIRId PrivateProviderInspectionRequestId
         FROM bpINS_REQUEST IR
         LEFT OUTER JOIN bp_INSPECTORS I ON IR.Inspector = I.Intl
         LEFT OUTER JOIN bpINS_REF IREF ON IR.InspectionCode = IREF.InspCd
+        LEFT OUTER JOIN bpMASTER_PERMIT M ON M.PermitNo = IR.PermitNo
+        LEFT OUTER JOIN bpASSOC_PERMIT A ON A.PermitNo = IR.PermitNo
         INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
         WHERE 
           CAST(IR.SchecDateTime AS DATE) BETWEEN @Today AND @Tomorrow";
       try
       {
-        var li = Constants.Get_Data<Inspection>(query, dp, Constants.csWATSC);
+        var li = Constants.Get_Data<Inspection>(query, Constants.csWATSC);
         int badPointCount = 0;
         foreach(Inspection i in li)
         {

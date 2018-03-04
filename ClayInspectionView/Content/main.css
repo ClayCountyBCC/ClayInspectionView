@@ -123,3 +123,5 @@ ol {
     transform: rotate(360deg);
   }
 }
+
+.esriPopup .sizer { width: 500px;}

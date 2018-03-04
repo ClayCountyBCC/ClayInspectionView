@@ -57,14 +57,21 @@ namespace IView
         });
     }
 
-    public ToggleDraw(): void
+    public ToggleDraw(toggle: boolean = null): void
     {
       let mapController = this;
       require(["esri/toolbars/draw"],
         function (Draw)
         {
+          if (toggle !== null)
+          {
+            mapController.isDrawing = toggle;
+          }
+          else
+          {
+            mapController.isDrawing = !mapController.isDrawing;
+          }
           
-          mapController.isDrawing = !mapController.isDrawing;
           if (mapController.isDrawing)
           {
             mapController.drawToolbar.activate(Draw.EXTENT);
@@ -74,22 +81,6 @@ namespace IView
             mapController.drawToolbar.deactivate();
           }
         });
-    }
-
-    findPointsInExtent(extent: any):void
-    {
-      console.log('graphics', mapController.map.graphics);
-      //(mapController.map.graphics.graphics, function (graphic) {
-      //  if (extent.contains(graphic.geometry)) {
-      //    graphic.setSymbol(highlightSymbol);
-      //    results.push(graphic.getContent());
-      //  }
-      //  //else if point was previously highlighted, reset its symbology
-      //  else if (graphic.symbol == highlightSymbol) {
-      //    graphic.setSymbol(defaultSymbol);
-      //  }
-      //});
-
     }
 
     public CreateLayers(inspectorData: Array<Inspector>, day: string, completed: boolean, isVisible:boolean): Array<any>
@@ -275,8 +266,6 @@ namespace IView
             }
           });
         });
-
-      console.log(lookupKeys);
       mapController.isDrawing = false;
       mapController.drawToolbar.deactivate();
       return lookupKeys;

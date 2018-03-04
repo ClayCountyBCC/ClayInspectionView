@@ -15,7 +15,7 @@ namespace ClayInspectionView.Models
     {
       get
       {
-        return X != double.MinValue;
+        return X != double.MinValue && X != 0;
       }
     }
     public Point()

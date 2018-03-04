@@ -2,6 +2,8 @@
 //import MapController from "./map";
 var IView;
 (function (IView) {
+    IView.allInspections = []; // populated from web service
+    IView.allInspectors = []; // populated from web service
     IView.currentDay = "";
     IView.currentIsComplete = false;
     var mapLoaded = false;
@@ -92,12 +94,22 @@ var IView;
         }
     }
     function DrawToggle() {
+        var select = document.getElementById("BulkAssignSelect");
+        var button = document.getElementById("BulkAssignButton");
+        var o = select.selectedOptions[0];
+        if (!button.disabled) {
+            button.textContent = "Bulk Assigning to: " + o.label;
+        }
+        else {
+            button.textContent = "Bulk Assign";
+        }
         IView.mapController.ToggleDraw();
     }
     IView.DrawToggle = DrawToggle;
     function toggle(id, show) {
         document.getElementById(id).style.display = show ? "inline-block" : "none";
     }
+    IView.toggle = toggle;
     function GetAllInspections() {
         toggle('showSpin', true);
         var button = document.getElementById("refreshButton");
@@ -106,6 +118,7 @@ var IView;
         var i = new IView.Inspection();
         i.GetInspections()
             .then(function (inspections) {
+            console.log('inspections', inspections);
             IView.allInspections = inspections;
             dataLoaded = true;
             BuildAndLoadInitialLayers();
@@ -156,8 +169,10 @@ var IView;
     function BulkAssignChange() {
         var select = document.getElementById("BulkAssignSelect");
         var button = document.getElementById("BulkAssignButton");
-        if (select.selectedIndex === 0) {
-        }
+        var o = select.selectedOptions[0];
+        button.disabled = (o.value === "");
+        button.textContent = "Bulk Assign";
+        IView.mapController.ToggleDraw(false);
     }
     IView.BulkAssignChange = BulkAssignChange;
     function buildInspectorData(inspections) {
@@ -187,37 +202,47 @@ var IView;
         x.push(i.length);
         x.push("</span></li>");
         i.map(function (n) {
-            x.push("<li><a href='http://claybccims/WATSWeb/Permit/Inspection/Inspection.aspx?PermitNo=");
+            x.push("<li><a target='clayinspections' href='http://apps.claycountygov.com/InspectionScheduler/#permit=");
             x.push(n.PermitNo);
+            x.push("&inspectionid=");
+            x.push(n.InspReqID);
             x.push("'>");
             x.push(n.PermitNo);
             x.push(" - ");
             x.push(n.InspectionDescription);
+            x.push(" - ");
+            x.push(n.IsCommercial ? "Commercial" : "Residential");
+            x.push(" - ");
+            x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
             x.push("</a></li>");
         });
         return x.join('');
     }
-    function Assign(e, assignedTo) {
-        var i = new IView.Inspection();
-        i.Assign(assignedTo, e.id, IView.currentDay);
-        UpdateInspectionAssignments(e.id, assignedTo, IView.currentDay);
-        GetAllInspections();
+    function Assign(e, InspectorId) {
+        var LookupKey = e.id;
+        var lk = [LookupKey];
+        BulkAssign(InspectorId, lk);
     }
     IView.Assign = Assign;
-    function UpdateInspectionAssignments(lookupKey, assignedTo, day) {
-        var currentInspector = IView.allInspectors.filter(function (k) {
-            return k.Id == assignedTo;
-        })[0];
-        console.log(currentInspector);
-        var inspections = IView.allInspections.filter(function (k) {
-            return k.LookupKey === lookupKey && k.ScheduledDay === day;
-        });
-        inspections.forEach(function (i) {
-            i.InspectorName = currentInspector.Name;
-            i.Color = currentInspector.Color;
-        });
-        BuildAndLoadInitialLayers();
-    }
+    //function UpdateInspectionAssignments(lookupKey: string, assignedTo: number, day: string)
+    //{
+    //  let currentInspector = allInspectors.filter(function (k)
+    //  {
+    //    return k.Id == assignedTo;
+    //  })[0];
+    //  console.log(currentInspector);
+    //  let inspections: Array<Inspection> = allInspections.filter(
+    //    function (k: Inspection)
+    //    {
+    //      return k.LookupKey === lookupKey && k.ScheduledDay === day;
+    //    });
+    //  inspections.forEach(function (i)
+    //  {
+    //    i.InspectorName = currentInspector.Name;
+    //    i.Color = currentInspector.Color;
+    //  });
+    //  BuildAndLoadInitialLayers();
+    //}
     function buildInspectorAssign(assignedTo, lookupKey) {
         var x = [];
         x.push("<li style='margin-bottom: .5em;'><span>Assigned to:</span>");
@@ -277,8 +302,24 @@ var IView;
     }
     IView.clearElement = clearElement;
     function FindItemsInExtent(extent) {
-        IView.mapController.FindItemsInExtent(extent);
+        var LookupKeys = IView.mapController.FindItemsInExtent(extent);
+        var InspectorId = parseInt(document.getElementById("BulkAssignSelect").value);
+        BulkAssign(InspectorId, LookupKeys);
     }
     IView.FindItemsInExtent = FindItemsInExtent;
+    function BulkAssign(InspectorId, LookupKeys) {
+        var InspectionIds = [];
+        for (var _i = 0, allInspections_1 = IView.allInspections; _i < allInspections_1.length; _i++) {
+            var i_1 = allInspections_1[_i];
+            if (LookupKeys.indexOf(i_1.LookupKey) !== -1 &&
+                i_1.ScheduledDay === IView.currentDay) {
+                if (IView.currentIsComplete || (!IView.currentIsComplete && !i_1.IsCompleted)) {
+                    InspectionIds.push(i_1.InspReqID);
+                }
+            }
+        }
+        var i = new IView.Inspection();
+        i.BulkAssign(InspectorId, InspectionIds);
+    }
 })(IView || (IView = {}));
 //# sourceMappingURL=app.js.map
