@@ -130,6 +130,7 @@
     <Compile Include="Controllers\AssignController.cs" />
     <Compile Include="Controllers\InspectionsController.cs" />
     <Compile Include="Controllers\InspectorsController.cs" />
+    <Compile Include="Controllers\UnitController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -140,6 +141,7 @@
     <Compile Include="Models\Constants.cs" />
     <Compile Include="Models\myCache.cs" />
     <Compile Include="Models\Point.cs" />
+    <Compile Include="Models\Unit.cs" />
     <Compile Include="Models\UserAccess.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -169,6 +171,7 @@
     <TypeScriptCompile Include="Scripts\Typings\arcgis-js-api.d.ts" />
     <TypeScriptCompile Include="Scripts\Typings\es6-promise\es6-promise.d.ts" />
     <TypeScriptCompile Include="Scripts\UI.ts" />
+    <TypeScriptCompile Include="Scripts\Unit.ts" />
     <TypeScriptCompile Include="Scripts\XHR.ts" />
   </ItemGroup>
   <ItemGroup>

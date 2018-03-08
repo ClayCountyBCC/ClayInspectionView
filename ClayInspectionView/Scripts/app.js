@@ -1,4 +1,5 @@
 /// <reference path="map.ts" />
+/// <reference path="unit.ts" />
 //import MapController from "./map";
 var IView;
 (function (IView) {
@@ -162,7 +163,7 @@ var IView;
             var i = allInspectors_1[_i];
             var o = document.createElement("option");
             o.value = i.Id.toString();
-            o.label = i.Name;
+            o.text = i.Name;
             select.options.add(o);
         }
     }

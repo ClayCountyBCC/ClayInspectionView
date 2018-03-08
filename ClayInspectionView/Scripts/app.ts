@@ -1,4 +1,5 @@
 ﻿/// <reference path="map.ts" />
+/// <reference path="unit.ts" />
 //import MapController from "./map";
 
 
@@ -220,7 +221,7 @@ namespace IView
     {
       let o = document.createElement("option");
       o.value = i.Id.toString();
-      o.label = i.Name;
+      o.text = i.Name;
       select.options.add(o);
     }
   }

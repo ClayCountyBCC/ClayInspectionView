@@ -15,6 +15,7 @@ namespace ClayInspectionView.Models
   {
     public const string csWATSC = "IVWATSC";
     public const string csGIS = "IVGIS";
+    public const string csTracking = "IVTRACKING";
     public const string csError = "LOG";
 
     public static List<T> Get_Data<T>(string query, string cs)

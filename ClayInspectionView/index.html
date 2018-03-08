@@ -2,8 +2,9 @@
 <html>
 <head>
   <title>Inspection View</title>
-	<meta charset="utf-8" />  
-  <meta http-equiv="X-UA-Compatible" content="IE=edge"> 
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
   <link rel="icon" type="image/png" href="Content/favico-iv.png" />
   <link rel="stylesheet" href="https://js.arcgis.com/3.23/esri/css/esri.css">
   <script defer src="https://js.arcgis.com/3.23/"></script>
@@ -79,13 +80,13 @@
         class="nav navbar-nav nav-tabs navbar-right hidden-sm hidden-xs">
       <li id="nav-cart">
         <a id="OpenInspectionsNav"
-           role="tab">          
+           role="tab">
         </a>
       </li>
     </ul>
   </nav>
   <div id="map">
-    
+
   </div>
   <div id="legend">
 
@@ -99,13 +100,14 @@
     });
 
   </script>
-  
+
   <script src="Scripts/map.js"></script>
   <script src="Scripts/UI.js"></script>
   <script src="Scripts/XHR.js"></script>
   <script src="Scripts/Inspection.js"></script>
   <script src="Scripts/Inspector.js"></script>
   <script src="Scripts/Point.js"></script>
+  <script src="Scripts/Unit.js"></script>
   <script src="Scripts/app.js"></script>
   <script src="Scripts/es6-promise.min.js"></script>
 </body>

@@ -37,7 +37,7 @@ namespace ClayInspectionView.Models
     {
       get
       {
-        return ScheduledDate.Date == DateTime.Today.Date ? "Today" : "Tomorrow";
+        return ScheduledDate.Date <= DateTime.Today.Date ? "Today" : "Tomorrow";
       }
     }
     public bool IsCompleted {
@@ -134,7 +134,9 @@ namespace ClayInspectionView.Models
         LEFT OUTER JOIN bpASSOC_PERMIT A ON A.PermitNo = IR.PermitNo
         INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
         WHERE 
-          CAST(IR.SchecDateTime AS DATE) BETWEEN @Today AND @Tomorrow";
+          CAST(IR.SchecDateTime AS DATE) IN (@Today, @Tomorrow)
+          OR (CAST(IR.SchecDateTime AS DATE) < @Today
+            AND ResultADC IS NULL)";
       try
       {
         var li = Constants.Get_Data<Inspection>(query, Constants.csWATSC);

@@ -79,6 +79,8 @@ namespace ClayInspectionView.Models
     {
       switch (key.Trim().ToLower())
       {
+        case "units":
+          return Unit.GetInspectionUnits();
         case "inspectors":
           return Inspector.Get();
         case "useraccess":
