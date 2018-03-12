@@ -53,21 +53,6 @@ namespace ClayInspectionView.Models
     public double Parcel_Centroid_X { get; set; } = 0;
     public double Parcel_Centroid_Y { get; set; } = 0;
     public Point PointToUse { get; set; }
-    //{
-    //  get
-    //  {
-    //    var p =  AddressPoint.IsValid ? AddressPoint : ParcelPoint;
-    //    if (!p.IsValid)
-    //    {
-    //      p = new Point(440000, 2100000);
-    //    }
-    //    else
-    //    {
-    //      p = new Point(440000, 2100000);
-    //    }
-    //    return p;
-    //  }
-    //}
 
     public Inspection()
     {
@@ -76,18 +61,7 @@ namespace ClayInspectionView.Models
 
     public static List<Inspection> GetInspections()
     {
-      //var dp = new DynamicParameters();
-      //DateTime d = DateTime.Today.AddDays(1).Date;
-      //switch (d.DayOfWeek) // if Tomorrow is:
-      //{
-      //  case DayOfWeek.Saturday:
-      //    d = d.AddDays(2).Date;
-      //    break;
-      //  case DayOfWeek.Sunday:
-      //    d = d.AddDays(1).Date;
-      //    break;
-      //}      
-      //dp.Add("@Tomorrow", d);
+
       string query = @"
         USE WATSC;
 

@@ -22,29 +22,17 @@
       </span>
     </div>
     <ul class="nav nav-tabs navbar-nav">
-      <li id="nav-Today-incomplete"
-          class="active">
-        <a onclick="IView.toggleNavDisplay('Today', false)"
-           aria-controls="today"
-           role="tab">
-          Today - Open
-        </a>
+      <li style="margin-left: 1em; margin-right: 1em;">
+        <div style="margin-top: .5em;">
+          <select id="selectDay"
+                  onchange="IView.ChangeDay()">
+            <option value="today-open" selected>Today - Open</option>
+            <option value="today-all">Today - All</option>
+            <option value="tomorrow">Tomorrow</option>
+          </select>
+        </div>
       </li>
-      <li id="nav-Today-all">
-        <a onclick="IView.toggleNavDisplay('Today', true)"
-           aria-controls="today"
-           role="tab">
-          Today - All
-        </a>
-      </li>
-      <li id="nav-Tomorrow-all">
-        <a onclick="IView.toggleNavDisplay('Tomorrow', true)"
-           aria-controls="tomorrow"
-           role="tab">
-          Tomorrow
-        </a>
-      </li>
-      <li class="">
+      <li>
         <button id="refreshButton"
                 style="margin-top: .5em;"
                 class="btn-success btn"
@@ -52,25 +40,6 @@
           Refresh Inspections
         </button>
         <div style="display: none; margin-top: .5em;"
-             id="showSpin">
-          <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
-        </div>
-      </li>
-      <li style="margin-left: 1em;"
-          class="">
-        <div style="margin-top: .5em;">
-          <select onchange="IView.BulkAssignChange()"
-                  id="BulkAssignSelect">
-            <option value="" selected>No Inspector Selected</option>
-          </select>
-          <button disabled
-                  id="BulkAssignButton"
-                  class="btn-danger btn"
-                  onclick="IView.DrawToggle()">
-            Bulk Assign
-          </button>
-        </div>
-        <div style="display: none;"
              id="showSpin">
           <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
         </div>
@@ -89,7 +58,30 @@
 
   </div>
   <div id="legend">
+    <ol>
+      <li style="margin-top: .5em; display: flex; justify-content: center; border: none;">
+        <select onchange="IView.BulkAssignChange()"
+                id="BulkAssignSelect">
+          <option value="" selected>No Inspector Selected</option>
+        </select>
+      </li>
+      <li style="display: flex; justify-content: center; border: none;">
+        <button disabled
+                id="BulkAssignButton"
+                class="btn-danger btn"
+                onclick="IView.DrawToggle()">
+          Bulk Assign
+        </button>
+        <div style="display: none;"
+             id="showSpin">
+          <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+        </div>
+      </li>
 
+    </ol>
+    <div id="LegendInspectorList">
+
+    </div>
   </div>
 
   <script>

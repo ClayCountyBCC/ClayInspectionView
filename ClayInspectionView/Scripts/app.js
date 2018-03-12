@@ -43,15 +43,19 @@ var IView;
             return k.ScheduledDay === days[1];
         }); // tomorrows inspections
         IView.mapController.ApplyLayers(IView.mapController.CreateLayers(buildInspectorData(inspections), days[1], true, days[1] === IView.currentDay));
+        IView.mapController.ToggleLayersByDay(IView.currentDay, IView.currentIsComplete);
         BuildLegend();
     }
     function BuildLegend() {
-        var legend = document.getElementById("legend");
+        var legend = document.getElementById("LegendInspectorList");
         clearElement(legend);
-        var x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
-        var isCompleted = (x[x.length - 1] === "incomplete" ? false : true);
+        //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
+        //var selectedDay = (<HTMLSelectElement>document.getElementById("selectDay")).value;
+        //currentDay
+        //let isCompleted = (x[x.length - 1] === "incomplete" ? false : true);
+        //let isCompleted = selectedDay === "today-all" || selectedDay === "tomorrow" ? false : true;
         var inspections = IView.allInspections.filter(function (k) {
-            if (isCompleted) {
+            if (IView.currentIsComplete) {
                 return k.ScheduledDay === IView.currentDay;
             }
             else {
@@ -82,8 +86,8 @@ var IView;
         legend.appendChild(ol);
     }
     function OnInspectorClick(i) {
-        var x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
-        IView.currentIsComplete = (x[x.length - 1] === "incomplete" ? false : true);
+        //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
+        //currentIsComplete = (x[x.length - 1] === "incomplete" ? false : true);
         var e = document.getElementById("inspector" + i.Id);
         if (e.classList.contains("strike")) {
             e.classList.remove("strike"); // it's already hidden, let's show it
@@ -225,25 +229,6 @@ var IView;
         BulkAssign(InspectorId, lk);
     }
     IView.Assign = Assign;
-    //function UpdateInspectionAssignments(lookupKey: string, assignedTo: number, day: string)
-    //{
-    //  let currentInspector = allInspectors.filter(function (k)
-    //  {
-    //    return k.Id == assignedTo;
-    //  })[0];
-    //  console.log(currentInspector);
-    //  let inspections: Array<Inspection> = allInspections.filter(
-    //    function (k: Inspection)
-    //    {
-    //      return k.LookupKey === lookupKey && k.ScheduledDay === day;
-    //    });
-    //  inspections.forEach(function (i)
-    //  {
-    //    i.InspectorName = currentInspector.Name;
-    //    i.Color = currentInspector.Color;
-    //  });
-    //  BuildAndLoadInitialLayers();
-    //}
     function buildInspectorAssign(assignedTo, lookupKey) {
         var x = [];
         x.push("<li style='margin-bottom: .5em;'><span>Assigned to:</span>");
@@ -282,14 +267,24 @@ var IView;
         return x.join('');
     }
     IView.mapAddressClick = mapAddressClick;
+    function ToggleLegend() {
+    }
+    IView.ToggleLegend = ToggleLegend;
+    function ChangeDay() {
+        var ddl = document.getElementById("selectDay");
+        switch (ddl.value) {
+            case "today-open":
+                toggleNavDisplay('Today', false);
+            case "today-all":
+                toggleNavDisplay('Today', true);
+                break;
+            case "tomorrow":
+                toggleNavDisplay('Tomorrow', true);
+        }
+    }
+    IView.ChangeDay = ChangeDay;
     function toggleNavDisplay(key, isCompleted) {
         IView.currentIsComplete = isCompleted;
-        var x = document.querySelectorAll("ul.nav li.active");
-        for (var i = 0; i < x.length; ++i) {
-            x[i].classList.remove("active");
-        }
-        var id = "nav-" + key + "-" + (isCompleted ? "all" : "incomplete");
-        document.getElementById(id).classList.add("active");
         IView.currentDay = key;
         IView.mapController.ToggleLayersByDay(key, isCompleted);
         BuildLegend();

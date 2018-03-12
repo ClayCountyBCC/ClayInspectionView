@@ -73,19 +73,23 @@ namespace IView
         true,
         days[1] === currentDay)
     );
+    mapController.ToggleLayersByDay(currentDay, currentIsComplete);
     BuildLegend();
   }
 
   function BuildLegend(): void
   {
-    let legend = <HTMLElement>document.getElementById("legend");
+    let legend = <HTMLElement>document.getElementById("LegendInspectorList");
     clearElement(legend);
-    let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
-    let isCompleted = (x[x.length - 1] === "incomplete" ? false : true);
+    //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
+    //var selectedDay = (<HTMLSelectElement>document.getElementById("selectDay")).value;
+    //currentDay
+    //let isCompleted = (x[x.length - 1] === "incomplete" ? false : true);
+    //let isCompleted = selectedDay === "today-all" || selectedDay === "tomorrow" ? false : true;
     let inspections = allInspections.filter(
       function (k)
       {
-        if (isCompleted)
+        if (currentIsComplete)
         {
           return k.ScheduledDay === currentDay;
         }
@@ -121,8 +125,8 @@ namespace IView
 
   function OnInspectorClick(i: Inspector)
   {
-    let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
-    currentIsComplete = (x[x.length - 1] === "incomplete" ? false : true);
+    //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
+    //currentIsComplete = (x[x.length - 1] === "incomplete" ? false : true);
 
     let e = document.getElementById("inspector" + i.Id);
     if (e.classList.contains("strike"))
@@ -296,26 +300,6 @@ namespace IView
     BulkAssign(InspectorId, lk);
   }
 
-  //function UpdateInspectionAssignments(lookupKey: string, assignedTo: number, day: string)
-  //{
-  //  let currentInspector = allInspectors.filter(function (k)
-  //  {
-  //    return k.Id == assignedTo;
-  //  })[0];
-  //  console.log(currentInspector);
-  //  let inspections: Array<Inspection> = allInspections.filter(
-  //    function (k: Inspection)
-  //    {
-  //      return k.LookupKey === lookupKey && k.ScheduledDay === day;
-  //    });
-  //  inspections.forEach(function (i)
-  //  {
-  //    i.InspectorName = currentInspector.Name;
-  //    i.Color = currentInspector.Color;
-  //  });
-  //  BuildAndLoadInitialLayers();
-  //}
-
   function buildInspectorAssign(assignedTo: string, lookupKey: string)
   {
     var x = [];
@@ -363,16 +347,29 @@ namespace IView
     return x.join('');
   }
 
+  export function ToggleLegend()
+  {
+
+  }
+
+  export function ChangeDay()
+  {
+    var ddl = <HTMLSelectElement>document.getElementById("selectDay");
+    switch (ddl.value)
+    {
+      case "today-open":
+        toggleNavDisplay('Today', false)
+      case "today-all":
+        toggleNavDisplay('Today', true);
+        break;
+      case "tomorrow":
+        toggleNavDisplay('Tomorrow', true);
+    }
+  }
+
   export function toggleNavDisplay(key:string, isCompleted:boolean):void
   {
     currentIsComplete = isCompleted;
-    let x = document.querySelectorAll("ul.nav li.active");
-    for (var i = 0; i < x.length; ++i)
-    {
-      (<HTMLLIElement>x[i]).classList.remove("active");
-    }
-    let id = "nav-" + key + "-" + (isCompleted ? "all" : "incomplete");
-    document.getElementById(id).classList.add("active");    
     currentDay = key;
     mapController.ToggleLayersByDay(key, isCompleted);
     BuildLegend();
