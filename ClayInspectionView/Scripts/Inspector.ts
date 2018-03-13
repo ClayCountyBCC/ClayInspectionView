@@ -10,6 +10,15 @@ namespace IView
     Id: number;
     Name: string;
     Color: string;
+    RBL: boolean;
+    CBL: boolean;
+    REL: boolean;
+    CEL: boolean;
+    RME: boolean;
+    CME: boolean;
+    RPL: boolean;
+    CPL: boolean;
+    PrivateProvider: boolean;
     Inspections: Array<Inspection>;
 
     GetAllInspectors(): Promise<Array<Inspector>>;
@@ -19,6 +28,15 @@ namespace IView
     public Id: number;
     public Name: string;
     public Color: string;
+    public RBL: boolean;
+    public CBL: boolean;
+    public REL: boolean;
+    public CEL: boolean;
+    public RME: boolean;
+    public CME: boolean;
+    public RPL: boolean;
+    public CPL: boolean;
+    public PrivateProvider: boolean;
     public Inspections: Array<Inspection>;
 
     constructor()

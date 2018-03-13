@@ -21,7 +21,22 @@ namespace IView
     // setup default map
     mapController = new MapController("map");
     // get the data for today/tomorrow
-    UpdateInspectors();
+    UpdateInspectors();    
+  }
+
+  export function HandleHash()
+  {
+    let hash = location.hash;
+    let currentHash = new LocationHash(location.hash.substring(1));
+    if (currentHash.InspectionId > 0)
+    {
+      let i = allInspections.filter(function (j) { return j.InspReqID === currentHash.InspectionId });
+      if (i.length > 0)
+      {
+        console.log(i[0].PointToUse);
+        mapController.CenterAndZoom(i[0].PointToUse);
+      }
+    }
   }
 
   export function mapLoadCompleted()
@@ -81,11 +96,6 @@ namespace IView
   {
     let legend = <HTMLElement>document.getElementById("LegendInspectorList");
     clearElement(legend);
-    //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
-    //var selectedDay = (<HTMLSelectElement>document.getElementById("selectDay")).value;
-    //currentDay
-    //let isCompleted = (x[x.length - 1] === "incomplete" ? false : true);
-    //let isCompleted = selectedDay === "today-all" || selectedDay === "tomorrow" ? false : true;
     let inspections = allInspections.filter(
       function (k)
       {
@@ -180,6 +190,7 @@ namespace IView
         // update the counts
         UpdateCounts(currentDay);
         toggle('showSpin', false);
+        HandleHash();
         button.disabled = false;
       }, function (): void
       {
@@ -236,8 +247,62 @@ namespace IView
     let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
     let o = select.selectedOptions[0];
     button.disabled = (o.value === "");
+    //if (!button.disabled)
+    //{
+    //  let inspector: Inspector = allInspectors.filter(function (i) { return i.Id.toString() === o.value; })[0];
+    //  let lookupKeys: Array<string> = [];
+    //  lookupKeys = GetInvalidInspections(inspector);
+    //  mapController.MarkItemsToIndicateNoMatch(lookupKeys);
+    //}
     button.textContent = "Bulk Assign";
     mapController.ToggleDraw(false);
+  }
+
+  function GetInvalidInspections(inspector: Inspector): Array<string>
+  {
+    // this function returns a list of the lookupkeys that the selected
+    // inspector doesn't have the necessary licenses to inspect.
+
+    let lookupKeys: Array<string> = [];
+    for (let i of allInspections)
+    {
+      if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
+      {
+        console.log('inspector', inspector, 'inspection', i);
+      }
+      if (i.IsPrivateProvider && !inspector.PrivateProvider)
+      {
+        if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
+        {
+          console.log('found');
+        }
+        if (lookupKeys.indexOf(i.LookupKey) === -1) lookupKeys.push(i.LookupKey);
+      } else
+      {
+        if (
+          i.CBL && !inspector.CBL || 
+          i.CEL && !inspector.CEL ||
+          i.CME && !inspector.CME ||
+          i.CPL && !inspector.CPL ||
+          i.RBL && !inspector.RBL ||
+          i.REL && !inspector.REL ||
+          i.RME && !inspector.RME ||
+          i.RPL && !inspector.RPL)
+        {
+          if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
+          {
+            console.log('found');
+          }
+          if(lookupKeys.indexOf(i.LookupKey) === -1) lookupKeys.push(i.LookupKey);
+        }
+      }
+    }
+    console.log('invalid lookupkeys', lookupKeys);
+    if (lookupKeys.indexOf('2821-BOLTON-ORANGE PARK32073') != -1)
+    {
+      console.log('found in array');
+    }
+    return lookupKeys;
   }
 
   function buildInspectorData(inspections): Array<Inspector>
@@ -358,7 +423,8 @@ namespace IView
     switch (ddl.value)
     {
       case "today-open":
-        toggleNavDisplay('Today', false)
+        toggleNavDisplay('Today', false);
+        break;
       case "today-all":
         toggleNavDisplay('Today', true);
         break;

@@ -30,6 +30,14 @@ namespace IView
     AddressPoint: Point;
     ParcelPoint: Point;
     PointToUse: Point;
+    RBL: boolean;
+    CBL: boolean;
+    REL: boolean;
+    CEL: boolean;
+    RME: boolean;
+    CME: boolean;
+    RPL: boolean;
+    CPL: boolean;
 
     GetInspections(Day: string, Total: string): Promise<Array<Inspection>>;
     BulkAssign(InspectorId: number, InspectionIds: Array<number>);
@@ -59,6 +67,14 @@ namespace IView
     public AddressPoint: Point;
     public ParcelPoint: Point;
     public PointToUse: Point;
+    public RBL: boolean;
+    public CBL: boolean;
+    public REL: boolean;
+    public CEL: boolean;
+    public RME: boolean;
+    public CME: boolean;
+    public RPL: boolean;
+    public CPL: boolean;
 
     constructor()
     {

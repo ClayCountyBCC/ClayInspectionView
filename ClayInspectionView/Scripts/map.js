@@ -96,7 +96,7 @@ var IView;
                             iT.setContent(IView.mapAddressClick);
                             var s = new SimpleMarkerSymbol({
                                 "color": c,
-                                "size": 11 + inspections.length * 3,
+                                "size": 10,
                                 "angle": 0,
                                 "xoffset": 0,
                                 "yoffset": 0,
@@ -141,7 +141,7 @@ var IView;
         };
         MapController.prototype.ToggleLayersByDay = function (day, isComplete) {
             var m = this.map;
-            this.map.graphicsLayerIds.forEach(function (layerId) {
+            m.graphicsLayerIds.forEach(function (layerId) {
                 var l = m.getLayer(layerId);
                 if (l.day === day && l.completed === isComplete) {
                     l.show();
@@ -192,6 +192,14 @@ var IView;
             mapController.isDrawing = false;
             mapController.drawToolbar.deactivate();
             return lookupKeys;
+        };
+        MapController.prototype.CenterAndZoom = function (p) {
+            var mapController = this;
+            var m = this.map;
+            require(["esri/geometry/Point"], function (Point) {
+                var pt = new Point([p.Longitude, p.Latitude]);
+                m.centerAndZoom(pt, 18);
+            });
         };
         return MapController;
     }());

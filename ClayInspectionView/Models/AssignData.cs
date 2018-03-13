@@ -27,22 +27,43 @@ namespace ClayInspectionView.Models
       dp.Add("@Ids", InspectionIds);
 
       string query = @"
-        UPDATE IR
-          SET IR.Inspector = I.Intl
+        USE WATSC;
+
+        WITH InspectionData AS (
+        SELECT 
+          IR.InspReqId,
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END REL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RPL,
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CEL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CPL,
+          CASE WHEN ISNULL(IR.PrivProvIRId, 0) > 0 THEN 1 ELSE 0 END PrivateProvider
         FROM bpINS_REQUEST IR
-        INNER JOIN bp_INSPECTORS I ON I.ID = @InspectorId
-        LEFT OUTER JOIN bpASSOC_PERMIT A ON IR.PermitNo = A.PermitNo
-        LEFT OUTER JOIN bpMASTER_PERMIT M ON IR.PermitNo = M.PermitNo
+        LEFT OUTER JOIN bpMASTER_PERMIT M ON M.PermitNo = IR.PermitNo
+        LEFT OUTER JOIN bpASSOC_PERMIT A ON A.PermitNo = IR.PermitNo
         WHERE 
-          IR.InspReqID IN @Ids
-          AND CASE WHEN IR.PermitType = 1 THEN I.BL
-            WHEN IR.PermitType = 2 THEN I.EL
-            WHEN IR.PermitType = 3 THEN I.PL
-            WHEN IR.PermitType = 4 THEN I.ME  END = 1
-          AND ((IR.PrivProvIRId IS NOT NULL AND I.PrivateProvider = 1)
-            OR IR.PrivProvIRId IS NULL)
-          AND ((ISNULL(A.Comm,M.Comm) = 1 AND I.Comm = 1)
-            OR ISNULL(A.Comm,M.Comm) = 0)";
+          InspReqID IN @Ids
+        )
+
+        UPDATE IR
+        SET Inspector = I.Intl
+        FROM bpINS_REQUEST IR   
+        INNER JOIN InspectionData ID ON IR.InspReqID = ID.InspReqId
+        INNER JOIN bp_INSPECTORS I ON I.ID=22
+        WHERE 
+          ((ID.RBL = 1 AND I.RBL = 1) OR
+          (ID.RME = 1 AND I.RME = 1) OR
+          (ID.REL = 1 AND I.REL = 1) OR
+          (ID.RPL = 1 AND I.RPL = 1) OR
+          (ID.CBL = 1 AND I.CBL = 1) OR
+          (ID.CME = 1 AND I.CME = 1) OR
+          (ID.CEL = 1 AND I.CEL = 1) OR
+          (ID.CPL = 1 AND I.CPL = 1))
+          AND ((ID.PrivateProvider = 1 AND I.PrivateProvider = 1)
+          OR ID.PrivateProvider = 0);";
       Constants.Exec_Query(query, dp, Constants.csWATSC);
     }
 

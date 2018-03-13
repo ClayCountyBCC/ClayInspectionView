@@ -166,6 +166,7 @@
     <TypeScriptCompile Include="Scripts\app.ts" />
     <TypeScriptCompile Include="Scripts\Inspection.ts" />
     <TypeScriptCompile Include="Scripts\Inspector.ts" />
+    <TypeScriptCompile Include="Scripts\LocationHash.ts" />
     <TypeScriptCompile Include="Scripts\map.ts" />
     <TypeScriptCompile Include="Scripts\Point.ts" />
     <TypeScriptCompile Include="Scripts\Typings\arcgis-js-api.d.ts" />

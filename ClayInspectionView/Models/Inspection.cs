@@ -53,6 +53,14 @@ namespace ClayInspectionView.Models
     public double Parcel_Centroid_X { get; set; } = 0;
     public double Parcel_Centroid_Y { get; set; } = 0;
     public Point PointToUse { get; set; }
+    public bool RBL { get; set; }
+    public bool CBL { get; set; }
+    public bool REL { get; set; }
+    public bool CEL { get; set; }
+    public bool RME { get; set; }
+    public bool CME { get; set; }
+    public bool RPL { get; set; }
+    public bool CPL { get; set; }
 
     public Inspection()
     {
@@ -75,6 +83,14 @@ namespace ClayInspectionView.Models
         );
 
         SELECT 
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END REL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RPL,
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CEL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CPL,
           ISNULL(B.ProjAddrNumber, '') + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
             ISNULL(B.ProjStreet, '') + '-' + 

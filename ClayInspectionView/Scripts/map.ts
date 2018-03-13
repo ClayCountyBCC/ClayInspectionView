@@ -141,10 +141,10 @@ namespace IView
                   var iT = new InfoTemplate();
                   iT.setTitle('Address: ${CompactAddress}');
                   iT.setContent(IView.mapAddressClick);
-
+                  
                   var s = new SimpleMarkerSymbol({
                     "color": c,
-                    "size": 11 + inspections.length * 3,
+                    "size": 10, // + inspections.length * 3
                     "angle": 0,
                     "xoffset": 0,
                     "yoffset": 0,
@@ -161,6 +161,7 @@ namespace IView
                     "LookupKey": n
                   });
                   g.setInfoTemplate(iT);
+                  
                   l.add(g);
                 }
 
@@ -203,7 +204,7 @@ namespace IView
     public ToggleLayersByDay(day: string, isComplete:boolean):void
     {
       let m = this.map;
-      this.map.graphicsLayerIds.forEach(function (layerId)
+      m.graphicsLayerIds.forEach(function (layerId)
       {
         let l = m.getLayer(layerId);
         if (l.day === day && l.completed === isComplete)
@@ -270,6 +271,58 @@ namespace IView
       mapController.drawToolbar.deactivate();
       return lookupKeys;
     }
+
+    public CenterAndZoom(p: any): void
+    {
+      let mapController = this;
+      let m = this.map;
+      require(["esri/geometry/Point"],
+        function (Point)
+        {
+          var pt = new Point([p.Longitude, p.Latitude]);
+          m.centerAndZoom(pt, 18);
+        });
+    }
+
+    //public MarkItemsToIndicateNoMatch(lookupKeys: Array<string>): void
+    //{
+    //  let mapController = this;
+    //  let m = this.map;
+    //  require([
+    //    "esri/symbols/SimpleMarkerSymbol",
+    //    "esri/symbols/SimpleLineSymbol",
+    //    "esri/Color"],
+    //    function (
+    //      SimpleMarkerSymbol,
+    //      SimpleLineSymbol,
+    //      Color)
+    //    {
+    //      m.graphicsLayerIds.forEach(function (layerId)
+    //      {
+    //        let l = m.getLayer(layerId);
+    //        if (l.visible)
+    //        {
+    //          for (let g of l.graphics)
+    //          {
+    //            let fluxSymbol = new SimpleMarkerSymbol();
+    //            fluxSymbol.color = g.symbol.color;
+    //            fluxSymbol.size = g.symbol.size;
+
+    //            fluxSymbol.outline = g.symbol.outline;
+    //            if (lookupKeys.indexOf(g.attributes.LookupKey) !== -1)
+    //            {
+    //              fluxSymbol.style = SimpleMarkerSymbol.STYLE_SQUARE;
+    //            }
+    //            else
+    //            {
+    //              fluxSymbol.style = SimpleMarkerSymbol.STYLE_CIRCLE;
+    //            }
+    //            g.setSymbol(fluxSymbol);
+    //          }
+    //        }
+    //      });
+    //    });
+    //}
 
 
   }

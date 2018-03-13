@@ -17,6 +17,18 @@ var IView;
         UpdateInspectors();
     }
     IView.Start = Start;
+    function HandleHash() {
+        var hash = location.hash;
+        var currentHash = new IView.LocationHash(location.hash.substring(1));
+        if (currentHash.InspectionId > 0) {
+            var i = IView.allInspections.filter(function (j) { return j.InspReqID === currentHash.InspectionId; });
+            if (i.length > 0) {
+                console.log(i[0].PointToUse);
+                IView.mapController.CenterAndZoom(i[0].PointToUse);
+            }
+        }
+    }
+    IView.HandleHash = HandleHash;
     function mapLoadCompleted() {
         mapLoaded = true;
         console.log("map load completed");
@@ -49,11 +61,6 @@ var IView;
     function BuildLegend() {
         var legend = document.getElementById("LegendInspectorList");
         clearElement(legend);
-        //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
-        //var selectedDay = (<HTMLSelectElement>document.getElementById("selectDay")).value;
-        //currentDay
-        //let isCompleted = (x[x.length - 1] === "incomplete" ? false : true);
-        //let isCompleted = selectedDay === "today-all" || selectedDay === "tomorrow" ? false : true;
         var inspections = IView.allInspections.filter(function (k) {
             if (IView.currentIsComplete) {
                 return k.ScheduledDay === IView.currentDay;
@@ -130,6 +137,7 @@ var IView;
             // update the counts
             UpdateCounts(IView.currentDay);
             toggle('showSpin', false);
+            HandleHash();
             button.disabled = false;
         }, function () {
             console.log('error getting All inspections');
@@ -176,10 +184,56 @@ var IView;
         var button = document.getElementById("BulkAssignButton");
         var o = select.selectedOptions[0];
         button.disabled = (o.value === "");
+        //if (!button.disabled)
+        //{
+        //  let inspector: Inspector = allInspectors.filter(function (i) { return i.Id.toString() === o.value; })[0];
+        //  let lookupKeys: Array<string> = [];
+        //  lookupKeys = GetInvalidInspections(inspector);
+        //  mapController.MarkItemsToIndicateNoMatch(lookupKeys);
+        //}
         button.textContent = "Bulk Assign";
         IView.mapController.ToggleDraw(false);
     }
     IView.BulkAssignChange = BulkAssignChange;
+    function GetInvalidInspections(inspector) {
+        // this function returns a list of the lookupkeys that the selected
+        // inspector doesn't have the necessary licenses to inspect.
+        var lookupKeys = [];
+        for (var _i = 0, allInspections_1 = IView.allInspections; _i < allInspections_1.length; _i++) {
+            var i = allInspections_1[_i];
+            if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073') {
+                console.log('inspector', inspector, 'inspection', i);
+            }
+            if (i.IsPrivateProvider && !inspector.PrivateProvider) {
+                if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073') {
+                    console.log('found');
+                }
+                if (lookupKeys.indexOf(i.LookupKey) === -1)
+                    lookupKeys.push(i.LookupKey);
+            }
+            else {
+                if (i.CBL && !inspector.CBL ||
+                    i.CEL && !inspector.CEL ||
+                    i.CME && !inspector.CME ||
+                    i.CPL && !inspector.CPL ||
+                    i.RBL && !inspector.RBL ||
+                    i.REL && !inspector.REL ||
+                    i.RME && !inspector.RME ||
+                    i.RPL && !inspector.RPL) {
+                    if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073') {
+                        console.log('found');
+                    }
+                    if (lookupKeys.indexOf(i.LookupKey) === -1)
+                        lookupKeys.push(i.LookupKey);
+                }
+            }
+        }
+        console.log('invalid lookupkeys', lookupKeys);
+        if (lookupKeys.indexOf('2821-BOLTON-ORANGE PARK32073') != -1) {
+            console.log('found in array');
+        }
+        return lookupKeys;
+    }
     function buildInspectorData(inspections) {
         var iData = IView.allInspectors.map(function (i) {
             var x = new IView.Inspector();
@@ -275,6 +329,7 @@ var IView;
         switch (ddl.value) {
             case "today-open":
                 toggleNavDisplay('Today', false);
+                break;
             case "today-all":
                 toggleNavDisplay('Today', true);
                 break;
@@ -305,8 +360,8 @@ var IView;
     IView.FindItemsInExtent = FindItemsInExtent;
     function BulkAssign(InspectorId, LookupKeys) {
         var InspectionIds = [];
-        for (var _i = 0, allInspections_1 = IView.allInspections; _i < allInspections_1.length; _i++) {
-            var i_1 = allInspections_1[_i];
+        for (var _i = 0, allInspections_2 = IView.allInspections; _i < allInspections_2.length; _i++) {
+            var i_1 = allInspections_2[_i];
             if (LookupKeys.indexOf(i_1.LookupKey) !== -1 &&
                 i_1.ScheduledDay === IView.currentDay) {
                 if (IView.currentIsComplete || (!IView.currentIsComplete && !i_1.IsCompleted)) {

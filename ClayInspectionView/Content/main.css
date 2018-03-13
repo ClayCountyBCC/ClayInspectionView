@@ -29,7 +29,7 @@ ol {
 }
 #legend {
   position: absolute;
-  top: 95px;
+  top: 50px;
   right: 20px;
   z-index: 39;
   background-color: white;
