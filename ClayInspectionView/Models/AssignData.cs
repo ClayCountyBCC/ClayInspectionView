@@ -52,7 +52,7 @@ namespace ClayInspectionView.Models
         SET Inspector = I.Intl
         FROM bpINS_REQUEST IR   
         INNER JOIN InspectionData ID ON IR.InspReqID = ID.InspReqId
-        INNER JOIN bp_INSPECTORS I ON I.ID=22
+        INNER JOIN bp_INSPECTORS I ON I.ID=@InspectorId
         WHERE 
           ((ID.RBL = 1 AND I.RBL = 1) OR
           (ID.RME = 1 AND I.RME = 1) OR
