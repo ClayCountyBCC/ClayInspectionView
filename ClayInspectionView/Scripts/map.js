@@ -54,7 +54,7 @@ var IView;
                 }
             });
         };
-        MapController.prototype.CreateLayers = function (inspectorData, day, completed, isVisible) {
+        MapController.prototype.CreateLayers = function (inspectorData, day, completed) {
             if (inspectorData.length === 0)
                 return [];
             var layers;
@@ -115,7 +115,7 @@ var IView;
                             l.add(g);
                         }
                     });
-                    l.visible = isVisible;
+                    //l.visible = isVisible;
                     return l;
                 });
             });

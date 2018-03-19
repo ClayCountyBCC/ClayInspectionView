@@ -61,6 +61,7 @@ namespace ClayInspectionView.Models
     public bool CME { get; set; }
     public bool RPL { get; set; }
     public bool CPL { get; set; }
+    public bool Fire { get; set; } // can do fire inspections
 
     public Inspection()
     {
@@ -91,6 +92,7 @@ namespace ClayInspectionView.Models
           CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CME,
           CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CEL,
           CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CPL,
+          CASE WHEN IR.PermitType IN ('6') THEN 1 ELSE 0 END Fire,
           ISNULL(B.ProjAddrNumber, '') + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
             ISNULL(B.ProjStreet, '') + '-' + 

@@ -38,23 +38,52 @@ var IView;
     function BuildAndLoadInitialLayers() {
         if (!mapLoaded || !dataLoaded)
             return;
+        window.onhashchange = HandleHash;
+        HandleHash();
         IView.mapController.ClearLayers();
         var days = ["Today", "Tomorrow"];
         if (IView.currentDay === "")
             IView.currentDay = days[0];
-        var inspections = IView.allInspections.filter(function (k) {
-            return k.ScheduledDay === days[0] && !k.IsCompleted;
-        }); // todays incompleted inspections
-        var inspectors = buildInspectorData(inspections);
-        IView.mapController.ApplyLayers(IView.mapController.CreateLayers(inspectors, days[0], false, days[0] === IView.currentDay));
-        inspections = IView.allInspections.filter(function (k) {
-            return k.ScheduledDay === days[0];
-        }); // todays inspections both incomplete and completed
-        IView.mapController.ApplyLayers(IView.mapController.CreateLayers(buildInspectorData(inspections), days[0], true, days[0] === IView.currentDay && IView.currentIsComplete === true));
-        inspections = IView.allInspections.filter(function (k) {
-            return k.ScheduledDay === days[1];
-        }); // tomorrows inspections
-        IView.mapController.ApplyLayers(IView.mapController.CreateLayers(buildInspectorData(inspections), days[1], true, days[1] === IView.currentDay));
+        var _loop_1 = function (d) {
+            var inspections = IView.allInspections.filter(function (k) {
+                return k.ScheduledDay === d && !k.IsCompleted;
+            }); // todays incompleted inspections
+            var inspectors = buildInspectorData(inspections);
+            IView.mapController.ApplyLayers(IView.mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
+            );
+            inspections = IView.allInspections.filter(function (k) {
+                return k.ScheduledDay === d;
+            }); // todays incompleted inspections
+            inspectors = buildInspectorData(inspections);
+            IView.mapController.ApplyLayers(IView.mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
+            );
+        };
+        for (var _i = 0, days_1 = days; _i < days_1.length; _i++) {
+            var d = days_1[_i];
+            _loop_1(d);
+        }
+        //inspections = allInspections.filter(
+        //  function (k)
+        //  {
+        //    return k.ScheduledDay === days[0];
+        //  }); // todays inspections both incomplete and completed
+        //mapController.ApplyLayers(
+        //  mapController.CreateLayers(
+        //    buildInspectorData(inspections),
+        //    days[0],
+        //    true) // days[0] === currentDay && currentIsComplete === true
+        //);
+        //inspections = allInspections.filter(
+        //  function (k)
+        //  {
+        //    return k.ScheduledDay === days[1]
+        //  }); // tomorrows inspections
+        //mapController.ApplyLayers(
+        //  mapController.CreateLayers(
+        //    buildInspectorData(inspections),
+        //    days[1],
+        //    true)// days[1] === currentDay
+        //);
         IView.mapController.ToggleLayersByDay(IView.currentDay, IView.currentIsComplete);
         BuildLegend();
     }
@@ -137,7 +166,6 @@ var IView;
             // update the counts
             UpdateCounts(IView.currentDay);
             toggle('showSpin', false);
-            HandleHash();
             button.disabled = false;
         }, function () {
             console.log('error getting All inspections');
@@ -219,7 +247,8 @@ var IView;
                     i.RBL && !inspector.RBL ||
                     i.REL && !inspector.REL ||
                     i.RME && !inspector.RME ||
-                    i.RPL && !inspector.RPL) {
+                    i.RPL && !inspector.RPL ||
+                    i.Fire && !inspector.Fire) {
                     if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073') {
                         console.log('found');
                     }
@@ -312,8 +341,16 @@ var IView;
         var tomorrow = inspections.filter(function (k) { return k.ScheduledDay !== "Today"; });
         var x = [];
         x.push("<ol>");
-        if (!inspections[0].IsCompleted && inspections[0].CanBeAssigned) {
-            x.push(buildInspectorAssign(inspections[0].InspectorName, graphic.attributes.LookupKey));
+        var InspectorName = IView.currentDay === "Today" ? today[0].InspectorName : tomorrow[0].InspectorName;
+        var isCompletedCheck = IView.currentDay === "Today" ? today[0].IsCompleted : tomorrow[0].IsCompleted;
+        console.log('Inspector Name', InspectorName, 'completedcheck', isCompletedCheck, inspections[0].CanBeAssigned);
+        if (!isCompletedCheck && inspections[0].CanBeAssigned) {
+            x.push(buildInspectorAssign(InspectorName, graphic.attributes.LookupKey));
+        }
+        else {
+            if (isCompletedCheck) {
+                x.push("<li>This inspection is already completed.</li>");
+            }
         }
         x.push(buildAddressDisplayByDay(today, "Today"));
         x.push(buildAddressDisplayByDay(tomorrow, "Tomorrow"));
@@ -333,8 +370,12 @@ var IView;
             case "today-all":
                 toggleNavDisplay('Today', true);
                 break;
-            case "tomorrow":
+            case "tomorrow-open":
+                toggleNavDisplay('Tomorrow', false);
+                break;
+            case "tomorrow-all":
                 toggleNavDisplay('Tomorrow', true);
+                break;
         }
     }
     IView.ChangeDay = ChangeDay;

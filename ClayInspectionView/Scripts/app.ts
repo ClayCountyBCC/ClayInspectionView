@@ -21,7 +21,8 @@ namespace IView
     // setup default map
     mapController = new MapController("map");
     // get the data for today/tomorrow
-    UpdateInspectors();    
+    UpdateInspectors();
+    
   }
 
   export function HandleHash()
@@ -49,45 +50,59 @@ namespace IView
   function BuildAndLoadInitialLayers()
   {
     if (!mapLoaded || !dataLoaded) return;
+    window.onhashchange = HandleHash;
+    HandleHash();
     mapController.ClearLayers();
     let days = ["Today", "Tomorrow"];
-    if(currentDay === "") currentDay = days[0];
-    let inspections = allInspections.filter(
-      function (k)
-      {
-        return k.ScheduledDay === days[0] && !k.IsCompleted;
-      }); // todays incompleted inspections
-    let inspectors = buildInspectorData(inspections);
-    mapController.ApplyLayers(
-      mapController.CreateLayers(inspectors, days[0], false, days[0] === currentDay)
-    );
-    
+    if (currentDay === "") currentDay = days[0];
+    for (let d of days)
+    {
+      let inspections = allInspections.filter(
+        function (k)
+        {
+          return k.ScheduledDay === d && !k.IsCompleted;
+        }); // todays incompleted inspections
 
-    inspections = allInspections.filter(
-      function (k)
-      {
-        return k.ScheduledDay === days[0];
-      }); // todays inspections both incomplete and completed
-    mapController.ApplyLayers(
-      mapController.CreateLayers(
-        buildInspectorData(inspections),
-        days[0],
-        true,
-        days[0] === currentDay && currentIsComplete === true)
-    );
+      let inspectors = buildInspectorData(inspections);
+      mapController.ApplyLayers(
+        mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
+      );
+      inspections = allInspections.filter(
+        function (k)
+        {
+          return k.ScheduledDay === d;
+        }); // todays incompleted inspections
 
-    inspections = allInspections.filter(
-      function (k)
-      {
-        return k.ScheduledDay === days[1]
-      }); // tomorrows inspections
-    mapController.ApplyLayers(
-      mapController.CreateLayers(
-        buildInspectorData(inspections),
-        days[1],
-        true,
-        days[1] === currentDay)
-    );
+      inspectors = buildInspectorData(inspections);
+      mapController.ApplyLayers(
+        mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
+      );
+
+    }
+
+    //inspections = allInspections.filter(
+    //  function (k)
+    //  {
+    //    return k.ScheduledDay === days[0];
+    //  }); // todays inspections both incomplete and completed
+    //mapController.ApplyLayers(
+    //  mapController.CreateLayers(
+    //    buildInspectorData(inspections),
+    //    days[0],
+    //    true) // days[0] === currentDay && currentIsComplete === true
+    //);
+
+    //inspections = allInspections.filter(
+    //  function (k)
+    //  {
+    //    return k.ScheduledDay === days[1]
+    //  }); // tomorrows inspections
+    //mapController.ApplyLayers(
+    //  mapController.CreateLayers(
+    //    buildInspectorData(inspections),
+    //    days[1],
+    //    true)// days[1] === currentDay
+    //);
     mapController.ToggleLayersByDay(currentDay, currentIsComplete);
     BuildLegend();
   }
@@ -190,7 +205,6 @@ namespace IView
         // update the counts
         UpdateCounts(currentDay);
         toggle('showSpin', false);
-        HandleHash();
         button.disabled = false;
       }, function (): void
       {
@@ -287,7 +301,8 @@ namespace IView
           i.RBL && !inspector.RBL ||
           i.REL && !inspector.REL ||
           i.RME && !inspector.RME ||
-          i.RPL && !inspector.RPL)
+          i.RPL && !inspector.RPL ||
+          i.Fire && !inspector.Fire)
         {
           if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
           {
@@ -402,10 +417,20 @@ namespace IView
     let tomorrow = inspections.filter(function (k) { return k.ScheduledDay !== "Today" });
     var x = [];
     x.push("<ol>");
-    if (!inspections[0].IsCompleted && inspections[0].CanBeAssigned)
+    let InspectorName: string = currentDay === "Today" ? today[0].InspectorName : tomorrow[0].InspectorName;
+    let isCompletedCheck: boolean = currentDay === "Today" ? today[0].IsCompleted : tomorrow[0].IsCompleted;
+    console.log('Inspector Name', InspectorName, 'completedcheck', isCompletedCheck, inspections[0].CanBeAssigned);
+    if (!isCompletedCheck && inspections[0].CanBeAssigned)
     {
-      x.push(buildInspectorAssign(inspections[0].InspectorName, graphic.attributes.LookupKey));      
-    }    
+      x.push(buildInspectorAssign(InspectorName, graphic.attributes.LookupKey));
+    }
+    else
+    {
+      if (isCompletedCheck)
+      {
+        x.push("<li>This inspection is already completed.</li>");
+      }
+    }
     x.push(buildAddressDisplayByDay(today, "Today"));
     x.push(buildAddressDisplayByDay(tomorrow, "Tomorrow"));
     x.push("</ol>");
@@ -428,8 +453,12 @@ namespace IView
       case "today-all":
         toggleNavDisplay('Today', true);
         break;
-      case "tomorrow":
+      case "tomorrow-open":
+        toggleNavDisplay('Tomorrow', false);
+        break;
+      case "tomorrow-all":
         toggleNavDisplay('Tomorrow', true);
+        break;
     }
   }
 

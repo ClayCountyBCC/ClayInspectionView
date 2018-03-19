@@ -20,6 +20,7 @@ namespace ClayInspectionView.Models
     public bool RPL { get; set; }
     public bool CPL { get; set; }
     public bool PrivateProvider { get; set; }
+    public bool Fire { get; set; }
     public Inspector()
     {
 
@@ -41,7 +42,8 @@ namespace ClayInspectionView.Models
           CME,
           RPL,
           CPL,
-          PrivateProvider
+          PrivateProvider,
+          Fire
         FROM bp_INSPECTORS
         WHERE 
           Active=1
@@ -51,6 +53,7 @@ namespace ClayInspectionView.Models
           '',
           'Unassigned',
           '#FFFFFF',
+          1,
           1,
           1,
           1,

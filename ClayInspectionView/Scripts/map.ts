@@ -83,7 +83,7 @@ namespace IView
         });
     }
 
-    public CreateLayers(inspectorData: Array<Inspector>, day: string, completed: boolean, isVisible:boolean): Array<any>
+    public CreateLayers(inspectorData: Array<Inspector>, day: string, completed: boolean): Array<any>
     {
       if (inspectorData.length === 0) return [];
       var layers: Array<any>;
@@ -167,7 +167,7 @@ namespace IView
 
               });
 
-              l.visible = isVisible;
+              //l.visible = isVisible;
               return l;
             });
           
@@ -283,47 +283,6 @@ namespace IView
           m.centerAndZoom(pt, 18);
         });
     }
-
-    //public MarkItemsToIndicateNoMatch(lookupKeys: Array<string>): void
-    //{
-    //  let mapController = this;
-    //  let m = this.map;
-    //  require([
-    //    "esri/symbols/SimpleMarkerSymbol",
-    //    "esri/symbols/SimpleLineSymbol",
-    //    "esri/Color"],
-    //    function (
-    //      SimpleMarkerSymbol,
-    //      SimpleLineSymbol,
-    //      Color)
-    //    {
-    //      m.graphicsLayerIds.forEach(function (layerId)
-    //      {
-    //        let l = m.getLayer(layerId);
-    //        if (l.visible)
-    //        {
-    //          for (let g of l.graphics)
-    //          {
-    //            let fluxSymbol = new SimpleMarkerSymbol();
-    //            fluxSymbol.color = g.symbol.color;
-    //            fluxSymbol.size = g.symbol.size;
-
-    //            fluxSymbol.outline = g.symbol.outline;
-    //            if (lookupKeys.indexOf(g.attributes.LookupKey) !== -1)
-    //            {
-    //              fluxSymbol.style = SimpleMarkerSymbol.STYLE_SQUARE;
-    //            }
-    //            else
-    //            {
-    //              fluxSymbol.style = SimpleMarkerSymbol.STYLE_CIRCLE;
-    //            }
-    //            g.setSymbol(fluxSymbol);
-    //          }
-    //        }
-    //      });
-    //    });
-    //}
-
 
   }
 }

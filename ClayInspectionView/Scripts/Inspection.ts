@@ -38,6 +38,7 @@ namespace IView
     CME: boolean;
     RPL: boolean;
     CPL: boolean;
+    Fire: boolean;
 
     GetInspections(Day: string, Total: string): Promise<Array<Inspection>>;
     BulkAssign(InspectorId: number, InspectionIds: Array<number>);
@@ -75,6 +76,7 @@ namespace IView
     public CME: boolean;
     public RPL: boolean;
     public CPL: boolean;
+    public Fire: boolean;
 
     constructor()
     {

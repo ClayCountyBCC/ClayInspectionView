@@ -18,6 +18,7 @@ namespace IView
     CME: boolean;
     RPL: boolean;
     CPL: boolean;
+    Fire: boolean;
     PrivateProvider: boolean;
     Inspections: Array<Inspection>;
 
@@ -36,6 +37,7 @@ namespace IView
     public CME: boolean;
     public RPL: boolean;
     public CPL: boolean;
+    public Fire: boolean;
     public PrivateProvider: boolean;
     public Inspections: Array<Inspection>;
 

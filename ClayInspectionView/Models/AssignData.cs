@@ -40,6 +40,7 @@ namespace ClayInspectionView.Models
           CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CME,
           CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CEL,
           CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CPL,
+          CASE WHEN IR.PermitType IN ('6') THEN 1 ELSE 0 END Fire,
           CASE WHEN ISNULL(IR.PrivProvIRId, 0) > 0 THEN 1 ELSE 0 END PrivateProvider
         FROM bpINS_REQUEST IR
         LEFT OUTER JOIN bpMASTER_PERMIT M ON M.PermitNo = IR.PermitNo
@@ -54,14 +55,17 @@ namespace ClayInspectionView.Models
         INNER JOIN InspectionData ID ON IR.InspReqID = ID.InspReqId
         INNER JOIN bp_INSPECTORS I ON I.ID=@InspectorId
         WHERE 
-          ((ID.RBL = 1 AND I.RBL = 1) OR
+          (
+          (ID.RBL = 1 AND I.RBL = 1) OR
           (ID.RME = 1 AND I.RME = 1) OR
           (ID.REL = 1 AND I.REL = 1) OR
           (ID.RPL = 1 AND I.RPL = 1) OR
           (ID.CBL = 1 AND I.CBL = 1) OR
           (ID.CME = 1 AND I.CME = 1) OR
           (ID.CEL = 1 AND I.CEL = 1) OR
-          (ID.CPL = 1 AND I.CPL = 1))
+          (ID.CPL = 1 AND I.CPL = 1) OR
+          (ID.Fire = 1 AND I.Fire = 1)
+          )
           AND ((ID.PrivateProvider = 1 AND I.PrivateProvider = 1)
           OR ID.PrivateProvider = 0);";
       Constants.Exec_Query(query, dp, Constants.csWATSC);
