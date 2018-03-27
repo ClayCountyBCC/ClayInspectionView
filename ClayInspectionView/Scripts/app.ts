@@ -34,8 +34,10 @@ namespace IView
       let i = allInspections.filter(function (j) { return j.InspReqID === currentHash.InspectionId });
       if (i.length > 0)
       {
-        console.log(i[0].PointToUse);
+        console.log('inspection based on passed id', i, 'inspection point to use', i[0].PointToUse);
         mapController.CenterAndZoom(i[0].PointToUse);
+        let ii = allInspections.filter(function (j) { return j.PointToUse.Latitude === i[0].PointToUse.Latitude });
+        console.log('all points', ii);
       }
     }
   }
@@ -80,29 +82,6 @@ namespace IView
 
     }
 
-    //inspections = allInspections.filter(
-    //  function (k)
-    //  {
-    //    return k.ScheduledDay === days[0];
-    //  }); // todays inspections both incomplete and completed
-    //mapController.ApplyLayers(
-    //  mapController.CreateLayers(
-    //    buildInspectorData(inspections),
-    //    days[0],
-    //    true) // days[0] === currentDay && currentIsComplete === true
-    //);
-
-    //inspections = allInspections.filter(
-    //  function (k)
-    //  {
-    //    return k.ScheduledDay === days[1]
-    //  }); // tomorrows inspections
-    //mapController.ApplyLayers(
-    //  mapController.CreateLayers(
-    //    buildInspectorData(inspections),
-    //    days[1],
-    //    true)// days[1] === currentDay
-    //);
     mapController.ToggleLayersByDay(currentDay, currentIsComplete);
     BuildLegend();
   }
@@ -235,6 +214,7 @@ namespace IView
       allInspectors = inspectors;
       BuildBulkInspectorSelect();
       GetAllInspections();
+      window.setInterval(GetAllInspections, 60 * 5 * 1000);
     }, function ()
       {
         console.log('error getting inspectors');

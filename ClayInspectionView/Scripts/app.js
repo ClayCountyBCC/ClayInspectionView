@@ -21,10 +21,12 @@ var IView;
         var hash = location.hash;
         var currentHash = new IView.LocationHash(location.hash.substring(1));
         if (currentHash.InspectionId > 0) {
-            var i = IView.allInspections.filter(function (j) { return j.InspReqID === currentHash.InspectionId; });
-            if (i.length > 0) {
-                console.log(i[0].PointToUse);
-                IView.mapController.CenterAndZoom(i[0].PointToUse);
+            var i_1 = IView.allInspections.filter(function (j) { return j.InspReqID === currentHash.InspectionId; });
+            if (i_1.length > 0) {
+                console.log('inspection based on passed id', i_1, 'inspection point to use', i_1[0].PointToUse);
+                IView.mapController.CenterAndZoom(i_1[0].PointToUse);
+                var ii = IView.allInspections.filter(function (j) { return j.PointToUse.Latitude === i_1[0].PointToUse.Latitude; });
+                console.log('all points', ii);
             }
         }
     }
@@ -62,28 +64,6 @@ var IView;
             var d = days_1[_i];
             _loop_1(d);
         }
-        //inspections = allInspections.filter(
-        //  function (k)
-        //  {
-        //    return k.ScheduledDay === days[0];
-        //  }); // todays inspections both incomplete and completed
-        //mapController.ApplyLayers(
-        //  mapController.CreateLayers(
-        //    buildInspectorData(inspections),
-        //    days[0],
-        //    true) // days[0] === currentDay && currentIsComplete === true
-        //);
-        //inspections = allInspections.filter(
-        //  function (k)
-        //  {
-        //    return k.ScheduledDay === days[1]
-        //  }); // tomorrows inspections
-        //mapController.ApplyLayers(
-        //  mapController.CreateLayers(
-        //    buildInspectorData(inspections),
-        //    days[1],
-        //    true)// days[1] === currentDay
-        //);
         IView.mapController.ToggleLayersByDay(IView.currentDay, IView.currentIsComplete);
         BuildLegend();
     }
@@ -191,6 +171,7 @@ var IView;
             IView.allInspectors = inspectors;
             BuildBulkInspectorSelect();
             GetAllInspections();
+            window.setInterval(GetAllInspections, 60 * 5 * 1000);
         }, function () {
             console.log('error getting inspectors');
             // do something with the error here
@@ -402,11 +383,11 @@ var IView;
     function BulkAssign(InspectorId, LookupKeys) {
         var InspectionIds = [];
         for (var _i = 0, allInspections_2 = IView.allInspections; _i < allInspections_2.length; _i++) {
-            var i_1 = allInspections_2[_i];
-            if (LookupKeys.indexOf(i_1.LookupKey) !== -1 &&
-                i_1.ScheduledDay === IView.currentDay) {
-                if (IView.currentIsComplete || (!IView.currentIsComplete && !i_1.IsCompleted)) {
-                    InspectionIds.push(i_1.InspReqID);
+            var i_2 = allInspections_2[_i];
+            if (LookupKeys.indexOf(i_2.LookupKey) !== -1 &&
+                i_2.ScheduledDay === IView.currentDay) {
+                if (IView.currentIsComplete || (!IView.currentIsComplete && !i_2.IsCompleted)) {
+                    InspectionIds.push(i_2.InspReqID);
                 }
             }
         }

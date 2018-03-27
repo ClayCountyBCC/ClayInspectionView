@@ -109,7 +109,7 @@ namespace ClayInspectionView.Models
               {
                 foreach (UserPrincipal up in g.GetMembers(false))
                 {
-                  if (up != null)
+                  if (up != null && !d.ContainsKey(up.SamAccountName.ToLower()))
                   {
                     d.Add(up.SamAccountName.ToLower(), new UserAccess(up));
                   }
@@ -139,9 +139,9 @@ namespace ClayInspectionView.Models
             d[""] = new UserAccess("");
             break;
           default:
-            ParseGroup(basic_access_group, ref d);
             ParseGroup(inspector_access_group, ref d);
             ParseGroup(mis_access_group, ref d);
+            ParseGroup(basic_access_group, ref d);                        
             d[""] = new UserAccess("");
             break;
 
