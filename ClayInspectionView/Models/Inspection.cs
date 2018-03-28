@@ -30,6 +30,7 @@ namespace ClayInspectionView.Models
     public string ParcelNo { get; set; }
     public int InspReqID {get;set;}
     public string InspectionCode { get; set; }
+    public string ResultADC { get; set; } = "";
     public DateTime ScheduledDate { get; set; }
     public DateTime? InspDateTime { get; set; }
     public bool CanBeAssigned { get; set; }
@@ -43,7 +44,7 @@ namespace ClayInspectionView.Models
     public bool IsCompleted {
       get
       {
-        return InspDateTime.HasValue;
+        return ResultADC.Length > 0;
       }
     }
     public Point AddressPoint { get; set; } = new Point();
@@ -108,6 +109,7 @@ namespace ClayInspectionView.Models
           ISNULL(I.Color, '#FFFFFF') Color,
           IREF.InsDesc AS InspectionDescription, 
           IR.PermitNo, 
+          ISNULL(LTRIM(RTRIM(IR.ResultADC)), '') ResultADC,
           IR.InspectionCode, 
           IR.SchecDateTime AS ScheduledDate,
           B.ParcelNo,
