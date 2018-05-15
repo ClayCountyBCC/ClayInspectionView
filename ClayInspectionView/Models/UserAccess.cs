@@ -12,6 +12,7 @@ namespace ClayInspectionView.Models
     private const string inspector_access_group = "gInspectionAppInspectors";
     private const string mis_access_group = "gICT";
     private const string contract_inspection_access_group = "gUniversalEngineering";
+
     public bool authenticated { get; set; } = false;
     public string user_name { get; set; }
     public int employee_id { get; set; } = 0;
@@ -82,6 +83,10 @@ namespace ClayInspectionView.Models
             {
               current_access = access_type.basic_access;
             }
+            else
+            {
+              current_access = access_type.contract_access;
+            }
           }
         }
       }
@@ -93,36 +98,22 @@ namespace ClayInspectionView.Models
 
     private static void ParseGroup(string group, ref Dictionary<string, UserAccess> d)
     {
-      //using (PrincipalContext pc = new PrincipalContext(ContextType.Domain, "CLAYBCC", "OU=Security Groups,DC=CLAYBCC,DC=local"))
-      using (PrincipalContext pc = new PrincipalContext(ContextType.Domain, "CLAYBCC", "OU=Security Groups,DC=CLAYBCC,DC=local"))
+      using (PrincipalContext pc = new PrincipalContext(ContextType.Domain))
       {
-        using (GroupPrincipal gp = new GroupPrincipal(pc))
+        using (GroupPrincipal gp = GroupPrincipal.FindByIdentity(pc, group))
         {
-          gp.Name = group;
-          
-
           if (gp != null)
           {
-            var searcher = new PrincipalSearcher(gp);
-            var sr = searcher.FindAll();
-            try
+            foreach (UserPrincipal up in gp.GetMembers())
             {
-              foreach (GroupPrincipal g in sr)
+              if (up != null)
               {
-                foreach (UserPrincipal up in g.GetMembers(false))
+                if (!d.ContainsKey(up.SamAccountName.ToLower()))
                 {
-                  if (up != null && !d.ContainsKey(up.SamAccountName.ToLower()))
-                  {
-                    d.Add(up.SamAccountName.ToLower(), new UserAccess(up));
-                  }
+                  d.Add(up.SamAccountName.ToLower(), new UserAccess(up));
                 }
               }
             }
-            catch(Exception ex)
-            {
-              new ErrorLog(ex);
-            }
-
           }
         }
       }
@@ -162,13 +153,14 @@ namespace ClayInspectionView.Models
     {
       try
       {
+        string un = Username.Replace(@"CLAYBCC\", "").ToLower();
         switch (Environment.MachineName.ToUpper())
         {
           case "MISSL01":
-            return new UserAccess(Username);
+            return new UserAccess(un);
           default:
             var d = GetCachedAllUserAccess();
-            string un = Username.Replace(@"CLAYBCC\", "").ToLower();
+
             if (d.ContainsKey(un))
             {
               return d[un]; // we're dun
@@ -178,7 +170,6 @@ namespace ClayInspectionView.Models
               return d[""];
             }
         }
-
       }
       catch (Exception ex)
       {
