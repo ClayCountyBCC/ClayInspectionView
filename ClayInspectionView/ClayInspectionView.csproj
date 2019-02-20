@@ -95,15 +95,44 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
-    <Content Include="Content\bootstrap-theme.css" />
-    <Content Include="Content\bootstrap-theme.min.css" />
-    <Content Include="Content\bootstrap.css" />
-    <Content Include="Content\bootstrap.min.css" />
+    <None Include="bower_components\bulma\css\bulma.css" />
+    <None Include="bower_components\bulma\css\bulma.min.css" />
+    <None Include="bower_components\bulma\myBulma.sass" />
+    <None Include="bower_components\fetch\fetch.js" />
+    <None Include="bower_components\promise-polyfill\dist\polyfill.js" />
+    <None Include="bower_components\promise-polyfill\dist\polyfill.min.js" />
+    <None Include="bower_components\promise-polyfill\karma.conf.js" />
+    <None Include="bower_components\promise-polyfill\rollup.umd.config.js" />
+    <None Include="bower_components\promise-polyfill\src\finally.js" />
+    <None Include="bower_components\promise-polyfill\src\index.js" />
+    <None Include="bower_components\promise-polyfill\src\polyfill.js" />
+    <Content Include="Content\bulma.css" />
+    <Content Include="Content\bulma.min.css">
+      <DependentUpon>bulma.css</DependentUpon>
+    </Content>
+    <Content Include="Content\bundle.css" />
+    <Content Include="Content\bundle.min.css">
+      <DependentUpon>bundle.css</DependentUpon>
+    </Content>
     <Content Include="Content\favico-iv.png" />
     <Content Include="Content\main.css" />
+    <Content Include="Content\myBulma.css" />
+    <Content Include="Content\myBulma.min.css">
+      <DependentUpon>myBulma.css</DependentUpon>
+    </Content>
+    <Content Include="Content\Utilities.css">
+      <DependentUpon>Utilities.scss</DependentUpon>
+    </Content>
+    <Content Include="Content\Utilities.min.css">
+      <DependentUpon>Utilities.css</DependentUpon>
+    </Content>
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
     <Content Include="index.html" />
+    <Content Include="Scripts\bundle.js" />
+    <Content Include="Scripts\bundle.min.js">
+      <DependentUpon>bundle.js</DependentUpon>
+    </Content>
     <Content Include="Scripts\es6-promise.min.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
@@ -111,10 +140,79 @@
     <Content Include="fonts\glyphicons-halflings-regular.woff" />
     <Content Include="fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="fonts\glyphicons-halflings-regular.eot" />
-    <Content Include="Content\bootstrap.min.css.map" />
-    <Content Include="Content\bootstrap.css.map" />
-    <Content Include="Content\bootstrap-theme.min.css.map" />
-    <Content Include="Content\bootstrap-theme.css.map" />
+    <Content Include="bower.json" />
+    <None Include="bower_components\bulma\.bower.json" />
+    <None Include="bower_components\bulma\BACKERS.md" />
+    <None Include="bower_components\bulma\bower.json" />
+    <None Include="bower_components\bulma\bulma.sass" />
+    <None Include="bower_components\bulma\CHANGELOG.md" />
+    <None Include="bower_components\bulma\css\bulma.css.map" />
+    <None Include="bower_components\bulma\LICENSE" />
+    <None Include="bower_components\bulma\package-lock.json" />
+    <None Include="bower_components\bulma\package.json" />
+    <None Include="bower_components\bulma\README.md" />
+    <None Include="bower_components\bulma\sass\base\generic.sass" />
+    <None Include="bower_components\bulma\sass\base\helpers.sass" />
+    <None Include="bower_components\bulma\sass\base\minireset.sass" />
+    <None Include="bower_components\bulma\sass\base\_all.sass" />
+    <None Include="bower_components\bulma\sass\components\breadcrumb.sass" />
+    <None Include="bower_components\bulma\sass\components\card.sass" />
+    <None Include="bower_components\bulma\sass\components\dropdown.sass" />
+    <None Include="bower_components\bulma\sass\components\level.sass" />
+    <None Include="bower_components\bulma\sass\components\list.sass" />
+    <None Include="bower_components\bulma\sass\components\media.sass" />
+    <None Include="bower_components\bulma\sass\components\menu.sass" />
+    <None Include="bower_components\bulma\sass\components\message.sass" />
+    <None Include="bower_components\bulma\sass\components\modal.sass" />
+    <None Include="bower_components\bulma\sass\components\navbar.sass" />
+    <None Include="bower_components\bulma\sass\components\pagination.sass" />
+    <None Include="bower_components\bulma\sass\components\panel.sass" />
+    <None Include="bower_components\bulma\sass\components\tabs.sass" />
+    <None Include="bower_components\bulma\sass\components\_all.sass" />
+    <None Include="bower_components\bulma\sass\elements\box.sass" />
+    <None Include="bower_components\bulma\sass\elements\button.sass" />
+    <None Include="bower_components\bulma\sass\elements\container.sass" />
+    <None Include="bower_components\bulma\sass\elements\content.sass" />
+    <None Include="bower_components\bulma\sass\elements\form.sass" />
+    <None Include="bower_components\bulma\sass\elements\icon.sass" />
+    <None Include="bower_components\bulma\sass\elements\image.sass" />
+    <None Include="bower_components\bulma\sass\elements\notification.sass" />
+    <None Include="bower_components\bulma\sass\elements\other.sass" />
+    <None Include="bower_components\bulma\sass\elements\progress.sass" />
+    <None Include="bower_components\bulma\sass\elements\table.sass" />
+    <None Include="bower_components\bulma\sass\elements\tag.sass" />
+    <None Include="bower_components\bulma\sass\elements\title.sass" />
+    <None Include="bower_components\bulma\sass\elements\_all.sass" />
+    <None Include="bower_components\bulma\sass\grid\columns.sass" />
+    <None Include="bower_components\bulma\sass\grid\tiles.sass" />
+    <None Include="bower_components\bulma\sass\grid\_all.sass" />
+    <None Include="bower_components\bulma\sass\layout\footer.sass" />
+    <None Include="bower_components\bulma\sass\layout\hero.sass" />
+    <None Include="bower_components\bulma\sass\layout\section.sass" />
+    <None Include="bower_components\bulma\sass\layout\_all.sass" />
+    <None Include="bower_components\bulma\sass\utilities\animations.sass" />
+    <None Include="bower_components\bulma\sass\utilities\controls.sass" />
+    <None Include="bower_components\bulma\sass\utilities\derived-variables.sass" />
+    <None Include="bower_components\bulma\sass\utilities\functions.sass" />
+    <None Include="bower_components\bulma\sass\utilities\initial-variables.sass" />
+    <None Include="bower_components\bulma\sass\utilities\mixins.sass" />
+    <None Include="bower_components\bulma\sass\utilities\_all.sass" />
+    <None Include="bower_components\bulma\yarn.lock" />
+    <None Include="bower_components\fetch\.bower.json" />
+    <None Include="bower_components\fetch\bower.json" />
+    <None Include="bower_components\fetch\LICENSE" />
+    <None Include="bower_components\promise-polyfill\.bower.json" />
+    <None Include="bower_components\promise-polyfill\bower.json" />
+    <None Include="bower_components\promise-polyfill\CHANGELOG.md" />
+    <None Include="bower_components\promise-polyfill\LICENSE" />
+    <None Include="bower_components\promise-polyfill\package.json" />
+    <None Include="bower_components\promise-polyfill\README.md" />
+    <None Include="bundleconfig.json" />
+    <None Include="compilerconfig.json" />
+    <None Include="compilerconfig.json.defaults">
+      <DependentUpon>compilerconfig.json</DependentUpon>
+    </None>
+    <Content Include="Content\Utilities.scss" />
     <None Include="Properties\PublishProfiles\InternalProduction.pubxml" />
     <None Include="Scripts\jquery-1.9.1.intellisense.js" />
     <Content Include="Scripts\jquery-1.9.1.js" />
@@ -166,14 +264,16 @@
     <TypeScriptCompile Include="Scripts\app.ts" />
     <TypeScriptCompile Include="Scripts\Inspection.ts" />
     <TypeScriptCompile Include="Scripts\Inspector.ts" />
+    <TypeScriptCompile Include="Scripts\Location.ts" />
     <TypeScriptCompile Include="Scripts\LocationHash.ts" />
     <TypeScriptCompile Include="Scripts\map.ts" />
+    <TypeScriptCompile Include="Scripts\MenuItem.ts" />
     <TypeScriptCompile Include="Scripts\Point.ts" />
     <TypeScriptCompile Include="Scripts\Typings\arcgis-js-api.d.ts" />
     <TypeScriptCompile Include="Scripts\Typings\es6-promise\es6-promise.d.ts" />
     <TypeScriptCompile Include="Scripts\UI.ts" />
     <TypeScriptCompile Include="Scripts\Unit.ts" />
-    <TypeScriptCompile Include="Scripts\XHR.ts" />
+    <TypeScriptCompile Include="Scripts\Utilities.ts" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />

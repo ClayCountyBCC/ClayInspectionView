@@ -5,12 +5,21 @@
 
 namespace IView
 {
+
   export let mapController: MapController;
   export let allInspections: Array<Inspection> =[];// populated from web service
   export let allInspectors: Array<Inspector> = []; // populated from web service
+  export let filteredLocations: Array<Location> = [];
   export let allLayers: Array<any>; // all of the layers created.
-  export let currentDay: string = "";
-  export let currentIsComplete: boolean = false;
+  //export let currentDay: string = "today";
+  //export let currentIsComplete: boolean = false;
+  export let day_filter: string = "today";  
+  export let inspection_status_filter = "open";
+  export let permit_kind_filter: string = "all";
+  export let permit_type_filter: Array<string> = [];
+  export let inspector_filter: Array<string> = [];
+  export let private_provider_only: boolean = false;
+
   let mapLoaded: boolean = false;
   let dataLoaded: boolean = false;
   export let currentInspectors: Array<Inspector>; // populated from data
@@ -21,8 +30,78 @@ namespace IView
     // setup default map
     mapController = new MapController("map");
     // get the data for today/tomorrow
-    UpdateInspectors();
+    Inspector.GetAllInspectors();
     
+  }
+
+  function UpdateFilters(): void
+  {
+    IView.inspection_status_filter = Get_Single_Filter('input[name="inspectionStatus"]:checked');
+    IView.day_filter = Get_Single_Filter('input[name="inspectionDay"]:checked');
+    IView.permit_kind_filter = Get_Single_Filter('input[name="commercialResidential"]:checked');
+    IView.private_provider_only = (<HTMLInputElement>document.getElementById("privateProviderFilter")).checked;
+    IView.permit_type_filter = Get_Filters('input[name="permitType"]:checked');
+    IView.inspector_filter = Get_Filters('input[name="inspectorFilter"]:checked');
+  }
+
+  export function ApplyFilters(): void
+  {
+    UpdateFilters();
+    // filter by status
+    let filtered: Array<Inspection> = IView.allInspections;
+    if (IView.inspection_status_filter !== "all")
+    {
+      let is_completed: boolean = IView.inspection_status_filter !== "open";
+      filtered = IView.allInspections.filter(function (j)
+      {
+        return j.IsCompleted === is_completed;
+      });
+    }
+
+    // filter by day
+    if (IView.day_filter !== "all")
+    {
+      if (IView.day_filter !== "prior")
+      {
+        filtered = filtered.filter(function (j) { return j.ScheduledDay === IView.day_filter; });
+      }
+      else
+      {
+        filtered = filtered.filter(function (j) { return j.Age > 0; });
+      }      
+    }
+
+    // filter by kind
+    if (IView.permit_kind_filter !== "all")
+    {
+      let is_commercial = IView.permit_kind_filter === "commercial";
+      filtered = filtered.filter(function (j) { return j.IsCommercial === is_commercial; });
+    }
+
+    // filter by permit type
+
+    // filter by private provider
+    
+
+    // filter by inspector
+
+
+  }
+
+  function Get_Single_Filter(selector: string): string
+  {
+    return (<HTMLInputElement>document.querySelector(selector)).value;
+  }
+
+  function Get_Filters(selector: string): Array<string>
+  {
+    let inputs = <NodeListOf<HTMLInputElement>>document.querySelectorAll(selector);
+    let values: Array<string> = [];
+    for (let i = 0; i < inputs.length; i++)
+    {
+      values.push(inputs.item(i).value);
+    }
+    return values;
   }
 
   export function HandleHash()
@@ -46,259 +125,253 @@ namespace IView
   {
     mapLoaded = true;
     console.log("map load completed");
-    BuildAndLoadInitialLayers();
+    //BuildAndLoadInitialLayers();
   }
 
-  function BuildAndLoadInitialLayers()
-  {
-    if (!mapLoaded || !dataLoaded) return;
-    window.onhashchange = HandleHash;
-    HandleHash();
-    mapController.ClearLayers();
-    let days = ["Today", "Tomorrow"];
-    if (currentDay === "") currentDay = days[0];
-    for (let d of days)
-    {
-      let inspections = allInspections.filter(
-        function (k)
-        {
-          return k.ScheduledDay === d && !k.IsCompleted;
-        }); // todays incompleted inspections
+  //function BuildAndLoadInitialLayers()
+  //{
+  //  if (!mapLoaded || !dataLoaded) return;
+  //  window.onhashchange = HandleHash;
+  //  HandleHash();
+  //  mapController.ClearLayers();
+  //  let days = ["Today", "Tomorrow"];
+  //  if (currentDay === "") currentDay = days[0];
+  //  for (let d of days)
+  //  {
+  //    let inspections = allInspections.filter(
+  //      function (k)
+  //      {
+  //        return k.ScheduledDay === d && !k.IsCompleted;
+  //      }); // todays incompleted inspections
 
-      let inspectors = buildInspectorData(inspections);
-      mapController.ApplyLayers(
-        mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
-      );
-      inspections = allInspections.filter(
-        function (k)
-        {
-          return k.ScheduledDay === d;
-        }); // todays incompleted inspections
+  //    let inspectors = buildInspectorData(inspections);
+  //    mapController.ApplyLayers(
+  //      mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
+  //    );
+  //    inspections = allInspections.filter(
+  //      function (k)
+  //      {
+  //        return k.ScheduledDay === d;
+  //      }); // todays incompleted inspections
 
-      inspectors = buildInspectorData(inspections);
-      mapController.ApplyLayers(
-        mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
-      );
+  //    //inspectors = buildInspectorData(inspections);
+  //    mapController.ApplyLayers(
+  //      mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
+  //    );
 
-    }
+  //  }
 
-    mapController.ToggleLayersByDay(currentDay, currentIsComplete);
-    BuildLegend();
-  }
+  //  mapController.ToggleLayersByDay(currentDay, currentIsComplete);
+  //  BuildLegend();
+  //}
 
-  function BuildLegend(): void
-  {
-    let legend = <HTMLElement>document.getElementById("LegendInspectorList");
-    clearElement(legend);
-    let inspections = allInspections.filter(
-      function (k)
-      {
-        if (currentIsComplete)
-        {
-          return k.ScheduledDay === currentDay;
-        }
-        else
-        {
-          return k.ScheduledDay === currentDay && k.IsCompleted === false;
-        }
-      });
-    let inspectors = buildInspectorData(inspections);    
-    let ol = document.createElement("ol");
-    inspectors.forEach(function (i)
-    {
-      let li = document.createElement("li");
-      li.id = "inspector" + i.Id;
-      li.style.backgroundColor = i.Color;      
-      li.style.display = "flex";
-      li.style.justifyContent = "space-between";
-      li.onclick = () => OnInspectorClick(i);
-      let inspectorName = document.createElement("span");
-      inspectorName.appendChild(document.createTextNode(i.Name));
-      inspectorName.style.textAlign = "left";
-      inspectorName.style.marginLeft = "1em";
-      let count = document.createElement("span");
-      count.appendChild(document.createTextNode(i.Inspections.length.toString()));
-      count.style.textAlign = "right";
-      count.style.marginRight = "1em";      
-      li.appendChild(inspectorName);
-      li.appendChild(count);
-      ol.appendChild(li);
-    });
-    legend.appendChild(ol);
-  }
+  //function BuildLegend(): void
+  //{
+  //  console.log("exiting build legend call early");
+  //  return;
 
-  function OnInspectorClick(i: Inspector)
-  {
-    //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
-    //currentIsComplete = (x[x.length - 1] === "incomplete" ? false : true);
+  //  let legend = <HTMLElement>document.getElementById("LegendInspectorList");
+  //  clearElement(legend);
+  //  let inspections = allInspections.filter(
+  //    function (k)
+  //    {
+  //      if (currentIsComplete)
+  //      {
+  //        return k.ScheduledDay === currentDay;
+  //      }
+  //      else
+  //      {
+  //        return k.ScheduledDay === currentDay && k.IsCompleted === false;
+  //      }
+  //    });
+  //  let inspectors = buildInspectorData(inspections);    
+  //  let ol = document.createElement("ol");
+  //  inspectors.forEach(function (i)
+  //  {
+  //    let li = document.createElement("li");
+  //    li.id = "inspector" + i.Id;
+  //    li.style.backgroundColor = i.Color;      
+  //    li.style.display = "flex";
+  //    li.style.justifyContent = "space-between";
+  //    li.onclick = () => OnInspectorClick(i);
+  //    let inspectorName = document.createElement("span");
+  //    inspectorName.appendChild(document.createTextNode(i.Name));
+  //    inspectorName.style.textAlign = "left";
+  //    inspectorName.style.marginLeft = "1em";
+  //    let count = document.createElement("span");
+  //    count.appendChild(document.createTextNode(i.Inspections.length.toString()));
+  //    count.style.textAlign = "right";
+  //    count.style.marginRight = "1em";      
+  //    li.appendChild(inspectorName);
+  //    li.appendChild(count);
+  //    ol.appendChild(li);
+  //  });
+  //  legend.appendChild(ol);
+  //}
 
-    let e = document.getElementById("inspector" + i.Id);
-    if (e.classList.contains("strike"))
-    {
-      e.classList.remove("strike"); // it's already hidden, let's show it
-      mapController.ToggleLayers(i.Id, currentDay, currentIsComplete, true);
-    }
-    else
-    {
-      e.classList.add("strike"); // let's add a strikethrough
-      mapController.ToggleLayers(i.Id, currentDay, currentIsComplete, false);
-    }
-  }
+  //function OnInspectorClick(i: Inspector)
+  //{
+  //  //let x = document.querySelector("ul.nav li.active").id.toLowerCase().split("-");
+  //  //currentIsComplete = (x[x.length - 1] === "incomplete" ? false : true);
 
-  export function DrawToggle():void
-  {
-    let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
-    let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
-    let o = select.selectedOptions[0];
-    if (!button.disabled)
-    {
-      button.textContent = "Bulk Assigning to: " + o.label;
-    }
-    else
-    {
-      button.textContent = "Bulk Assign";
-    }
-    mapController.ToggleDraw();
-  }
+  //  let e = document.getElementById("inspector" + i.Id);
+  //  if (e.classList.contains("strike"))
+  //  {
+  //    e.classList.remove("strike"); // it's already hidden, let's show it
+  //    mapController.ToggleLayers(i.Id, currentDay, currentIsComplete, true);
+  //  }
+  //  else
+  //  {
+  //    e.classList.add("strike"); // let's add a strikethrough
+  //    mapController.ToggleLayers(i.Id, currentDay, currentIsComplete, false);
+  //  }
+  //}
 
-  export function toggle(id: string, show: boolean): void
-  {
-    document.getElementById(id).style.display = show ? "inline-block" : "none";
-  }
+  //export function DrawToggle():void
+  //{
+  //  let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
+  //  let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
+  //  let o = select.selectedOptions[0];
+  //  if (!button.disabled)
+  //  {
+  //    button.textContent = "Bulk Assigning to: " + o.label;
+  //  }
+  //  else
+  //  {
+  //    button.textContent = "Bulk Assign";
+  //  }
+  //  mapController.ToggleDraw();
+  //}
 
-  export function GetAllInspections(): void
-  {
-    toggle('showSpin', true);
-    let button = (<HTMLButtonElement>document.getElementById("refreshButton"));
-    button.disabled = true;
-    console.log('GetallInspections');
-    var i = new Inspection();
-    i.GetInspections()
-      .then(
-      function (inspections: Array<Inspection>): void
-      {
-        console.log('inspections', inspections);
-        allInspections = inspections;
-        dataLoaded = true;
-        BuildAndLoadInitialLayers();
-        // update the counts
-        UpdateCounts(currentDay);
-        toggle('showSpin', false);
-        button.disabled = false;
-      }, function (): void
-      {
-        console.log('error getting All inspections');
-        allInspections = [];
-        toggle('showSpin', false);
-        button.disabled = false;
-      });
-  }
+  //export function toggle(id: string, show: boolean): void
+  //{
+  //  document.getElementById(id).style.display = show ? "inline-block" : "none";
+  //}
 
-  function UpdateCounts(day: string)
-  {    
-    let i = allInspections.filter(function (k) { return k.ScheduledDay === day }); // our total
-    let total = i.length;
-    i = i.filter(function (k) { return !k.IsCompleted }); // let's weed out the ones that are completed.'
-    let current = i.length;
-    let e = (<HTMLElement>document.getElementById("OpenInspectionsNav"));// update our totals.
-    clearElement(e);
-    let count = "Open Inspections: " + current + " of " + total;
-    e.appendChild(document.createTextNode(count));
-  }
+  //export function GetAllInspections(): void
+  //{
+  //  toggle('showSpin', true);
+  //  let button = (<HTMLButtonElement>document.getElementById("refreshButton"));
+  //  button.disabled = true;
+  //  console.log('GetallInspections');
+  //  Inspection.GetInspections()
+  //    .then(
+  //    function (inspections: Array<Inspection>): void
+  //    {
+  //      console.log('inspections', inspections);
+  //      allInspections = inspections;
+  //      Location.GetAllLocations(inspections);
+  //      dataLoaded = true;
+  //      BuildAndLoadInitialLayers();
+  //       update the counts
+  //      UpdateCounts(currentDay);
+  //      toggle('showSpin', false);
+  //      button.disabled = false;
+  //    }, function (): void
+  //    {
+  //      console.log('error getting All inspections');
+  //      allInspections = [];
+  //      toggle('showSpin', false);
+  //      button.disabled = false;
+  //    });
+  //}
 
-  function UpdateInspectors(): void
-  {
-    var i = new Inspector();
-    i.GetAllInspectors().then(function (inspectors: Array<Inspector>)
-    {
-      allInspectors = inspectors;
-      BuildBulkInspectorSelect();
-      GetAllInspections();
-      window.setInterval(GetAllInspections, 60 * 5 * 1000);
-    }, function ()
-      {
-        console.log('error getting inspectors');
-        // do something with the error here
-        allInspectors = [];
-      });
-  }
+  //function UpdateCounts(day: string)
+  //{    
+  //  let i = allInspections.filter(function (k) { return k.ScheduledDay === day }); // our total
+  //  let total = i.length;
+  //  i = i.filter(function (k) { return !k.IsCompleted }); // let's weed out the ones that are completed.'
+  //  let current = i.length;
+  //  let e = (<HTMLElement>document.getElementById("OpenInspectionsNav"));// update our totals.
+  //  clearElement(e);
+  //  let count = "Open Inspections: " + current + " of " + total;
+  //  e.appendChild(document.createTextNode(count));
+  //}
 
-  function BuildBulkInspectorSelect():void
-  {
-    let select:HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
-    for (let i of allInspectors)
-    {
-      let o = document.createElement("option");
-      o.value = i.Id.toString();
-      o.text = i.Name;
-      select.options.add(o);
-    }
-  }
+  //function UpdateInspectors(): void
+  //{
+  //  Inspector.GetAllInspectors().then(function (inspectors: Array<Inspector>)
+  //  {
+  //    allInspectors = inspectors;
+  //    //BuildBulkInspectorSelect();
+  //    GetAllInspections();
+  //    window.setInterval(GetAllInspections, 60 * 5 * 1000);
+  //  }, function ()
+  //    {
+  //      console.log('error getting inspectors');
+  //      // do something with the error here
+  //      allInspectors = [];
+  //    });
+  //}
 
-  export function BulkAssignChange()
-  {
-    let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
-    let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
-    let o = select.selectedOptions[0];
-    button.disabled = (o.value === "");
-    //if (!button.disabled)
-    //{
-    //  let inspector: Inspector = allInspectors.filter(function (i) { return i.Id.toString() === o.value; })[0];
-    //  let lookupKeys: Array<string> = [];
-    //  lookupKeys = GetInvalidInspections(inspector);
-    //  mapController.MarkItemsToIndicateNoMatch(lookupKeys);
-    //}
-    button.textContent = "Bulk Assign";
-    mapController.ToggleDraw(false);
-  }
+  //function BuildBulkInspectorSelect():void
+  //{
+  //  let select:HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
+  //  for (let i of allInspectors)
+  //  {
+  //    let o = document.createElement("option");
+  //    o.value = i.Id.toString();
+  //    o.text = i.Name;
+  //    select.options.add(o);
+  //  }
+  //}
 
-  function GetInvalidInspections(inspector: Inspector): Array<string>
-  {
-    // this function returns a list of the lookupkeys that the selected
-    // inspector doesn't have the necessary licenses to inspect.
+  //export function BulkAssignChange()
+  //{
+  //  let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
+  //  let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
+  //  let o = select.selectedOptions[0];
+  //  button.disabled = (o.value === "");
+  //  //if (!button.disabled)
+  //  //{
+  //  //  let inspector: Inspector = allInspectors.filter(function (i) { return i.Id.toString() === o.value; })[0];
+  //  //  let lookupKeys: Array<string> = [];
+  //  //  lookupKeys = GetInvalidInspections(inspector);
+  //  //  mapController.MarkItemsToIndicateNoMatch(lookupKeys);
+  //  //}
+  //  button.textContent = "Bulk Assign";
+  //  mapController.ToggleDraw(false);
+  //}
 
-    let lookupKeys: Array<string> = [];
-    for (let i of allInspections)
-    {
-      if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
-      {
-        console.log('inspector', inspector, 'inspection', i);
-      }
-      if (i.IsPrivateProvider && !inspector.PrivateProvider)
-      {
-        if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
-        {
-          console.log('found');
-        }
-        if (lookupKeys.indexOf(i.LookupKey) === -1) lookupKeys.push(i.LookupKey);
-      } else
-      {
-        if (
-          i.CBL && !inspector.CBL || 
-          i.CEL && !inspector.CEL ||
-          i.CME && !inspector.CME ||
-          i.CPL && !inspector.CPL ||
-          i.RBL && !inspector.RBL ||
-          i.REL && !inspector.REL ||
-          i.RME && !inspector.RME ||
-          i.RPL && !inspector.RPL ||
-          i.Fire && !inspector.Fire)
-        {
-          if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
-          {
-            console.log('found');
-          }
-          if(lookupKeys.indexOf(i.LookupKey) === -1) lookupKeys.push(i.LookupKey);
-        }
-      }
-    }
-    console.log('invalid lookupkeys', lookupKeys);
-    if (lookupKeys.indexOf('2821-BOLTON-ORANGE PARK32073') != -1)
-    {
-      console.log('found in array');
-    }
-    return lookupKeys;
-  }
+  //function GetInvalidInspections(inspector: Inspector): Array<string>
+  //{
+  //  // this function returns a list of the lookupkeys that the selected
+  //  // inspector doesn't have the necessary licenses to inspect.
+
+  //  let lookupKeys: Array<string> = [];
+  //  for (let i of allInspections)
+  //  {
+  //    if (i.IsPrivateProvider && !inspector.PrivateProvider)
+  //    {
+  //      if (lookupKeys.indexOf(i.LookupKey) === -1) lookupKeys.push(i.LookupKey);
+  //    } else
+  //    {
+  //      if (
+  //        i.CBL && !inspector.CBL || 
+  //        i.CEL && !inspector.CEL ||
+  //        i.CME && !inspector.CME ||
+  //        i.CPL && !inspector.CPL ||
+  //        i.RBL && !inspector.RBL ||
+  //        i.REL && !inspector.REL ||
+  //        i.RME && !inspector.RME ||
+  //        i.RPL && !inspector.RPL ||
+  //        i.Fire && !inspector.Fire)
+  //      {
+  //        if (i.LookupKey === '2821-BOLTON-ORANGE PARK32073')
+  //        {
+  //          console.log('found');
+  //        }
+  //        if(lookupKeys.indexOf(i.LookupKey) === -1) lookupKeys.push(i.LookupKey);
+  //      }
+  //    }
+  //  }
+  //  console.log('invalid lookupkeys', lookupKeys);
+  //  if (lookupKeys.indexOf('2821-BOLTON-ORANGE PARK32073') != -1)
+  //  {
+  //    console.log('found in array');
+  //  }
+  //  return lookupKeys;
+  //}
 
   function buildInspectorData(inspections): Array<Inspector>
   {
@@ -336,7 +409,7 @@ namespace IView
     x.push("</span></li>");
     i.map(function (n)
     {
-      x.push("<li><a target='clayinspections' href='http://apps.claycountygov.com/InspectionScheduler/#permit=");
+      x.push("<li><a target='clayinspections' href='/InspectionScheduler/#permit=");
       x.push(n.PermitNo);
       x.push("&inspectionid=")
       x.push(n.InspReqID)
@@ -353,12 +426,12 @@ namespace IView
     return x.join('');
   }
 
-  export function Assign(e: HTMLElement, InspectorId:number)
-  {
-    let LookupKey = e.id;
-    let lk: Array<string> = [LookupKey];
-    BulkAssign(InspectorId, lk);
-  }
+  //export function Assign(e: HTMLElement, InspectorId:number)
+  //{
+  //  let LookupKey = e.id;
+  //  let lk: Array<string> = [LookupKey];
+  //  BulkAssign(InspectorId, lk);
+  //}
 
   function buildInspectorAssign(assignedTo: string, lookupKey: string)
   {
@@ -387,100 +460,116 @@ namespace IView
     return x.join('');
   }
 
-  export function mapAddressClick(graphic):string
+  //export function mapAddressClick(graphic):string
+  //{
+  //  let inspections:Array<Inspection> = allInspections.filter(function (k: Inspection)
+  //  {
+  //    return k.LookupKey === graphic.attributes.LookupKey;
+  //  });
+  //  let today = inspections.filter(function (k) { return k.ScheduledDay === "Today" });
+  //  let tomorrow = inspections.filter(function (k) { return k.ScheduledDay !== "Today" });
+  //  var x = [];
+  //  x.push("<ol>");
+  //  let InspectorName: string = currentDay === "Today" ? today[0].InspectorName : tomorrow[0].InspectorName;
+  //  let isCompletedCheck: boolean = currentDay === "Today" ? today[0].IsCompleted : tomorrow[0].IsCompleted;
+  //  console.log('Inspector Name', InspectorName, 'completedcheck', isCompletedCheck, inspections[0].CanBeAssigned);
+  //  if (!isCompletedCheck && inspections[0].CanBeAssigned)
+  //  {
+  //    x.push(buildInspectorAssign(InspectorName, graphic.attributes.LookupKey));
+  //  }
+  //  else
+  //  {
+  //    if (isCompletedCheck)
+  //    {
+  //      x.push("<li>This inspection is already completed.</li>");
+  //    }
+  //  }
+  //  x.push(buildAddressDisplayByDay(today, "Today"));
+  //  x.push(buildAddressDisplayByDay(tomorrow, "Tomorrow"));
+  //  x.push("</ol>");
+  //  return x.join('');
+  //}
+
+  export function ShowFilters()
   {
-    let inspections:Array<Inspection> = allInspections.filter(function (k: Inspection)
+    document.getElementById("filters").classList.add("is-active");
+  }
+
+  export function CloseModals(): void
+  {
+    ApplyFilters();
+    let modals = document.querySelectorAll(".modal");
+    if (modals.length > 0)
     {
-      return k.LookupKey === graphic.attributes.LookupKey;
-    });
-    let today = inspections.filter(function (k) { return k.ScheduledDay === "Today" });
-    let tomorrow = inspections.filter(function (k) { return k.ScheduledDay !== "Today" });
-    var x = [];
-    x.push("<ol>");
-    let InspectorName: string = currentDay === "Today" ? today[0].InspectorName : tomorrow[0].InspectorName;
-    let isCompletedCheck: boolean = currentDay === "Today" ? today[0].IsCompleted : tomorrow[0].IsCompleted;
-    console.log('Inspector Name', InspectorName, 'completedcheck', isCompletedCheck, inspections[0].CanBeAssigned);
-    if (!isCompletedCheck && inspections[0].CanBeAssigned)
-    {
-      x.push(buildInspectorAssign(InspectorName, graphic.attributes.LookupKey));
-    }
-    else
-    {
-      if (isCompletedCheck)
+      for (let i = 0; i < modals.length; i++)
       {
-        x.push("<li>This inspection is already completed.</li>");
+        let modal = modals.item(i);
+        modal.classList.remove("is-active");
       }
     }
-    x.push(buildAddressDisplayByDay(today, "Today"));
-    x.push(buildAddressDisplayByDay(tomorrow, "Tomorrow"));
-    x.push("</ol>");
-    return x.join('');
   }
 
-  export function ToggleLegend()
-  {
+  //export function ChangeDay()
+  //{
+  //  var ddl = <HTMLSelectElement>document.getElementById("selectDay");
+  //  switch (ddl.value)
+  //  {
+  //    case "today-open":
+  //      toggleNavDisplay('Today', false);
+  //      break;
+  //    case "today-all":
+  //      toggleNavDisplay('Today', true);
+  //      break;
+  //    case "tomorrow-open":
+  //      toggleNavDisplay('Tomorrow', false);
+  //      break;
+  //    case "tomorrow-all":
+  //      toggleNavDisplay('Tomorrow', true);
+  //      break;
+  //  }
+  //}
 
-  }
+  //export function toggleNavDisplay(key:string, isCompleted:boolean):void
+  //{
+  //  currentIsComplete = isCompleted;
+  //  currentDay = key;
+  //  mapController.ToggleLayersByDay(key, isCompleted);
+  //  BuildLegend();
+  //  UpdateCounts(key);
+  //}
 
-  export function ChangeDay()
-  {
-    var ddl = <HTMLSelectElement>document.getElementById("selectDay");
-    switch (ddl.value)
-    {
-      case "today-open":
-        toggleNavDisplay('Today', false);
-        break;
-      case "today-all":
-        toggleNavDisplay('Today', true);
-        break;
-      case "tomorrow-open":
-        toggleNavDisplay('Tomorrow', false);
-        break;
-      case "tomorrow-all":
-        toggleNavDisplay('Tomorrow', true);
-        break;
-    }
-  }
+  //export function clearElement(node: HTMLElement): void
+  //{ // this function just emptys an element of all its child nodes.
+  //  while (node.firstChild)
+  //  {
+  //    node.removeChild(node.firstChild);
+  //  }
+  //}
 
-  export function toggleNavDisplay(key:string, isCompleted:boolean):void
-  {
-    currentIsComplete = isCompleted;
-    currentDay = key;
-    mapController.ToggleLayersByDay(key, isCompleted);
-    BuildLegend();
-    UpdateCounts(key);
-  }
+  //export function FindItemsInExtent(extent: any): void
+  //{
+  //  let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
+  //  let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("BulkAssignSelect")).value);
+  //  BulkAssign(InspectorId, LookupKeys);
+  //}
 
-  export function clearElement(node: HTMLElement): void
-  { // this function just emptys an element of all its child nodes.
-    while (node.firstChild)
-    {
-      node.removeChild(node.firstChild);
-    }
-  }
+  //function BulkAssign(InspectorId: number, LookupKeys: Array<string>)
+  //{
+  //  let InspectionIds: Array<number> = [];
+  //  for (let i of allInspections)
+  //  {
+  //    if (LookupKeys.indexOf(i.LookupKey) !== -1 &&
+  //      i.ScheduledDay === currentDay)
+  //    {
+  //      if (currentIsComplete || (!currentIsComplete && !i.IsCompleted))
+  //      {
+  //        InspectionIds.push(i.InspReqID);
+  //      }
+  //    }
+  //  }
+  //  //let i = new Inspection();
+  //  Inspection.BulkAssign(InspectorId, InspectionIds);
+  //}
 
-  export function FindItemsInExtent(extent: any): void
-  {
-    let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
-    let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("BulkAssignSelect")).value);
-    BulkAssign(InspectorId, LookupKeys);
-  }
 
-  function BulkAssign(InspectorId: number, LookupKeys: Array<string>)
-  {
-    let InspectionIds: Array<number> = [];
-    for (let i of allInspections)
-    {
-      if (LookupKeys.indexOf(i.LookupKey) !== -1 &&
-        i.ScheduledDay === currentDay)
-      {
-        if (currentIsComplete || (!currentIsComplete && !i.IsCompleted))
-        {
-          InspectionIds.push(i.InspReqID);
-        }
-      }
-    }
-    let i = new Inspection();
-    i.BulkAssign(InspectorId, InspectionIds);
-  }
 }

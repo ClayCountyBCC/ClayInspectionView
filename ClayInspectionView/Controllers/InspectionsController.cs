@@ -21,15 +21,18 @@ namespace ClayInspectionView.Controllers
         {
           var UA = UserAccess.GetUserAccess(User.Identity.Name);
           List<Inspection> li = Inspection.GetInspections();
-          bool CanBeAssigned = UA.current_access == UserAccess.access_type.inspector_access;
           if(UA.current_access == UserAccess.access_type.contract_access)
           {
             li.RemoveAll((i) => i.InspectorName != "Universal Eng");
           }
-          foreach (var i in li)
+          if (UA.current_access == UserAccess.access_type.inspector_access)
           {
-            i.CanBeAssigned = CanBeAssigned;
+            foreach (var i in li)
+            {
+              if (i.ResultADC == "") i.CanBeAssigned = true;
+            }
           }
+
           return Ok(li);
 
         }

@@ -22,7 +22,6 @@ namespace IView
     PrivateProvider: boolean;
     Inspections: Array<Inspection>;
 
-    GetAllInspectors(): Promise<Array<Inspector>>;
   }
   export class Inspector implements IInspector
   {
@@ -43,26 +42,66 @@ namespace IView
 
     constructor()
     {
-
     }
 
-    GetAllInspectors(): Promise<Array<Inspector>>
+    public static GetAllInspectors(): void
     {
-      var x = XHR.Get("API/Inspectors/");
-      return new Promise<Array<Inspector>>(function (resolve, reject)
-      {
-        x.then(function (response)
+      Utilities.Toggle_Loading_Button("refreshButton", true);
+
+      let path = Utilities.Get_Path("/inspectionview");
+      Utilities.Get<Array<Inspector>>(path + "API/Inspectors/")
+        .then(function (inspectors: Array<Inspector>)
         {
-          let ar: Array<Inspector> = JSON.parse(response.Text);
-          return resolve(ar);
-        }).catch(function ()
-        {
-          console.log("error in Get Inspectors");
-          return reject(null);
-        });
-      });
+          console.log('inspectors', inspectors);
+          IView.allInspectors = inspectors;
+          Inspection.GetInspections();
+          window.setInterval(Inspection.GetInspections, 60 * 5 * 1000);
+          Inspector.BuildInspectorList();
+
+        }, function (e)
+          {
+          console.log('error getting inspectors');
+          IView.allInspectors = [];
+          });
+
     }
 
+    static BuildInspectorList(): void
+    {
+      let container = document.getElementById("inspectorList");
+      Utilities.Clear_Element(container);
+      container.appendChild(Inspector.AddInspector("All"));
+      for (let i of IView.allInspectors)
+      {
+        container.appendChild(Inspector.AddInspector(i.Name));
+      }
+    }
+
+    static AddInspector(name: string): DocumentFragment
+    {
+      let df = document.createDocumentFragment();
+      let label = document.createElement("label");
+      label.classList.add("label");
+      label.classList.add("checkbox");
+      label.classList.add("is-medium");
+      let input = document.createElement("input");
+      input.type = "checkbox";
+      input.classList.add("checkbox");
+      input.classList.add("is-medium");
+      input.name = "inspectorFilter";
+      input.value = name;
+      input.checked = true;
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(name));
+      df.appendChild(label);
+      //df.appendChild(document.createElement("br"));
+      return df;
+    }
+
+    static BuildInspectorControl(): void
+    {
+
+    }
   }
 
 

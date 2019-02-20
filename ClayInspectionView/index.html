@@ -3,85 +3,215 @@
 <head>
   <title>Inspection View</title>
   <meta charset="utf-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=11">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <link rel="icon" type="image/png" href="Content/favico-iv.png" />
   <link rel="stylesheet" href="https://js.arcgis.com/3.23/esri/css/esri.css">
   <script defer src="https://js.arcgis.com/3.23/"></script>
-  <link href="Content/bootstrap.min.css" rel="stylesheet" />
-  <link href="Content/bootstrap-theme.min.css" rel="stylesheet" />
+  <!--<link href="Content/bulma.min.css" rel="stylesheet" />
   <link href="Content/main.css" rel="stylesheet" />
+  <link href="Content/Utilities.min.css" rel="stylesheet" />-->
+  <link href="Content/bundle.css" rel="stylesheet" />
 </head>
 <body>
-  <nav style="z-index:1; margin: 0;"
-       id="navTopMenu"
-       class="navbar navbar-default container-fluid">
-    <div class="navbar-header">
-      <span class="hidden-sm hidden-xs navbar-brand">
-        Inspections
-      </span>
-    </div>
-    <ul class="nav nav-tabs navbar-nav">
-      <li style="margin-left: 1em; margin-right: 1em;">
-        <div style="margin-top: .5em;">
-          <select id="selectDay"
-                  onchange="IView.ChangeDay()">
-            <option value="today-open" selected>Today - Open</option>
-            <option value="today-all">Today - All</option>
-            <option value="tomorrow-open">Tomorrow - Open</option>
-            <option value="tomorrow-all">Tomorrow - All</option>
-          </select>
-        </div>
-      </li>
-      <li>
-        <button id="refreshButton"
-                style="margin-top: .5em;"
-                class="btn-success btn"
-                onclick="IView.GetAllInspections()">
-          Refresh Inspections
-        </button>
-        <div style="display: none; margin-top: .5em;"
-             id="showSpin">
-          <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
-        </div>
-      </li>
-    </ul>
-    <ul style="margin-right: 2em; cursor: auto;"
-        class="nav navbar-nav nav-tabs navbar-right hidden-sm hidden-xs">
-      <li id="nav-cart">
-        <a id="OpenInspectionsNav"
-           role="tab">
+  <nav class="navbar is-light hide-for-print" role="navigation" aria-label="main navigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item has-text-weight-bold is-size-4"
+           href="index.html">
+          Inspections
         </a>
-      </li>
-    </ul>
+      </div>
+      <div class="navbar-menu is-active">
+        <div class="navbar-start">
+
+        </div>
+        <div class="navbar-end">
+          <div class="navbar-item">
+            <button id="refreshButton"
+                    onclick="IView.GetAllInspections()"
+                    class="button is-success">
+              Refresh Inspections
+            </button>
+          </div>
+          <div class="navbar-item">
+            <button onclick="IView.ShowFilters()"
+                    class="button is-info">
+              Filters
+            </button>
+          </div>
+          <div class="navbar-item">
+            <span id="OpenInspectionsNav"></span>
+          </div>
+        </div>
+      </div>
+    </div>
   </nav>
+
   <div id="map">
 
   </div>
-  <div id="legend">
-    <ol>
-      <li style="margin-top: .5em; display: flex; justify-content: center; border: none;">
-        <select onchange="IView.BulkAssignChange()"
-                id="BulkAssignSelect">
-          <option value="" selected>No Inspector Selected</option>
-        </select>
-      </li>
-      <li style="display: flex; justify-content: center; border: none;">
-        <button disabled
-                id="BulkAssignButton"
-                class="btn-danger btn"
-                onclick="IView.DrawToggle()">
-          Bulk Assign
-        </button>
-        <div style="display: none;"
-             id="showSpin">
-          <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+
+  <div class="modal"
+       id="filters">
+    <div onclick="IView.CloseModals();"
+         class="modal-background"></div>
+    <div class="modal-card container">
+      <header class="modal-card-head">
+        <p class="modal-card-title">
+          Inspection Filters
+        </p>
+        <button onclick="IView.CloseModals();"
+                type="button"
+                class="delete"
+                aria-label="close"></button>
+      </header>
+      <section class="modal-card-body">
+        <div class="columns">
+          <div class="column is-one-third">
+            <div class="field">
+              <label class="label is-medium">
+                Inspection Status
+              </label>
+              <div class="control">
+                <label class="radio">
+                  <input type="radio" name="inspectionStatus" value="all" />
+                  Show All
+                </label>
+                <br />
+                <label class="radio">
+                  <input type="radio" name="inspectionStatus" value="open" checked />
+                  Open Only
+                </label>
+                <br />
+                <label class="radio">
+                  <input type="radio" name="inspectionStatus" value="closed" />
+                  Closed Only
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label is-medium">
+                Inspection Day
+              </label>
+              <div class="control">
+                <label class="radio">
+                  <input type="radio" name="inspectionDay" value="all" />
+                  All
+                </label>
+                <br />
+                <label class="radio">
+                  <input type="radio" name="inspectionDay" value="prior" />
+                  Scheduled date has passed
+                </label>
+                <br />
+                <label class="radio">
+                  <input type="radio" name="inspectionDay" value="today" checked />
+                  Today
+                </label>
+                <br />
+                <label class="radio">
+                  <input type="radio" name="inspectionDay" value="tomorrow" />
+                  Tomorrow
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="column is-one-third">
+            <div class="field">
+              <label class="label is-medium">
+                Permit Kind
+              </label>
+              <div class="control">
+                <label class="radio">
+                  <input type="radio" name="commercialResidential" value="all" checked />
+                  All
+                </label>
+                <br />
+                <label class="radio">
+                  <input type="radio" name="commercialResidential" value="commercial" />
+                  Commercial Only
+                </label>
+                <br />
+                <label class="radio">
+                  <input type="radio" name="commercialResidential" value="residential" />
+                  Residential Only
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label is-medium">
+                Private Provider
+              </label>
+              <div class="control">
+                <label class="checkbox">
+                  <input type="checkbox" id="privateProviderFilter" value="privateprovider" />
+                  Private Provider Only
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label is-medium">
+                Permit Types
+              </label>
+              <div class="control">
+                <label class="checkbox">
+                  <input type="checkbox" name="permitType" value="all" checked />
+                  All
+                </label>
+                <br />
+                <label class="checkbox">
+                  <input type="checkbox" name="permitType" value="building" checked />
+                  Building
+                </label>
+                <br />
+                <label class="checkbox">
+                  <input type="checkbox" name="permitType" value="electrical" checked />
+                  Electrical
+                </label>
+                <br />
+                <label class="checkbox">
+                  <input type="checkbox" name="permitType" value="mechanical" checked />
+                  Mechanical
+                </label>
+                <br />
+                <label class="checkbox">
+                  <input type="checkbox" name="permitType" value="plumbing" checked />
+                  Plumbing
+                </label>
+                <br />
+                <label class="checkbox">
+                  <input type="checkbox" name="permitType" value="fire" checked />
+                  Fire
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="column is-one-third">
+            <div class="field">
+              <label class="label is-medium">
+                Inspectors
+              </label>
+              <div id="inspectorList"
+                   class="control">
+
+              </div>
+            </div>
+          </div>
         </div>
-      </li>
 
-    </ol>
-    <div id="LegendInspectorList">
 
+        
+
+      </section>
+      <footer style="justify-content: flex-end;"
+              class="modal-card-foot hide-for-print">
+        <button type="button"
+                onclick="IView.CloseModals();"
+                class="button is-success">
+          Save & Close
+        </button>
+      </footer>
     </div>
   </div>
 
@@ -94,16 +224,7 @@
 
   </script>
 
-  <script src="Scripts/map.js"></script>
-  <script src="Scripts/UI.js"></script>
-  <script src="Scripts/XHR.js"></script>
-  <script src="Scripts/Inspection.js"></script>
-  <script src="Scripts/Inspector.js"></script>
-  <script src="Scripts/Point.js"></script>
-  <script src="Scripts/Unit.js"></script>
-  <script src="Scripts/LocationHash.js"></script>
-  <script src="Scripts/app.js?032220182238"></script>
-  <script src="Scripts/es6-promise.min.js"></script>
+  <script src="Scripts/bundle.js"></script>
 </body>
 
 </html>

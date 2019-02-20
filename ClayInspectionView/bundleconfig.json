@@ -1,0 +1,25 @@
+[
+  {
+    "outputFileName": "Scripts/bundle.js",
+    "inputFiles": [
+      "bower_components/promise-polyfill/dist/polyfill.js",
+      "bower_components/fetch/fetch.js",
+      "Scripts/Utilities.js",
+      "Scripts/ui.js",
+      "Scripts/map.js",
+      "Scripts/Location.js",
+      "Scripts/LocationHash.js",
+      "Scripts/Inspector.js",
+      "Scripts/Inspection.js",
+      "Scripts/app.js"
+    ]
+  },
+  {
+    "outputFileName": "Content/bundle.css",
+    "inputFiles": [
+      "Content/myBulma.css",
+      "Content/Utilities.css",
+      "Content/main.css"
+    ]
+  }
+]

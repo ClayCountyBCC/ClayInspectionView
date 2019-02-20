@@ -28,23 +28,30 @@ namespace ClayInspectionView.Models
 
       string query = @"
         USE WATSC;
-
-        WITH InspectionData AS (
+        WITH FireInspections AS (
+            SELECT 
+              InspCd 
+            FROM bpINS_REF 
+            WHERE 
+              InsDesc LIKE '%FIRE%'
+              AND Retired = 0
+        ), InspectionData AS (
         SELECT 
           IR.InspReqId,
-          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RBL,
-          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RME,
-          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END REL,
-          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RPL,
-          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CBL,
-          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CME,
-          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CEL,
-          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CPL,
-          CASE WHEN IR.PermitType IN ('6') THEN 1 ELSE 0 END Fire,
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END RBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END RME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END REL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END RPL,
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CEL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CPL,
+          CASE WHEN IR.PermitType IN ('6') OR FI.InspCd IS NOT NULL THEN 1 ELSE 0 END Fire,
           CASE WHEN ISNULL(IR.PrivProvIRId, 0) > 0 THEN 1 ELSE 0 END PrivateProvider
         FROM bpINS_REQUEST IR
         LEFT OUTER JOIN bpMASTER_PERMIT M ON M.PermitNo = IR.PermitNo
         LEFT OUTER JOIN bpASSOC_PERMIT A ON A.PermitNo = IR.PermitNo
+        LEFT OUTER JOIN FireInspections FI ON IR.InspectionCode = FI.InspCd
         WHERE 
           InspReqID IN @Ids
         )
@@ -68,12 +75,12 @@ namespace ClayInspectionView.Models
           )
           AND ((ID.PrivateProvider = 1 AND I.PrivateProvider = 1)
           OR ID.PrivateProvider = 0);";
-      Constants.Exec_Query(query, dp, Constants.csWATSC);
+      Constants.Exec_Query(query, dp, Constants.csWATSC);      
     }
 
-    public void BulkAssign()
+    public List<Inspection> BulkAssign()
     {
-      if (InspectionIds.Count == 0) return;
+      if (InspectionIds.Count == 0) return new List<Inspection>();
       if (InspectorId == 0)
       {
         BulkAssignToUnassigned();
@@ -82,6 +89,7 @@ namespace ClayInspectionView.Models
       {
         BulkAssignToInspector();
       }
+      return Inspection.GetInspections();
     }
 
     private void BulkAssignToUnassigned()
@@ -95,6 +103,8 @@ namespace ClayInspectionView.Models
         WHERE InspReqID IN @Ids";
       Constants.Exec_Query(query, dp, Constants.csWATSC);
     }
+
+
 
 
   }

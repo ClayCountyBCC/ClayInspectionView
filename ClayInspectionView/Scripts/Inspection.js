@@ -5,38 +5,34 @@ var IView;
 (function (IView) {
     var Inspection = /** @class */ (function () {
         function Inspection() {
+            this.Age = -1;
+            this.ValidInspectors = [];
         }
-        Inspection.prototype.GetInspections = function () {
-            var x = XHR.Get("API/Inspections/GetInspections");
-            return new Promise(function (resolve, reject) {
-                x.then(function (response) {
-                    var ar = JSON.parse(response.Text);
-                    return resolve(ar);
-                }).catch(function () {
-                    console.log("error in Get Inspections");
-                    return reject(null);
-                });
+        Inspection.GetInspections = function () {
+            var path = Utilities.Get_Path("/inspectionview");
+            Utilities.Get(path + "API/Inspections/GetInspections")
+                .then(function (inspections) {
+                IView.allInspections = inspections;
+                Utilities.Toggle_Loading_Button("refreshButton", false);
+                IView.Location.GetAllLocations(inspections);
+            }, function (e) {
+                console.log('error getting inspectors', e);
+                IView.allInspectors = [];
+                Utilities.Toggle_Loading_Button("refreshButton", false);
             });
-        };
-        Inspection.prototype.BulkAssign = function (InspectorId, InspectionIds) {
-            var button = document.getElementById("BulkAssignButton");
-            IView.toggle('showSpin', true);
-            var AssignData = {
-                InspectorId: InspectorId,
-                InspectionIds: InspectionIds
-            };
-            var x = XHR.Post("API/Assign/BulkAssign/", JSON.stringify(AssignData));
-            new Promise(function (resolve, reject) {
-                x.then(function (response) {
-                    IView.GetAllInspections();
-                    IView.toggle('showSpin', false);
-                    button.textContent = "Bulk Assign";
-                }).catch(function () {
-                    console.log("error in Bulk Assign Inspections");
-                    IView.toggle('showSpin', false);
-                    button.textContent = "Bulk Assign";
-                });
-            });
+            //var x = XHR.Get("API/Inspections/GetInspections");
+            //return new Promise<Array<Inspection>>(function (resolve, reject)
+            //{
+            //  x.then(function (response)
+            //  {
+            //    let ar: Array<Inspection> = JSON.parse(response.Text);
+            //    return resolve(ar);
+            //  }).catch(function ()
+            //  {
+            //    console.log("error in Get Inspections");
+            //    return reject(null);
+            //  });
+            //});
         };
         return Inspection;
     }());

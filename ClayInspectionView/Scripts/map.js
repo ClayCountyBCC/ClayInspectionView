@@ -24,11 +24,12 @@ var IView;
                     //showInfoWindowOnClick: false
                 };
                 mapController.map = new Map(mapDiv, mapOptions);
-                mapController.map.on("load", function (evt) {
-                    mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
-                    mapController.drawToolbar.on("DrawEnd", IView.FindItemsInExtent);
-                    IView.mapLoadCompleted();
-                });
+                //mapController.map.on("load", function (evt)
+                //{
+                //  mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
+                //  mapController.drawToolbar.on("DrawEnd", IView.FindItemsInExtent);
+                //  IView.mapLoadCompleted();
+                //});
                 var dynamicLayerOptions = {
                     opacity: .3
                 };
@@ -84,6 +85,7 @@ var IView;
                         var inspections = i.Inspections.filter(function (v) {
                             return v.LookupKey == n;
                         });
+                        // Need to get total number o                
                         var p = inspections[0].PointToUse;
                         var compactAddress = inspections[0].StreetAddressCombined + '<br/> ' +
                             inspections[0].City + ', ' + inspections[0].Zip;
@@ -93,15 +95,35 @@ var IView;
                         if (p.IsValid) {
                             var iT = new InfoTemplate();
                             iT.setTitle('Address: ${CompactAddress}');
-                            iT.setContent(IView.mapAddressClick);
+                            //iT.setContent(IView.mapAddressClick);
                             var s = new SimpleMarkerSymbol({
                                 "color": c,
-                                "size": 10,
+                                "size": 12,
                                 "angle": 0,
                                 "xoffset": 0,
-                                "yoffset": 0,
+                                "yoffset": -5,
                                 "type": "esriSMS",
                                 "style": "esriSMSCircle",
+                                "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
+                            });
+                            var s2 = new SimpleMarkerSymbol({
+                                "color": [0, 255, 0],
+                                "size": 12,
+                                "angle": 0,
+                                "xoffset": -5,
+                                "yoffset": 0,
+                                "type": "esriSMS",
+                                "style": "esriSMSDiamond",
+                                "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
+                            });
+                            var s3 = new SimpleMarkerSymbol({
+                                "color": [0, 0, 255],
+                                "size": 12,
+                                "angle": 0,
+                                "xoffset": 5,
+                                "yoffset": 0,
+                                "type": "esriSMS",
+                                "style": "esriSMSSquare",
                                 "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
                             });
                             var inspection = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
@@ -112,6 +134,8 @@ var IView;
                                 "LookupKey": n
                             });
                             g.setInfoTemplate(iT);
+                            l.add(new Graphic(wmInspection, s2));
+                            l.add(new Graphic(wmInspection, s3));
                             l.add(g);
                         }
                     });

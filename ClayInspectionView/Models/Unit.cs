@@ -47,15 +47,13 @@ namespace ClayInspectionView.Models
     {
       string query = @"
       SELECT 
-        unitcode Name, 
-        longitude, 
-        latitude, 
-        date_last_communicated 
-      FROM unit_tracking_data
-      WHERE 
-        unitcode LIKE 'DS%' OR
-        unitcode LIKE 'MB%'
-      ORDER BY unitcode ASC";
+        UD.unitcode Name, 
+        UD.longitude, 
+        UD.latitude, 
+        UD.date_last_communicated 
+      FROM unit_tracking_data UD
+      INNER JOIN unit_group UG ON UD.unitcode = UG.unitcode AND UG.group_name = 'INSPECTOR'       
+      ORDER BY UD.unitcode ASC";
       return Constants.Get_Data<Unit>(query, Constants.csTracking);
     }
 

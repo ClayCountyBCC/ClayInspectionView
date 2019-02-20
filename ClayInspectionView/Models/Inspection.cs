@@ -33,12 +33,19 @@ namespace ClayInspectionView.Models
     public string ResultADC { get; set; } = "";
     public DateTime ScheduledDate { get; set; }
     public DateTime? InspDateTime { get; set; }
-    public bool CanBeAssigned { get; set; }
+    public bool CanBeAssigned { get; set; } = false;
     public string ScheduledDay
     {
       get
       {
-        return ScheduledDate.Date <= DateTime.Today.Date ? "Today" : "Tomorrow";
+        return ScheduledDate.Date <= DateTime.Today.Date ? "today" : "tomorrow";
+      }
+    }
+    public int Age
+    {
+      get
+      {
+        return DateTime.Today.Date.Subtract(ScheduledDate.Date).Days;
       }
     }
     public bool IsCompleted {
@@ -82,18 +89,27 @@ namespace ClayInspectionView.Models
           WHERE calendar_date > @Today
           AND day_of_week NOT IN (1, 7)
           AND observed_holiday = 0
+          ORDER BY calendar_date ASC
         );
+        WITH FireInspections AS (
+          SELECT 
+            InspCd 
+          FROM bpINS_REF 
+          WHERE 
+            InsDesc LIKE '%FIRE%'
+            AND Retired = 0
+        )
 
         SELECT 
-          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RBL,
-          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RME,
-          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END REL,
-          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 0 THEN 1 ELSE 0 END RPL,
-          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CBL,
-          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CME,
-          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CEL,
-          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 THEN 1 ELSE 0 END CPL,
-          CASE WHEN IR.PermitType IN ('6') THEN 1 ELSE 0 END Fire,
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END RBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END RME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END REL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 0 AND FI.InspCd IS NULL THEN 1 ELSE 0 END RPL,
+          CASE WHEN IR.PermitType IN ('0', '1', '9') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CBL,
+          CASE WHEN IR.PermitType IN ('4') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CME,
+          CASE WHEN IR.PermitType IN ('2') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CEL,
+          CASE WHEN IR.PermitType IN ('3') AND ISNULL(M.Comm, A.Comm) = 1 AND FI.InspCd IS NULL THEN 1 ELSE 0 END CPL,
+          CASE WHEN IR.PermitType IN ('6') OR FI.InspCd IS NOT NULL THEN 1 ELSE 0 END Fire,
           ISNULL(B.ProjAddrNumber, '') + '-' + 
             CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
             ISNULL(B.ProjStreet, '') + '-' + 
@@ -126,6 +142,7 @@ namespace ClayInspectionView.Models
         LEFT OUTER JOIN bpINS_REF IREF ON IR.InspectionCode = IREF.InspCd
         LEFT OUTER JOIN bpMASTER_PERMIT M ON M.PermitNo = IR.PermitNo
         LEFT OUTER JOIN bpASSOC_PERMIT A ON A.PermitNo = IR.PermitNo
+        LEFT OUTER JOIN FireInspections FI ON IR.InspectionCode = FI.InspCd
         INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
         WHERE 
           CAST(IR.SchecDateTime AS DATE) IN (@Today, @Tomorrow)
@@ -158,72 +175,72 @@ namespace ClayInspectionView.Models
 
 
 
-    public static bool Assign(string LookupKey, int InspectorId, string Day)
-    {
-      string Inspector = "";
-      if (InspectorId == 0) // how we handle the Unassigned
-      {
-        Inspector = null;
-      }
-      else
-      {
-        Inspector = (
-          from i in (List<Inspector>)myCache.GetItem("inspectors")
-          where i.Id == InspectorId
-          select i.Intl
-          ).First();
-      }
-      var d = DateTime.Today.Date;
-      if(Day.ToLower() != "today")
-      {
-        switch (d.DayOfWeek) // if Tomorrow is:
-        {
-          case DayOfWeek.Saturday:
-            d = d.AddDays(2).Date;
-            break;
-          case DayOfWeek.Sunday:
-            d = d.AddDays(1).Date;
-            break;
-          default:
-            d = DateTime.Today.AddDays(1).Date;
-            break;
-        }
-      }
+    //public static bool Assign(string LookupKey, int InspectorId, string Day)
+    //{
+    //  string Inspector = "";
+    //  if (InspectorId == 0) // how we handle the Unassigned
+    //  {
+    //    Inspector = null;
+    //  }
+    //  else
+    //  {
+    //    Inspector = (
+    //      from i in (List<Inspector>)myCache.GetItem("inspectors")
+    //      where i.Id == InspectorId
+    //      select i.Intl
+    //      ).First();
+    //  }
+    //  var d = DateTime.Today.Date;
+    //  if(Day.ToLower() != "today")
+    //  {
+    //    switch (d.DayOfWeek) // if Tomorrow is:
+    //    {
+    //      case DayOfWeek.Saturday:
+    //        d = d.AddDays(2).Date;
+    //        break;
+    //      case DayOfWeek.Sunday:
+    //        d = d.AddDays(1).Date;
+    //        break;
+    //      default:
+    //        d = DateTime.Today.AddDays(1).Date;
+    //        break;
+    //    }
+    //  }
 
 
-      var dp = new DynamicParameters();
-      dp.Add("@Inspector", Inspector);
-      dp.Add("@LookupKey", LookupKey);
-      dp.Add("@DateToUse", d);
+    //  var dp = new DynamicParameters();
+    //  dp.Add("@Inspector", Inspector);
+    //  dp.Add("@LookupKey", LookupKey);
+    //  dp.Add("@DateToUse", d);
 
-      string sql = @"
-        USE WATSC;
+    //  string sql = @"
+    //    USE WATSC;
 
-        UPDATE IR
-          SET Inspector = @Inspector
-        FROM bpINS_REQUEST IR
-        LEFT OUTER JOIN bp_INSPECTORS I ON IR.Inspector = I.Intl
-        LEFT OUTER JOIN bpINS_REF IREF ON IR.InspectionCode = IREF.InspCd
-        INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
-        WHERE 
-          CAST(IR.SchecDateTime AS DATE) = CAST(@DateToUse AS DATE)
-          AND IR.InspDateTime IS NULL
-          AND B.ProjAddrNumber + '-' + 
-            CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
-            B.ProjStreet + '-' + 
-            CASE WHEN LEN(LTRIM(RTRIM(B.ProjPostDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPostDir)) ELSE '' END + 
-            B.ProjCity + 
-            B.ProjZip = @LookupKey;";
-      try
-      {
-        var i = Constants.Exec_Query(sql, dp, Constants.csWATSC);
-        return i > 0;
-      }catch(Exception ex)
-      {
-        new ErrorLog(ex, sql);
-        return false;
-      }
-    }
+    //    UPDATE IR
+    //      SET Inspector = @Inspector
+    //    FROM bpINS_REQUEST IR
+    //    LEFT OUTER JOIN bp_INSPECTORS I ON IR.Inspector = I.Intl
+    //    LEFT OUTER JOIN bpINS_REF IREF ON IR.InspectionCode = IREF.InspCd
+    //    INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
+    //    WHERE 
+    //      CAST(IR.SchecDateTime AS DATE) = CAST(@DateToUse AS DATE)
+    //      AND IR.InspDateTime IS NULL
+    //      AND B.ProjAddrNumber + '-' + 
+    //        CASE WHEN LEN(LTRIM(RTRIM(B.ProjPreDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPreDir)) ELSE '' END + 
+    //        B.ProjStreet + '-' + 
+    //        CASE WHEN LEN(LTRIM(RTRIM(B.ProjPostDir))) > 0 THEN '-' + LTRIM(RTRIM(B.ProjPostDir)) ELSE '' END + 
+    //        B.ProjCity + 
+    //        B.ProjZip = @LookupKey;";
+    //  try
+    //  {
+    //    var i = Constants.Exec_Query(sql, dp, Constants.csWATSC);
+    //    return i > 0;
+    //  }catch(Exception ex)
+    //  {
+    //    new ErrorLog(ex, sql);
+    //    return false;
+    //  }
+    //}
 
   }
 }

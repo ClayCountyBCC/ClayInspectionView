@@ -1,0 +1,96 @@
+﻿/*
+  This will go with Utilities.ts
+*/
+
+
+.hide
+{
+  display: none;
+}
+
+.show
+{
+  display: block;
+}
+
+.show-inline
+{
+  display: inline-block;
+}
+
+.show-flex
+{
+  display: flex;
+}
+
+/*@media print
+{
+  @page
+  {
+    margin: 2em;
+    size: ledger !important;
+  }
+
+  a
+  {
+    text-decoration: none;
+    color: black;
+  }
+
+  .print-title-size
+  {
+    line-height: 1em;
+  }
+
+  table.print-with-no-border
+  {
+    align-self: center;
+    text-align: left;
+  }
+
+  table.print-with-no-border th,
+  table.print-with-no-border td
+  {
+    text-align: left;
+    line-height: 1em;
+    border: none;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+
+  table.pagebreak td
+  {
+    line-height: 1em;
+    text-align: left;
+    width: auto;
+    margin: 0;
+  }
+
+  .show-for-print
+  {
+    display: block;
+  }
+
+  .hide-for-print
+  {
+    display: none;
+  }
+
+  body
+  {
+    font-size: 16px !important;
+    display: block;
+  }
+
+  .pagebreak
+  {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #projects .table tr > th
+  {
+    position: initial;
+  }
+}*/
