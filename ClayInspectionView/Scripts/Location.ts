@@ -1,4 +1,4 @@
-﻿
+﻿declare var dojo: any;
 
 namespace IView
 {
@@ -55,6 +55,8 @@ namespace IView
       if (inspections.length === 0) return;
       let i = inspections[0];
       this.lookup_key = i.LookupKey;
+
+
       this.point_to_use = i.PointToUse;
 
       this.UpdateFlags();
@@ -163,6 +165,7 @@ namespace IView
       // If this address has both residential and commercial permits (usually an error)
       // then we'll give it a diamond icon.
       let x = 0;
+      if (this.assigned_inspectors.length > 1) x = 1;
       let offsets = this.GetOffsets();
       for (let i of this.assigned_inspectors)
       {
@@ -184,7 +187,14 @@ namespace IView
             icontype = "esriSMSCircle";
           }
         }
-        this.icons.push(this.CreateIcon(icontype, this[i].hexcolor, offsets[x++]));
+        let icon = this.CreateIcon(icontype, this[i].hexcolor, offsets[x++]);
+        let test = this;
+        icon.then(function (j)
+        {
+          test.icons.push(j);
+        });
+        
+        //this.icons.push(icon);
       }
 
     }
@@ -192,9 +202,11 @@ namespace IView
     private CreateIcon(icon: string, color: string, offset: Array<number>): any
     {
       // this is our base function that we'll use to simplify our icon creation.
-      return require(["esri/symbols/SimpleMarkerSymbol", "esri/Color"], function (SimpleMarkerSymbol, Color)
+      var d = new dojo.Deferred();
+
+      require(["esri/symbols/SimpleMarkerSymbol", "esri/Color"], function (SimpleMarkerSymbol, Color)
       {
-        return new SimpleMarkerSymbol({
+        let s = new SimpleMarkerSymbol({
           "color": Color.fromHex(color),
           "size": 12, 
           "angle": 0,
@@ -204,12 +216,15 @@ namespace IView
           "style": icon,
           "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
         });
+        d.resolve(s);
       });
+      return d;
     }
 
     private GetOffsets(): Array<Array<number>>
     {
       return [
+        [0, 0],
         [-5, 5],
         [5, -5],
         [-5, -5],
@@ -221,8 +236,10 @@ namespace IView
       ];
     }
 
-    public static GetAllLocations(inspections: Array<Inspection>)
+    public static CreateLocations(inspections: Array<Inspection>)
     {
+      let inspectionCount = inspections.length.toString();
+      Utilities.Set_Text(document.getElementById("inspectionCount"), inspectionCount);
       var lookupKeys: Array<string> = [];
       IView.filteredLocations = [];
       for (let i of inspections)
@@ -234,10 +251,90 @@ namespace IView
         let filtered = inspections.filter(function (k) { return k.LookupKey === key; });
         IView.filteredLocations.push(new Location(filtered));
       }
-      console.log('all locations', IView.filteredLocations);
-      //console.log('inspections > 2', IView.allLocations.filter(function (k) { return k.inspections.length > 2; }));
-      //console.log('mixed inspections', IView.allLocations.filter(function (k) { return k.has_commercial && k.has_residential; }));
+      console.log('locations', IView.filteredLocations);
+      console.log('inspectors > 1', IView.filteredLocations.filter(function (k) { return k.icons.length > 2; }));
+      console.log('inspections > 2', IView.filteredLocations.filter(function (k) { return k.inspections.length > 2; }));
+      console.log('mixed inspections', IView.filteredLocations.filter(function (k) { return k.has_commercial && k.has_residential; }));
+      IView.dataLoaded = true;
+      IView.BuildAndLoadInitialLayers();
+    }
 
+    public LocationView():HTMLDivElement
+    {
+      let container = document.createElement("div");
+      let df = document.createDocumentFragment();
+      df.appendChild(this.AddressView());
+      df.appendChild(this.BulkAssignControl());
+      df.appendChild(this.CreateInspectionTable());
+      container.appendChild(df);
+      return container;
+    }
+
+    private AddressView():HTMLParagraphElement
+    {
+      let i = this.inspections[0];
+      let p = document.createElement("p");
+      p.appendChild(document.createTextNode(i.StreetAddressCombined));
+      p.appendChild(document.createTextNode(i.City + ', ' + i.Zip));
+      return p;
+    }
+
+    private BulkAssignControl(): HTMLDivElement
+    {
+      let container = document.createElement("div");
+      container.appendChild
+      return container;
+    }
+
+    private CreateInspectionTable():HTMLTableElement
+    {
+      let table = document.createElement("table");
+      table.classList.add("table");
+      table.classList.add("is-fullwidth");
+      table.appendChild(this.CreateInspectionTableHeading());
+      let tbody = document.createElement("tbody");
+      for (let i of this.inspections)
+      {
+        tbody.appendChild(this.CreateInspectionRow(i));
+      }
+      table.appendChild(tbody);
+      return table;
+    }
+
+    private CreateInspectionTableHeading(): HTMLTableSectionElement
+    {
+      let thead = document.createElement("thead");
+      let tr = document.createElement("tr");
+      tr.appendChild(this.CreateTableCell(true, "Permit"));
+      tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
+      tr.appendChild(this.CreateTableCell(true, "Kind"));
+      tr.appendChild(this.CreateTableCell(true, "Private Provider"));
+      tr.appendChild(this.CreateTableCell(true, "Status"));
+      tr.appendChild(this.CreateTableCell(true, "Assigned"));
+      thead.appendChild(tr);
+      return thead;
+    }
+
+    private CreateTableCell(header: boolean, value: string, className: string = ""): HTMLTableCellElement
+    {
+      let td = document.createElement(header ? "th" : "td");
+      if (className.length > 0) td.classList.add(className);
+      td.appendChild(document.createTextNode(value));
+      return td;
+    }
+
+    
+
+    private CreateInspectionRow(inspection: Inspection): HTMLTableRowElement
+    {
+      let tr = document.createElement("tr")
+      tr.appendChild(this.CreateTableCell(false, inspection.PermitNo));
+      tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription));
+      tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
+      tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
+      tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));
+      tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+      return tr;
     }
 
   }

@@ -25,7 +25,8 @@ namespace ClayInspectionView.Controllers
           {
             li.RemoveAll((i) => i.InspectorName != "Universal Eng");
           }
-          if (UA.current_access == UserAccess.access_type.inspector_access)
+          if (UA.current_access == UserAccess.access_type.inspector_access ||
+            UA.current_access == UserAccess.access_type.admin_access)
           {
             foreach (var i in li)
             {

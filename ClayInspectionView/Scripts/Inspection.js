@@ -9,16 +9,21 @@ var IView;
             this.ValidInspectors = [];
         }
         Inspection.GetInspections = function () {
+            Utilities.Toggle_Loading_Button("refreshButton", true);
+            Utilities.Toggle_Loading_Button("filterButton", true);
             var path = Utilities.Get_Path("/inspectionview");
             Utilities.Get(path + "API/Inspections/GetInspections")
                 .then(function (inspections) {
                 IView.allInspections = inspections;
                 Utilities.Toggle_Loading_Button("refreshButton", false);
-                IView.Location.GetAllLocations(inspections);
+                Utilities.Toggle_Loading_Button("filterButton", false);
+                IView.Location.CreateLocations(IView.ApplyFilters(inspections));
+                IView.Inspector.GetInspectorsToEdit();
             }, function (e) {
                 console.log('error getting inspectors', e);
                 IView.allInspectors = [];
                 Utilities.Toggle_Loading_Button("refreshButton", false);
+                Utilities.Toggle_Loading_Button("filterButton", false);
             });
             //var x = XHR.Get("API/Inspections/GetInspections");
             //return new Promise<Array<Inspection>>(function (resolve, reject)

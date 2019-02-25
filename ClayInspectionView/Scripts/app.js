@@ -4,7 +4,9 @@
 var IView;
 (function (IView) {
     IView.allInspections = []; // populated from web service
+    IView.inspectors_to_edit = []; // only populated if the user has admin access.
     IView.allInspectors = []; // populated from web service
+    IView.allUnits = [];
     IView.filteredLocations = [];
     //export let currentDay: string = "today";
     //export let currentIsComplete: boolean = false;
@@ -14,8 +16,11 @@ var IView;
     IView.permit_type_filter = [];
     IView.inspector_filter = [];
     IView.private_provider_only = false;
-    var mapLoaded = false;
-    var dataLoaded = false;
+    IView.invalid_address_only = false;
+    IView.permit_types_toggle_status = false;
+    IView.inspector_toggle_status = false;
+    IView.mapLoaded = false;
+    IView.dataLoaded = false;
     function Start() {
         // things to do:
         // setup default map
@@ -24,18 +29,67 @@ var IView;
         IView.Inspector.GetAllInspectors();
     }
     IView.Start = Start;
+    function ResetFilters() {
+        // let's set the actual filter backing first.
+        IView.day_filter = "today";
+        IView.inspection_status_filter = "open";
+        IView.permit_kind_filter = "all";
+        IView.permit_type_filter = [];
+        IView.inspector_filter = [];
+        IView.private_provider_only = false;
+        IView.invalid_address_only = false;
+        document.querySelector("input[name='inspectionStatus'][value='open']").checked = true;
+        document.querySelector("input[name='inspectionDay'][value='today']").checked = true;
+        document.querySelector("input[name='commercialResidential'][value='all']").checked = true;
+        document.getElementById("privateProviderFilter").checked = false;
+        document.getElementById("invalidAddressFilter").checked = false;
+        Toggle_Input_Group("input[name='inspectorFilter']", false);
+        document.querySelector("input[name='inspectorFilter'][value='All']").checked = true;
+        Toggle_Input_Group("input[name='permitType']", false);
+        document.querySelector("input[name='permitType'][value='all']").checked = true;
+        IView.Location.CreateLocations(ApplyFilters(IView.allInspections));
+    }
+    IView.ResetFilters = ResetFilters;
+    function Toggle_Group(group) {
+        if (group === "inspectors") {
+            IView.inspector_toggle_status = !IView.inspector_toggle_status;
+            Toggle_Input_Group("input[name='inspectorFilter']", IView.inspector_toggle_status);
+        }
+        else {
+            IView.permit_types_toggle_status = !IView.permit_types_toggle_status;
+            Toggle_Input_Group("input[name='permitType']", IView.permit_types_toggle_status);
+        }
+        IView.Location.CreateLocations(ApplyFilters(IView.allInspections));
+    }
+    IView.Toggle_Group = Toggle_Group;
+    function Toggle_Input_Group(querystring, checked) {
+        var inputs = document.querySelectorAll(querystring);
+        for (var i = 0; i < inputs.length; i++) {
+            inputs.item(i).checked = checked;
+        }
+    }
+    function FilterInputEvents() {
+        var inputs = document.querySelectorAll("#filters input");
+        for (var i = 0; i < inputs.length; i++) {
+            inputs.item(i).addEventListener("click", function (e) {
+                IView.Location.CreateLocations(ApplyFilters(IView.allInspections));
+            });
+        }
+    }
+    IView.FilterInputEvents = FilterInputEvents;
     function UpdateFilters() {
         IView.inspection_status_filter = Get_Single_Filter('input[name="inspectionStatus"]:checked');
         IView.day_filter = Get_Single_Filter('input[name="inspectionDay"]:checked');
         IView.permit_kind_filter = Get_Single_Filter('input[name="commercialResidential"]:checked');
         IView.private_provider_only = document.getElementById("privateProviderFilter").checked;
+        IView.invalid_address_only = document.getElementById("invalidAddressFilter").checked;
         IView.permit_type_filter = Get_Filters('input[name="permitType"]:checked');
         IView.inspector_filter = Get_Filters('input[name="inspectorFilter"]:checked');
     }
-    function ApplyFilters() {
+    function ApplyFilters(inspections) {
         UpdateFilters();
         // filter by status
-        var filtered = IView.allInspections;
+        var filtered = inspections;
         if (IView.inspection_status_filter !== "all") {
             var is_completed_1 = IView.inspection_status_filter !== "open";
             filtered = IView.allInspections.filter(function (j) {
@@ -57,8 +111,26 @@ var IView;
             filtered = filtered.filter(function (j) { return j.IsCommercial === is_commercial_1; });
         }
         // filter by permit type
+        if (IView.permit_type_filter.indexOf("all") === -1) {
+            filtered = filtered.filter(function (j) {
+                return IView.permit_type_filter.indexOf(j.PermitNo.substr(0, 1)) !== -1;
+            });
+        }
         // filter by private provider
+        if (IView.private_provider_only) {
+            filtered = filtered.filter(function (j) { return j.IsPrivateProvider; });
+        }
+        // filter by invalid address
+        if (IView.invalid_address_only) {
+            filtered = filtered.filter(function (j) { return !j.AddressPoint.IsValid || !j.ParcelPoint.IsValid; });
+        }
         // filter by inspector
+        if (IView.inspector_filter.indexOf("All") === -1) {
+            filtered = filtered.filter(function (j) {
+                return IView.inspector_filter.indexOf(j.InspectorName) !== -1;
+            });
+        }
+        return filtered;
     }
     IView.ApplyFilters = ApplyFilters;
     function Get_Single_Filter(selector) {
@@ -87,43 +159,45 @@ var IView;
     }
     IView.HandleHash = HandleHash;
     function mapLoadCompleted() {
-        mapLoaded = true;
+        IView.mapLoaded = true;
         console.log("map load completed");
-        //BuildAndLoadInitialLayers();
+        BuildAndLoadInitialLayers();
     }
     IView.mapLoadCompleted = mapLoadCompleted;
-    //function BuildAndLoadInitialLayers()
-    //{
-    //  if (!mapLoaded || !dataLoaded) return;
-    //  window.onhashchange = HandleHash;
-    //  HandleHash();
-    //  mapController.ClearLayers();
-    //  let days = ["Today", "Tomorrow"];
-    //  if (currentDay === "") currentDay = days[0];
-    //  for (let d of days)
-    //  {
-    //    let inspections = allInspections.filter(
-    //      function (k)
-    //      {
-    //        return k.ScheduledDay === d && !k.IsCompleted;
-    //      }); // todays incompleted inspections
-    //    let inspectors = buildInspectorData(inspections);
-    //    mapController.ApplyLayers(
-    //      mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
-    //    );
-    //    inspections = allInspections.filter(
-    //      function (k)
-    //      {
-    //        return k.ScheduledDay === d;
-    //      }); // todays incompleted inspections
-    //    //inspectors = buildInspectorData(inspections);
-    //    mapController.ApplyLayers(
-    //      mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
-    //    );
-    //  }
-    //  mapController.ToggleLayersByDay(currentDay, currentIsComplete);
-    //  BuildLegend();
-    //}
+    function BuildAndLoadInitialLayers() {
+        if (!IView.mapLoaded || !IView.dataLoaded)
+            return;
+        window.onhashchange = HandleHash;
+        HandleHash();
+        IView.mapController.UpdateLocationLayer(IView.filteredLocations);
+        //mapController.ClearLayers();
+        //let days = ["Today", "Tomorrow"];
+        //if (currentDay === "") currentDay = days[0];
+        //for (let d of days)
+        //{
+        //  let inspections = allInspections.filter(
+        //    function (k)
+        //    {
+        //      return k.ScheduledDay === d && !k.IsCompleted;
+        //    }); // todays incompleted inspections
+        //  let inspectors = buildInspectorData(inspections);
+        //  mapController.ApplyLayers(
+        //    mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
+        //  );
+        //  inspections = allInspections.filter(
+        //    function (k)
+        //    {
+        //      return k.ScheduledDay === d;
+        //    }); // todays incompleted inspections
+        //  //inspectors = buildInspectorData(inspections);
+        //  mapController.ApplyLayers(
+        //    mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
+        //  );
+        //}
+        //mapController.ToggleLayersByDay(currentDay, currentIsComplete);
+        //BuildLegend();
+    }
+    IView.BuildAndLoadInitialLayers = BuildAndLoadInitialLayers;
     //function BuildLegend(): void
     //{
     //  console.log("exiting build legend call early");
@@ -423,7 +497,7 @@ var IView;
     }
     IView.ShowFilters = ShowFilters;
     function CloseModals() {
-        ApplyFilters();
+        //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));
         var modals = document.querySelectorAll(".modal");
         if (modals.length > 0) {
             for (var i = 0; i < modals.length; i++) {

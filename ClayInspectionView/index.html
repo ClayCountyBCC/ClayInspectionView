@@ -6,8 +6,8 @@
   <meta http-equiv="X-UA-Compatible" content="IE=11">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <link rel="icon" type="image/png" href="Content/favico-iv.png" />
-  <link rel="stylesheet" href="https://js.arcgis.com/3.23/esri/css/esri.css">
-  <script defer src="https://js.arcgis.com/3.23/"></script>
+  <link rel="stylesheet" href="https://js.arcgis.com/3.27/esri/css/esri.css">
+  <script defer src="https://js.arcgis.com/3.27/"></script>
   <!--<link href="Content/bulma.min.css" rel="stylesheet" />
   <link href="Content/main.css" rel="stylesheet" />
   <link href="Content/Utilities.min.css" rel="stylesheet" />-->
@@ -28,18 +28,20 @@
         </div>
         <div class="navbar-end">
           <div class="navbar-item">
-            <button id="refreshButton"
-                    onclick="IView.GetAllInspections()"
-                    class="button is-success">
-              Refresh Inspections
-            </button>
-          </div>
-          <div class="navbar-item">
-            <button onclick="IView.ShowFilters()"
+            <button id="filterButton"
+                    onclick="IView.ShowFilters()"
                     class="button is-info">
               Filters
             </button>
           </div>
+          <div class="navbar-item">
+            <button id="refreshButton"
+                    onclick="IView.Inspection.GetInspections()"
+                    class="button is-success">
+              Refresh Inspections
+            </button>
+          </div>
+
           <div class="navbar-item">
             <span id="OpenInspectionsNav"></span>
           </div>
@@ -67,6 +69,7 @@
                 aria-label="close"></button>
       </header>
       <section class="modal-card-body">
+
         <div class="columns">
           <div class="column is-one-third">
             <div class="field">
@@ -152,36 +155,52 @@
             </div>
             <div class="field">
               <label class="label is-medium">
-                Permit Types
+                Invalid Address / Parcel
               </label>
               <div class="control">
+                <label class="checkbox">
+                  <input type="checkbox" id="invalidAddressFilter" value="invalidaddress" />
+                  Invalid Only
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label is-medium">
+                Permit Types
+                <button onclick="IView.Toggle_Group('permittypes');"
+                        class="button is-small is-warning">
+                  Toggle All
+                </button>
+              </label>
+              <div id="permitTypes"
+                   class="control">
                 <label class="checkbox">
                   <input type="checkbox" name="permitType" value="all" checked />
                   All
                 </label>
                 <br />
                 <label class="checkbox">
-                  <input type="checkbox" name="permitType" value="building" checked />
+                  <input type="checkbox" name="permitType" value="1" />
                   Building
                 </label>
                 <br />
                 <label class="checkbox">
-                  <input type="checkbox" name="permitType" value="electrical" checked />
+                  <input type="checkbox" name="permitType" value="2" />
                   Electrical
                 </label>
                 <br />
                 <label class="checkbox">
-                  <input type="checkbox" name="permitType" value="mechanical" checked />
-                  Mechanical
-                </label>
-                <br />
-                <label class="checkbox">
-                  <input type="checkbox" name="permitType" value="plumbing" checked />
+                  <input type="checkbox" name="permitType" value="3" />
                   Plumbing
                 </label>
                 <br />
                 <label class="checkbox">
-                  <input type="checkbox" name="permitType" value="fire" checked />
+                  <input type="checkbox" name="permitType" value="4" />
+                  Mechanical
+                </label>
+                <br />
+                <label class="checkbox">
+                  <input type="checkbox" name="permitType" value="6" />
                   Fire
                 </label>
               </div>
@@ -191,6 +210,10 @@
             <div class="field">
               <label class="label is-medium">
                 Inspectors
+                <button onclick="IView.Toggle_Group('inspectors');"
+                        class="button is-small is-warning">
+                  Toggle All
+                </button>
               </label>
               <div id="inspectorList"
                    class="control">
@@ -201,11 +224,22 @@
         </div>
 
 
-        
+
 
       </section>
       <footer style="justify-content: flex-end;"
               class="modal-card-foot hide-for-print">
+        <p class="modal-card-title">
+          Inspections that match your filters:
+          <span style="padding-left: .5em;"
+                id="inspectionCount"></span>
+        </p>
+
+        <button type="button"
+                onclick="IView.ResetFilters();"
+                class="button is-warning">
+          Reset to Defaults
+        </button>
         <button type="button"
                 onclick="IView.CloseModals();"
                 class="button is-success">

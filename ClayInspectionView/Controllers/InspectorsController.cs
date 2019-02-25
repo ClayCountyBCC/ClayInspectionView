@@ -9,14 +9,17 @@ using System.Runtime.Caching;
 
 namespace ClayInspectionView.Controllers
 {
+  [RoutePrefix("API/Inspector")]
   public class InspectorsController : ApiController
   {
     // GET: api/Inspectors
+    [HttpGet]
+    [Route("List")]
     public IHttpActionResult Get()
     {
       var CIP = new CacheItemPolicy()
       {
-        AbsoluteExpiration = DateTime.Now.AddHours(16)
+        AbsoluteExpiration = DateTime.Now.AddHours(1)
       };
       List<Inspector> inspectors = (List<Inspector>)myCache.GetItem("inspectors", CIP);
       if (inspectors != null)
@@ -28,5 +31,20 @@ namespace ClayInspectionView.Controllers
         return InternalServerError();
       }
     }
+
+    [HttpGet]
+    [Route("Edit")]
+    public IHttpActionResult Edit()
+    {
+      if (UserAccess.GetUserAccess(User.Identity.Name).current_access == UserAccess.access_type.admin_access)
+      {
+        return Ok(Inspector.Get());
+      }
+      else
+      {
+        return Ok();
+      }
+    }
+
   }
 }

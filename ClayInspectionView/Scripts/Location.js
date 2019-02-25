@@ -128,30 +128,44 @@ var IView;
             // If this address has both residential and commercial permits (usually an error)
             // then we'll give it a diamond icon.
             var x = 0;
+            if (this.assigned_inspectors.length > 1)
+                x = 1;
             var offsets = this.GetOffsets();
-            for (var _i = 0, _a = this.assigned_inspectors; _i < _a.length; _i++) {
-                var i = _a[_i];
+            var _loop_1 = function (i) {
                 if (x > offsets.length)
-                    return;
+                    return { value: void 0 };
                 var icontype = "";
-                if (this[i].commercial > 0 && this[i].residential > 0) {
+                if (this_1[i].commercial > 0 && this_1[i].residential > 0) {
                     icontype = "esriSMSDiamond";
                 }
                 else {
-                    if (this[i].commercial > 0) {
+                    if (this_1[i].commercial > 0) {
                         icontype = "esriSMSSquare";
                     }
                     else {
                         icontype = "esriSMSCircle";
                     }
                 }
-                this.icons.push(this.CreateIcon(icontype, this[i].hexcolor, offsets[x++]));
+                var icon = this_1.CreateIcon(icontype, this_1[i].hexcolor, offsets[x++]);
+                var test = this_1;
+                icon.then(function (j) {
+                    test.icons.push(j);
+                });
+                //this.icons.push(icon);
+            };
+            var this_1 = this;
+            for (var _i = 0, _a = this.assigned_inspectors; _i < _a.length; _i++) {
+                var i = _a[_i];
+                var state_1 = _loop_1(i);
+                if (typeof state_1 === "object")
+                    return state_1.value;
             }
         };
         Location.prototype.CreateIcon = function (icon, color, offset) {
             // this is our base function that we'll use to simplify our icon creation.
-            return require(["esri/symbols/SimpleMarkerSymbol", "esri/Color"], function (SimpleMarkerSymbol, Color) {
-                return new SimpleMarkerSymbol({
+            var d = new dojo.Deferred();
+            require(["esri/symbols/SimpleMarkerSymbol", "esri/Color"], function (SimpleMarkerSymbol, Color) {
+                var s = new SimpleMarkerSymbol({
                     "color": Color.fromHex(color),
                     "size": 12,
                     "angle": 0,
@@ -161,10 +175,13 @@ var IView;
                     "style": icon,
                     "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
                 });
+                d.resolve(s);
             });
+            return d;
         };
         Location.prototype.GetOffsets = function () {
             return [
+                [0, 0],
                 [-5, 5],
                 [5, -5],
                 [-5, -5],
@@ -175,7 +192,9 @@ var IView;
                 [0, 5]
             ];
         };
-        Location.GetAllLocations = function (inspections) {
+        Location.CreateLocations = function (inspections) {
+            var inspectionCount = inspections.length.toString();
+            Utilities.Set_Text(document.getElementById("inspectionCount"), inspectionCount);
             var lookupKeys = [];
             IView.filteredLocations = [];
             for (var _i = 0, inspections_1 = inspections; _i < inspections_1.length; _i++) {
@@ -183,17 +202,84 @@ var IView;
                 if (lookupKeys.indexOf(i.LookupKey) === -1)
                     lookupKeys.push(i.LookupKey);
             }
-            var _loop_1 = function (key) {
+            var _loop_2 = function (key) {
                 var filtered = inspections.filter(function (k) { return k.LookupKey === key; });
                 IView.filteredLocations.push(new Location(filtered));
             };
             for (var _a = 0, lookupKeys_1 = lookupKeys; _a < lookupKeys_1.length; _a++) {
                 var key = lookupKeys_1[_a];
-                _loop_1(key);
+                _loop_2(key);
             }
-            console.log('all locations', IView.filteredLocations);
-            //console.log('inspections > 2', IView.allLocations.filter(function (k) { return k.inspections.length > 2; }));
-            //console.log('mixed inspections', IView.allLocations.filter(function (k) { return k.has_commercial && k.has_residential; }));
+            console.log('locations', IView.filteredLocations);
+            console.log('inspectors > 1', IView.filteredLocations.filter(function (k) { return k.icons.length > 2; }));
+            console.log('inspections > 2', IView.filteredLocations.filter(function (k) { return k.inspections.length > 2; }));
+            console.log('mixed inspections', IView.filteredLocations.filter(function (k) { return k.has_commercial && k.has_residential; }));
+            IView.dataLoaded = true;
+            IView.BuildAndLoadInitialLayers();
+        };
+        Location.prototype.LocationView = function () {
+            var container = document.createElement("div");
+            var df = document.createDocumentFragment();
+            df.appendChild(this.AddressView());
+            df.appendChild(this.BulkAssignControl());
+            df.appendChild(this.CreateInspectionTable());
+            container.appendChild(df);
+            return container;
+        };
+        Location.prototype.AddressView = function () {
+            var i = this.inspections[0];
+            var p = document.createElement("p");
+            p.appendChild(document.createTextNode(i.StreetAddressCombined));
+            p.appendChild(document.createTextNode(i.City + ', ' + i.Zip));
+            return p;
+        };
+        Location.prototype.BulkAssignControl = function () {
+            var container = document.createElement("div");
+            container.appendChild;
+            return container;
+        };
+        Location.prototype.CreateInspectionTable = function () {
+            var table = document.createElement("table");
+            table.classList.add("table");
+            table.classList.add("is-fullwidth");
+            table.appendChild(this.CreateInspectionTableHeading());
+            var tbody = document.createElement("tbody");
+            for (var _i = 0, _a = this.inspections; _i < _a.length; _i++) {
+                var i = _a[_i];
+                tbody.appendChild(this.CreateInspectionRow(i));
+            }
+            table.appendChild(tbody);
+            return table;
+        };
+        Location.prototype.CreateInspectionTableHeading = function () {
+            var thead = document.createElement("thead");
+            var tr = document.createElement("tr");
+            tr.appendChild(this.CreateTableCell(true, "Permit"));
+            tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
+            tr.appendChild(this.CreateTableCell(true, "Kind"));
+            tr.appendChild(this.CreateTableCell(true, "Private Provider"));
+            tr.appendChild(this.CreateTableCell(true, "Status"));
+            tr.appendChild(this.CreateTableCell(true, "Assigned"));
+            thead.appendChild(tr);
+            return thead;
+        };
+        Location.prototype.CreateTableCell = function (header, value, className) {
+            if (className === void 0) { className = ""; }
+            var td = document.createElement(header ? "th" : "td");
+            if (className.length > 0)
+                td.classList.add(className);
+            td.appendChild(document.createTextNode(value));
+            return td;
+        };
+        Location.prototype.CreateInspectionRow = function (inspection) {
+            var tr = document.createElement("tr");
+            tr.appendChild(this.CreateTableCell(false, inspection.PermitNo));
+            tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription));
+            tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
+            tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
+            tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));
+            tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+            return tr;
         };
         return Location;
     }());

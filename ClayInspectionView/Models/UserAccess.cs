@@ -10,10 +10,11 @@ namespace ClayInspectionView.Models
   {
     private const string basic_access_group = "gInspectionAppAccess"; // We may make this an argument if we end up using this code elsewhere.
     private const string inspector_access_group = "gInspectionAppInspectors";
-    private const string mis_access_group = "gICT";
+    private const string mis_access_group = "gMISDeveloper_Group";
     private const string contract_inspection_access_group = "gUniversalEngineering";
 
     public bool authenticated { get; set; } = false;
+    
     public string user_name { get; set; }
     public int employee_id { get; set; } = 0;
     public string display_name { get; set; } = "";
@@ -23,7 +24,8 @@ namespace ClayInspectionView.Models
       public_access = 1, // They get treated like public users.
       basic_access = 2,
       inspector_access = 3,
-      contract_access = 4
+      contract_access = 4,
+      admin_access = 5
     }
     public access_type current_access { get; set; } = access_type.public_access; // default to public access.
 
@@ -73,21 +75,29 @@ namespace ClayInspectionView.Models
           }
           var groups = (from g in up.GetAuthorizationGroups()
                         select g.Name).ToList();
-          if (groups.Contains(mis_access_group) || groups.Contains(inspector_access_group))
+          if (groups.Contains(mis_access_group))
           {
-            current_access = access_type.inspector_access;
+            current_access = access_type.admin_access;
           }
           else
           {
-            if (groups.Contains(basic_access_group))
+            if (groups.Contains(inspector_access_group))
             {
-              current_access = access_type.basic_access;
+              current_access = access_type.inspector_access;
             }
             else
             {
-              current_access = access_type.contract_access;
+              if (groups.Contains(basic_access_group))
+              {
+                current_access = access_type.basic_access;
+              }
+              else
+              {
+                current_access = access_type.contract_access;
+              }
             }
           }
+
         }
       }
       catch (Exception ex)

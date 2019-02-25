@@ -1,5 +1,5 @@
 ﻿#map {
-  height: calc(100% - 65px);
+  height: calc(100% - 52px);
   width: calc(100%);
 }
 
@@ -24,6 +24,16 @@ html, body
   font-weight: 400;
   font-size: 1.25rem;
 }
+
+div.titlePane div.title
+{
+  font-size: 12px;
+  display: block;
+  color: #FFFFFF;
+  line-height: 20px;
+  cursor: default;
+}
+
 /*.strike {
   text-decoration: line-through;
 }

@@ -17,6 +17,7 @@ namespace IView
       require([
         "esri/map",
         "esri/layers/ArcGISDynamicMapServiceLayer",
+        "esri/layers/GraphicsLayer",
         "esri/dijit/Legend",
         "dojo/_base/array",
         "dojo/parser",
@@ -26,6 +27,7 @@ namespace IView
         function (
           Map,
           ArcGISDynamicMapServiceLayer,
+          GraphicsLayer,
           Legend,
           arrayUtils,
           Parser,
@@ -41,18 +43,25 @@ namespace IView
             //showInfoWindowOnClick: false
           }
           mapController.map = new Map(mapDiv, mapOptions);
-          //mapController.map.on("load", function (evt)
-          //{
+          mapController.map.infoWindow.resize(600, 100);
+          //map.infoWindow.resize(300, 200); // changes the size of the info window used in the InfoTemplate
+          // default size is 250wide by 100 high
+          mapController.map.on("load", function (evt)
+          {
           //  mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
           //  mapController.drawToolbar.on("DrawEnd", IView.FindItemsInExtent);
 
-          //  IView.mapLoadCompleted();
-          //});
+            IView.mapLoadCompleted();
+          });
           let dynamicLayerOptions = {
             opacity: .3
           };
           let BuildingLayer = new ArcGISDynamicMapServiceLayer("https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer", dynamicLayerOptions);
-          mapController.map.addLayers([BuildingLayer]);
+          IView.location_layer = new GraphicsLayer();
+          IView.location_layer.id = "locations";
+          IView.unit_layer = new GraphicsLayer();
+          IView.unit_layer.id = "units";
+          mapController.map.addLayers([BuildingLayer, IView.location_layer, IView.unit_layer]);
 
         });
     }
@@ -80,6 +89,127 @@ namespace IView
           {
             mapController.drawToolbar.deactivate();
           }
+        });
+    }
+
+    
+
+    public UpdateLocationLayer(locations: Array<Location>): void
+    {
+      //if (locations.length === 0) return;
+      require([
+        "esri/layers/GraphicsLayer",
+        "esri/geometry/Point",
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/graphic",
+        "esri/SpatialReference",
+        "esri/Color",
+        "esri/InfoTemplate",
+        "esri/geometry/webMercatorUtils",
+        "esri/symbols/TextSymbol"],
+        function (
+          GraphicsLayer,
+          arcgisPoint,
+          SimpleMarkerSymbol,
+          Graphic,
+          SpatialReference,
+          Color,
+          InfoTemplate,
+          webMercatorUtils,
+          TextSymbol)
+        {
+          IView.location_layer.clear();
+          for (let l of locations)
+          {
+            let p = l.point_to_use;
+            var pin = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
+            var wmPin = webMercatorUtils.geographicToWebMercator(pin);
+            var iT = new InfoTemplate();
+            iT.setTitle('Inspections: ' + l.inspections.length.toString());
+            iT.setContent(function (graphic:any)
+            {
+              let value = l.LocationView().outerHTML;
+              console.log('html info template', value);
+              return value;
+              // Show the address
+              // 
+              // we need a bulk assign area
+              // with some kind of verbage that indicates that it will only bulk assign
+              // those that are incomplete
+
+              // build a table showing the following:
+              // Permit #
+              // Inspection # / Description
+              // Status
+              // Assigned
+              //  If the inspection is complete, just show the name
+              //  If incomplete, show a dropdown allowing it to be reassigned.
+              //return "<div></div>";
+  //export function mapAddressClick(graphic):string
+  //{
+  //  let inspections:Array<Inspection> = allInspections.filter(function (k: Inspection)
+  //  {
+  //    return k.LookupKey === graphic.attributes.LookupKey;
+  //  });
+  //  let today = inspections.filter(function (k) { return k.ScheduledDay === "Today" });
+  //  let tomorrow = inspections.filter(function (k) { return k.ScheduledDay !== "Today" });
+  //  var x = [];
+  //  x.push("<ol>");
+  //  let InspectorName: string = currentDay === "Today" ? today[0].InspectorName : tomorrow[0].InspectorName;
+  //  let isCompletedCheck: boolean = currentDay === "Today" ? today[0].IsCompleted : tomorrow[0].IsCompleted;
+  //  console.log('Inspector Name', InspectorName, 'completedcheck', isCompletedCheck, inspections[0].CanBeAssigned);
+  //  if (!isCompletedCheck && inspections[0].CanBeAssigned)
+  //  {
+  //    x.push(buildInspectorAssign(InspectorName, graphic.attributes.LookupKey));
+  //  }
+  //  else
+  //  {
+  //    if (isCompletedCheck)
+  //    {
+  //      x.push("<li>This inspection is already completed.</li>");
+  //    }
+  //  }
+  //  x.push(buildAddressDisplayByDay(today, "Today"));
+  //  x.push(buildAddressDisplayByDay(tomorrow, "Tomorrow"));
+  //  x.push("</ol>");
+  //  return x.join('');
+  //}
+            });
+            if (l.icons.length > 1)
+            {
+              for (var i = 0; i < l.icons.length; i++)
+              {
+                var g = new Graphic(wmPin, l.icons[i]);
+                g.setInfoTemplate(iT);
+                IView.location_layer.add(g);
+              }
+              // need to add circle around grouped inspections
+
+            }
+            else
+            {
+              var g = new Graphic(wmPin, l.icons[0]);
+              g.setInfoTemplate(iT);
+              IView.location_layer.add(g);
+            }
+            if (l.inspections.length > 1)
+            {
+              var textSymbol = new TextSymbol(l.inspections.length.toString()); //esri.symbol.TextSymbol(data.Records[i].UnitName);
+              textSymbol.setColor(new dojo.Color([0, 100, 0]));
+              textSymbol.setOffset(0, -20);
+              textSymbol.setAlign(TextSymbol.ALIGN_MIDDLE);
+              var font = new esri.symbol.Font();
+              font.setSize("8pt");
+              font.setWeight(esri.symbol.Font.WEIGHT_BOLD);
+              textSymbol.setFont(font);
+              var graphicText = new Graphic(wmPin, textSymbol);
+              IView.location_layer.add(graphicText);
+            }
+
+            //g.setInfoTemplate(iT);
+          } 
+          IView.location_layer.show();
+
         });
     }
 
@@ -156,29 +286,6 @@ namespace IView
                     "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
                   });
 
-                  var s2 = new SimpleMarkerSymbol({
-                    "color": [0, 255, 0],
-                    "size": 12, // + inspections.length * 3
-                    "angle": 0,
-                    "xoffset": -5,
-                    "yoffset": 0,
-                    "type": "esriSMS",
-                    "style": "esriSMSDiamond",
-                    "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
-                  });
-
-                  var s3 = new SimpleMarkerSymbol({
-                    "color": [0, 0, 255],
-                    "size": 12, // + inspections.length * 3
-                    "angle": 0,
-                    "xoffset": 5,
-                    "yoffset": 0,
-                    "type": "esriSMS",
-                    "style": "esriSMSSquare",
-                    "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
-                  });
-
-
                   var inspection = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
                   var wmInspection = webMercatorUtils.geographicToWebMercator(inspection); 
                   var g = new Graphic(wmInspection, s);
@@ -188,8 +295,6 @@ namespace IView
                   });
                   g.setInfoTemplate(iT);
 
-                  l.add(new Graphic(wmInspection, s2));
-                  l.add(new Graphic(wmInspection, s3));
                   l.add(g);
                 }
 

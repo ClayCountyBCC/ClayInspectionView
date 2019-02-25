@@ -16,13 +16,16 @@ namespace ClayInspectionView.Controllers
     [Route("BulkAssign")]
     public IHttpActionResult BulkAssign(AssignData AD)
     {
-      if (UserAccess.GetUserAccess(User.Identity.Name).current_access != UserAccess.access_type.inspector_access)
+      var ua = UserAccess.GetUserAccess(User.Identity.Name);
+      if (ua.current_access == UserAccess.access_type.inspector_access ||
+        ua.current_access == UserAccess.access_type.admin_access)
       {
-        return Unauthorized();
+        return Ok(AD.BulkAssign());
       }
       else
       {
-        return Ok(AD.BulkAssign());
+        return Unauthorized();
+
       }
     }
 

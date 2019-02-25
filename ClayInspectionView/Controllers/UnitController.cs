@@ -8,12 +8,17 @@ using ClayInspectionView.Models;
 
 namespace ClayInspectionView.Controllers
 {
+  [RoutePrefix("API/Unit")]
   public class UnitController : ApiController
   {
     // GET: api/Unit
+    [HttpGet]
+    [Route("List")]
     public IHttpActionResult Get()
     {
-      if(UserAccess.GetUserAccess(User.Identity.Name).current_access == UserAccess.access_type.inspector_access)
+      var ua = UserAccess.GetUserAccess(User.Identity.Name);
+      if (ua.current_access == UserAccess.access_type.inspector_access || 
+        ua.current_access == UserAccess.access_type.admin_access )
       {
         return Ok(Unit.GetCachedInspectionUnits());
       }

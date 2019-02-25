@@ -7,9 +7,13 @@ namespace IView
 {
 
   export let mapController: MapController;
-  export let allInspections: Array<Inspection> =[];// populated from web service
+  export let allInspections: Array<Inspection> = [];// populated from web service
+  export let inspectors_to_edit: Array<Inspector> = []; // only populated if the user has admin access.
   export let allInspectors: Array<Inspector> = []; // populated from web service
+  export let allUnits: Array<Unit> = [];
   export let filteredLocations: Array<Location> = [];
+  export let location_layer: any;
+  export let unit_layer: any;
   export let allLayers: Array<any>; // all of the layers created.
   //export let currentDay: string = "today";
   //export let currentIsComplete: boolean = false;
@@ -19,9 +23,13 @@ namespace IView
   export let permit_type_filter: Array<string> = [];
   export let inspector_filter: Array<string> = [];
   export let private_provider_only: boolean = false;
+  export let invalid_address_only: boolean = false;
 
-  let mapLoaded: boolean = false;
-  let dataLoaded: boolean = false;
+  export let permit_types_toggle_status: boolean = false;
+  export let inspector_toggle_status: boolean = false;
+
+  export let mapLoaded: boolean = false;
+  export let dataLoaded: boolean = false;
   export let currentInspectors: Array<Inspector>; // populated from data
   
   export function Start(): void 
@@ -32,6 +40,69 @@ namespace IView
     // get the data for today/tomorrow
     Inspector.GetAllInspectors();
     
+
+  }
+
+  export function ResetFilters():void
+  {
+    // let's set the actual filter backing first.
+    day_filter = "today";
+    inspection_status_filter = "open";
+    permit_kind_filter = "all";
+    permit_type_filter = [];
+    inspector_filter = [];
+    private_provider_only = false;
+    invalid_address_only = false;
+
+
+    (<HTMLInputElement>document.querySelector("input[name='inspectionStatus'][value='open']")).checked = true;
+    (<HTMLInputElement>document.querySelector("input[name='inspectionDay'][value='today']")).checked = true;
+    (<HTMLInputElement>document.querySelector("input[name='commercialResidential'][value='all']")).checked = true;
+
+    (<HTMLInputElement>document.getElementById("privateProviderFilter")).checked = false;
+    (<HTMLInputElement>document.getElementById("invalidAddressFilter")).checked = false;
+    Toggle_Input_Group("input[name='inspectorFilter']", false);
+    (<HTMLInputElement>document.querySelector("input[name='inspectorFilter'][value='All']")).checked = true;
+    Toggle_Input_Group("input[name='permitType']", false);
+    (<HTMLInputElement>document.querySelector("input[name='permitType'][value='all']")).checked = true;
+
+    Location.CreateLocations(ApplyFilters(IView.allInspections));
+  }
+
+  export function Toggle_Group(group: string):void
+  {
+    if (group === "inspectors")
+    {
+      inspector_toggle_status = !inspector_toggle_status;
+      Toggle_Input_Group("input[name='inspectorFilter']", inspector_toggle_status);
+    }
+    else
+    {
+      permit_types_toggle_status = !permit_types_toggle_status;
+      Toggle_Input_Group("input[name='permitType']", permit_types_toggle_status);
+    }
+    Location.CreateLocations(ApplyFilters(IView.allInspections));
+  }
+
+  function Toggle_Input_Group(querystring: string, checked: boolean):void
+  {
+    let inputs = document.querySelectorAll(querystring);
+    for (let i = 0; i < inputs.length; i++)
+    {
+      (<HTMLInputElement>inputs.item(i)).checked = checked;
+    }
+  }
+
+  export function FilterInputEvents()
+  {
+    let inputs = document.querySelectorAll("#filters input");
+    for (let i = 0; i < inputs.length; i++)
+    {
+      inputs.item(i).addEventListener("click", function (e)
+      {
+        Location.CreateLocations(ApplyFilters(IView.allInspections));
+      });
+    }
   }
 
   function UpdateFilters(): void
@@ -40,15 +111,16 @@ namespace IView
     IView.day_filter = Get_Single_Filter('input[name="inspectionDay"]:checked');
     IView.permit_kind_filter = Get_Single_Filter('input[name="commercialResidential"]:checked');
     IView.private_provider_only = (<HTMLInputElement>document.getElementById("privateProviderFilter")).checked;
+    IView.invalid_address_only = (<HTMLInputElement>document.getElementById("invalidAddressFilter")).checked;
     IView.permit_type_filter = Get_Filters('input[name="permitType"]:checked');
     IView.inspector_filter = Get_Filters('input[name="inspectorFilter"]:checked');
   }
 
-  export function ApplyFilters(): void
+  export function ApplyFilters(inspections: Array<Inspection>): Array<Inspection>
   {
     UpdateFilters();
     // filter by status
-    let filtered: Array<Inspection> = IView.allInspections;
+    let filtered: Array<Inspection> = inspections;
     if (IView.inspection_status_filter !== "all")
     {
       let is_completed: boolean = IView.inspection_status_filter !== "open";
@@ -79,13 +151,36 @@ namespace IView
     }
 
     // filter by permit type
+    if (IView.permit_type_filter.indexOf("all") === -1)
+    {
+      filtered = filtered.filter(function (j)
+      {
+        return IView.permit_type_filter.indexOf(j.PermitNo.substr(0, 1)) !== -1;
+      });
+    }
 
     // filter by private provider
-    
+    if (IView.private_provider_only)
+    {
+      filtered = filtered.filter(function (j) { return j.IsPrivateProvider; });
+    }
+
+    // filter by invalid address
+    if (IView.invalid_address_only)
+    {
+      filtered = filtered.filter(function (j) { return !j.AddressPoint.IsValid || !j.ParcelPoint.IsValid; });
+    }
 
     // filter by inspector
-
-
+    if (IView.inspector_filter.indexOf("All") === -1)
+    {
+      
+      filtered = filtered.filter(function (j)
+      {
+        return IView.inspector_filter.indexOf(j.InspectorName) !== -1;
+      });
+    }
+    return filtered;
   }
 
   function Get_Single_Filter(selector: string): string
@@ -125,45 +220,47 @@ namespace IView
   {
     mapLoaded = true;
     console.log("map load completed");
-    //BuildAndLoadInitialLayers();
+    BuildAndLoadInitialLayers();
   }
 
-  //function BuildAndLoadInitialLayers()
-  //{
-  //  if (!mapLoaded || !dataLoaded) return;
-  //  window.onhashchange = HandleHash;
-  //  HandleHash();
-  //  mapController.ClearLayers();
-  //  let days = ["Today", "Tomorrow"];
-  //  if (currentDay === "") currentDay = days[0];
-  //  for (let d of days)
-  //  {
-  //    let inspections = allInspections.filter(
-  //      function (k)
-  //      {
-  //        return k.ScheduledDay === d && !k.IsCompleted;
-  //      }); // todays incompleted inspections
+  export function BuildAndLoadInitialLayers()
+  {
+    if (!mapLoaded || !dataLoaded) return;
+    window.onhashchange = HandleHash;
+    HandleHash();
+    mapController.UpdateLocationLayer(IView.filteredLocations);
+    //mapController.ClearLayers();
 
-  //    let inspectors = buildInspectorData(inspections);
-  //    mapController.ApplyLayers(
-  //      mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
-  //    );
-  //    inspections = allInspections.filter(
-  //      function (k)
-  //      {
-  //        return k.ScheduledDay === d;
-  //      }); // todays incompleted inspections
+    //let days = ["Today", "Tomorrow"];
+    //if (currentDay === "") currentDay = days[0];
+    //for (let d of days)
+    //{
+    //  let inspections = allInspections.filter(
+    //    function (k)
+    //    {
+    //      return k.ScheduledDay === d && !k.IsCompleted;
+    //    }); // todays incompleted inspections
 
-  //    //inspectors = buildInspectorData(inspections);
-  //    mapController.ApplyLayers(
-  //      mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
-  //    );
+    //  let inspectors = buildInspectorData(inspections);
+    //  mapController.ApplyLayers(
+    //    mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
+    //  );
+    //  inspections = allInspections.filter(
+    //    function (k)
+    //    {
+    //      return k.ScheduledDay === d;
+    //    }); // todays incompleted inspections
 
-  //  }
+    //  //inspectors = buildInspectorData(inspections);
+    //  mapController.ApplyLayers(
+    //    mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
+    //  );
 
-  //  mapController.ToggleLayersByDay(currentDay, currentIsComplete);
-  //  BuildLegend();
-  //}
+    //}
+
+    //mapController.ToggleLayersByDay(currentDay, currentIsComplete);
+    //BuildLegend();
+  }
 
   //function BuildLegend(): void
   //{
@@ -497,7 +594,7 @@ namespace IView
 
   export function CloseModals(): void
   {
-    ApplyFilters();
+    //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));
     let modals = document.querySelectorAll(".modal");
     if (modals.length > 0)
     {

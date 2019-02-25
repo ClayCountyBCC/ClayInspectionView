@@ -47,21 +47,41 @@ namespace IView
     public static GetAllInspectors(): void
     {
       Utilities.Toggle_Loading_Button("refreshButton", true);
+      Utilities.Toggle_Loading_Button("filterButton", true);
 
       let path = Utilities.Get_Path("/inspectionview");
-      Utilities.Get<Array<Inspector>>(path + "API/Inspectors/")
+      Utilities.Get<Array<Inspector>>(path + "API/Inspectors/List")
         .then(function (inspectors: Array<Inspector>)
         {
           console.log('inspectors', inspectors);
           IView.allInspectors = inspectors;
           Inspection.GetInspections();
           window.setInterval(Inspection.GetInspections, 60 * 5 * 1000);
+          window.setInterval(Unit.GetUnits, 60 * 1000);
           Inspector.BuildInspectorList();
+
 
         }, function (e)
           {
           console.log('error getting inspectors');
           IView.allInspectors = [];
+          });
+
+    }
+
+    public static GetInspectorsToEdit(): void
+    {
+      let path = Utilities.Get_Path("/inspectionview");
+      Utilities.Get<Array<Inspector>>(path + "API/Inspectors/Edit")
+        .then(function (inspectors: Array<Inspector>)
+        {
+          console.log('inspectors to edit', inspectors);
+          IView.inspectors_to_edit = inspectors;
+
+        }, function (e)
+          {
+            console.log('error getting inspectors');
+            IView.allInspectors = [];
           });
 
     }
@@ -75,6 +95,7 @@ namespace IView
       {
         container.appendChild(Inspector.AddInspector(i.Name));
       }
+      IView.FilterInputEvents();
     }
 
     static AddInspector(name: string): DocumentFragment
@@ -90,7 +111,7 @@ namespace IView
       input.classList.add("is-medium");
       input.name = "inspectorFilter";
       input.value = name;
-      input.checked = true;
+      input.checked = name === "All";
       label.appendChild(input);
       label.appendChild(document.createTextNode(name));
       df.appendChild(label);

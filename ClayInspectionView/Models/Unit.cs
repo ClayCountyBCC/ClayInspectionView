@@ -9,8 +9,8 @@ namespace ClayInspectionView.Models
   {
     public string Name { get; set; }
     public DateTime Date_Last_Communicated { get; set; }
-    public double Longitude { get; set; }
-    public double Latitude { get; set; }
+    public decimal Longitude { get; set; }
+    public decimal Latitude { get; set; }
     public string Unit_Icon_URL
     {
       get

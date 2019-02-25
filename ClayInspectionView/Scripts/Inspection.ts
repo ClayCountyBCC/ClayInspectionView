@@ -89,19 +89,23 @@ namespace IView
 
     public static GetInspections(): void
     {
-      
+      Utilities.Toggle_Loading_Button("refreshButton", true);
+      Utilities.Toggle_Loading_Button("filterButton", true);
       let path = Utilities.Get_Path("/inspectionview");
       Utilities.Get<Array<Inspection>>(path + "API/Inspections/GetInspections")
         .then(function (inspections: Array<Inspection>)
         {
           IView.allInspections = inspections;
           Utilities.Toggle_Loading_Button("refreshButton", false);
-          Location.GetAllLocations(inspections);
+          Utilities.Toggle_Loading_Button("filterButton", false);
+          Location.CreateLocations(IView.ApplyFilters(inspections));
+          Inspector.GetInspectorsToEdit();
         }, function (e)
           {
             console.log('error getting inspectors', e);
             IView.allInspectors = [];
-            Utilities.Toggle_Loading_Button("refreshButton", false);
+          Utilities.Toggle_Loading_Button("refreshButton", false);
+          Utilities.Toggle_Loading_Button("filterButton", false);
           });
       //var x = XHR.Get("API/Inspections/GetInspections");
       //return new Promise<Array<Inspection>>(function (resolve, reject)
