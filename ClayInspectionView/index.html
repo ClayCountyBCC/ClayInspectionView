@@ -28,6 +28,14 @@
         </div>
         <div class="navbar-end">
           <div class="navbar-item">
+            <button id="editInspectors"
+                    onclick="IView.ShowInspectors()"
+                    class="button is-warning hide">
+              Inspectors
+            </button>
+          </div>
+          <div class="navbar-item">
+
             <button id="filterButton"
                     onclick="IView.ShowFilters()"
                     class="button is-info">
@@ -242,6 +250,103 @@
         </button>
         <button type="button"
                 onclick="IView.CloseModals();"
+                class="button is-success">
+          Save & Close
+        </button>
+      </footer>
+    </div>
+  </div>
+
+
+  <div class="modal"
+       id="inspectorEdit">
+    <div onclick="IView.CloseModals();"
+         class="modal-background"></div>
+    <div class="modal-card container">
+      <header class="modal-card-head">
+        <p class="modal-card-title">
+          Add / Edit Inspectors
+        </p>
+        <button onclick="IView.CloseModals();"
+                type="button"
+                class="delete"
+                aria-label="close"></button>
+      </header>
+      <section class="modal-card-body">
+        <table class="table is-fullwidth is-bordered">
+          <thead>
+            <tr>
+              <th colspan="5">
+                &nbsp;
+              </th>
+              <th class="has-text-centered"
+                  colspan="4">
+                Commercial
+              </th>
+              <th class="has-text-centered"
+                  colspan="4">
+                Residential
+              </th>
+              <th colspan="2">
+                &nbsp;
+              </th>
+            </tr>
+            <tr>
+              <th>Name</th>
+              <th>Active</th>
+              <th>Initials</th>
+              <th>Display Color</th>
+              <th>Vehicle #</th>
+              <th>B</th>
+              <th>E</th>
+              <th>P</th>
+              <th>M</th>
+              <th>B</th>
+              <th>E</th>
+              <th>P</th>
+              <th>M</th>
+              <th>Fire</th>
+              <th>Private Provider</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chet Barr</td>
+              <td>Yes</td>
+              <td>CB</td>
+              <td>#FF6600</td>
+              <td>None</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td>No</td>
+              <td>Yes</td>
+            </tr>
+          </tbody>
+        </table>
+
+      
+
+
+
+
+      </section>
+      <footer style="justify-content: flex-end;"
+              class="modal-card-foot hide-for-print">
+
+
+        <button type="button"
+                onclick="IView.CloseModals();"
+                class="button is-warning">
+          Cancel Without Saving
+        </button>
+        <button type="button"
+                onclick="IView.SaveInspectors();"
                 class="button is-success">
           Save & Close
         </button>

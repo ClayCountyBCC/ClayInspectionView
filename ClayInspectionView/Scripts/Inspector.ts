@@ -56,6 +56,7 @@ namespace IView
           console.log('inspectors', inspectors);
           IView.allInspectors = inspectors;
           Inspection.GetInspections();
+          Unit.GetUnits();
           window.setInterval(Inspection.GetInspections, 60 * 5 * 1000);
           window.setInterval(Unit.GetUnits, 60 * 1000);
           Inspector.BuildInspectorList();
@@ -77,6 +78,10 @@ namespace IView
         {
           console.log('inspectors to edit', inspectors);
           IView.inspectors_to_edit = inspectors;
+          if (inspectors.length > 0)
+          {
+            Utilities.Show_Inline_Flex("editInspectors");
+          }
 
         }, function (e)
           {

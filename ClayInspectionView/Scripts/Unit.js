@@ -13,10 +13,18 @@ var IView;
                 console.log('units', units);
                 IView.allUnits = units;
                 console.log('build units layer');
+                IView.mapController.UpdateUnitLayer(units);
             }, function (e) {
                 console.log('error getting units');
                 IView.allUnits = [];
             });
+        };
+        Unit.UnitView = function (unit) {
+            var ol = document.createElement("ol");
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode("Date Last Updated: " + Utilities.Format_DateTime(unit.Date_Last_Communicated)));
+            ol.appendChild(li);
+            return ol.outerHTML;
         };
         return Unit;
     }());

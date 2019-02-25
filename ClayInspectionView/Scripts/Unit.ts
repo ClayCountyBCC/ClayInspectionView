@@ -33,12 +33,22 @@ namespace IView
           console.log('units', units);
           IView.allUnits = units;
           console.log('build units layer');
+          IView.mapController.UpdateUnitLayer(units);
 
         }, function (e)
           {
             console.log('error getting units');
             IView.allUnits = [];
           });
+    }
+
+    public static UnitView(unit: Unit): string
+    {
+      let ol = document.createElement("ol");
+      let li = document.createElement("li");
+      li.appendChild(document.createTextNode("Date Last Updated: " + Utilities.Format_DateTime(unit.Date_Last_Communicated)));
+      ol.appendChild(li);
+      return ol.outerHTML;
     }
 
 

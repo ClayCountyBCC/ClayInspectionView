@@ -15,6 +15,7 @@ var IView;
                 console.log('inspectors', inspectors);
                 IView.allInspectors = inspectors;
                 IView.Inspection.GetInspections();
+                IView.Unit.GetUnits();
                 window.setInterval(IView.Inspection.GetInspections, 60 * 5 * 1000);
                 window.setInterval(IView.Unit.GetUnits, 60 * 1000);
                 Inspector.BuildInspectorList();
@@ -29,6 +30,9 @@ var IView;
                 .then(function (inspectors) {
                 console.log('inspectors to edit', inspectors);
                 IView.inspectors_to_edit = inspectors;
+                if (inspectors.length > 0) {
+                    Utilities.Show_Inline_Flex("editInspectors");
+                }
             }, function (e) {
                 console.log('error getting inspectors');
                 IView.allInspectors = [];

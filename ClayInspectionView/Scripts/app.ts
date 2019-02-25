@@ -592,6 +592,11 @@ namespace IView
     document.getElementById("filters").classList.add("is-active");
   }
 
+  export function ShowInspectors()
+  {
+    document.getElementById("inspectorEdit").classList.add("is-active");
+  }
+
   export function CloseModals(): void
   {
     //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));

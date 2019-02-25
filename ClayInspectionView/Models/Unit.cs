@@ -15,7 +15,21 @@ namespace ClayInspectionView.Models
     {
       get
       {
-        return "//static.arcgis.com/images/Symbols/Transportation/CarGreenFront.png";
+        switch (DateTime.Now.Subtract(Date_Last_Communicated).TotalMinutes)
+        {
+          case double n when (n > -1 && n < 21):
+            return "//static.arcgis.com/images/Symbols/Transportation/CarGreenFront.png";
+          case double n when n > 20.999 && n < 61:
+            return "//static.arcgis.com/images/Symbols/Transportation/CarYellowFront.png";
+          case double n when n > 60.999 && n < 121:
+            return "//static.arcgis.com/images/Symbols/Transportation/CarRedFront.png";
+          case double n when n > 120.999 && n < 721:
+            return "//static.arcgis.com/images/Symbols/Transportation/CarRedFront.png";
+          default:
+            return "//static.arcgis.com/images/Symbols/Transportation/CarRedFront.png";
+
+
+        }
       }
     }
     public string Unit_Status_Icon_URL

@@ -47,6 +47,21 @@ namespace Utilities
     e.classList.remove("show-flex");
   }
 
+  export function Show_Inline_Flex(e: string)
+  export function Show_Inline_Flex(e: HTMLElement)
+  export function Show_Inline_Flex(e: Element)
+  export function Show_Inline_Flex(e: any)
+  {
+    if (typeof e == "string")
+    {
+      e = document.getElementById(e);
+    }
+    e.classList.add("show-inline-flex");
+    e.classList.remove("hide");
+    e.classList.remove("show");
+    e.classList.remove("show-flex");
+  }
+
   export function Show_Flex(e: string)
   export function Show_Flex(e: HTMLElement)
   export function Show_Flex(e: Element)
@@ -322,6 +337,17 @@ namespace Utilities
       return date.toLocaleDateString('en-us');
     }
     return new Date(date).toLocaleDateString('en-US');
+  }
+
+  export function Format_DateTime(date: Date): string
+  export function Format_DateTime(date: string): string
+  export function Format_DateTime(date: any): string
+  {
+    if (date instanceof Date)
+    {
+      return date.toLocaleString('en-us');
+    }
+    return new Date(date).toLocaleString('en-US');
   }
 
   export function Validate_Text(e: string, errorElementId: string, errorText: string): string

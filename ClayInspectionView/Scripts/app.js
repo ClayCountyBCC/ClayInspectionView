@@ -496,6 +496,10 @@ var IView;
         document.getElementById("filters").classList.add("is-active");
     }
     IView.ShowFilters = ShowFilters;
+    function ShowInspectors() {
+        document.getElementById("inspectorEdit").classList.add("is-active");
+    }
+    IView.ShowInspectors = ShowInspectors;
     function CloseModals() {
         //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));
         var modals = document.querySelectorAll(".modal");

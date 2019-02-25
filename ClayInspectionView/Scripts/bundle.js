@@ -785,6 +785,16 @@ var Utilities;
         e.classList.remove("show-flex");
     }
     Utilities.Show_Inline = Show_Inline;
+    function Show_Inline_Flex(e) {
+        if (typeof e == "string") {
+            e = document.getElementById(e);
+        }
+        e.classList.add("show-inline-flex");
+        e.classList.remove("hide");
+        e.classList.remove("show");
+        e.classList.remove("show-flex");
+    }
+    Utilities.Show_Inline_Flex = Show_Inline_Flex;
     function Show_Flex(e) {
         if (typeof e == "string") {
             e = document.getElementById(e);
@@ -994,6 +1004,13 @@ var Utilities;
         return new Date(date).toLocaleDateString('en-US');
     }
     Utilities.Format_Date = Format_Date;
+    function Format_DateTime(date) {
+        if (date instanceof Date) {
+            return date.toLocaleString('en-us');
+        }
+        return new Date(date).toLocaleString('en-US');
+    }
+    Utilities.Format_DateTime = Format_DateTime;
     function Validate_Text(e, errorElementId, errorText) {
         // this should only be used for required elements.
         if (typeof e == "string") {
@@ -1098,6 +1115,39 @@ var Utilities;
     Utilities.Get_Path = Get_Path;
 })(Utilities || (Utilities = {}));
 //# sourceMappingURL=Utilities.js.map
+/// <reference path="point.ts" />
+/// <reference path="ui.ts" />
+/// <reference path="app.ts" />
+var IView;
+(function (IView) {
+    var Unit = /** @class */ (function () {
+        function Unit() {
+        }
+        Unit.GetUnits = function () {
+            var path = Utilities.Get_Path("/inspectionview");
+            Utilities.Get(path + "API/Unit/List")
+                .then(function (units) {
+                console.log('units', units);
+                IView.allUnits = units;
+                console.log('build units layer');
+                IView.mapController.UpdateUnitLayer(units);
+            }, function (e) {
+                console.log('error getting units');
+                IView.allUnits = [];
+            });
+        };
+        Unit.UnitView = function (unit) {
+            var ol = document.createElement("ol");
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode("Date Last Updated: " + Utilities.Format_DateTime(unit.Date_Last_Communicated)));
+            ol.appendChild(li);
+            return ol.outerHTML;
+        };
+        return Unit;
+    }());
+    IView.Unit = Unit;
+})(IView || (IView = {}));
+//# sourceMappingURL=unit.js.map
 /// <reference path="app.ts" />
 //# sourceMappingURL=ui.js.map
 /// <reference path="Typings/arcgis-js-api.d.ts" />
@@ -1164,6 +1214,64 @@ var IView;
                 }
             });
         };
+        MapController.prototype.UpdateUnitLayer = function (units) {
+            //if (locations.length === 0) return;
+            require([
+                "esri/layers/GraphicsLayer",
+                "esri/geometry/Point",
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/PictureMarkerSymbol",
+                "esri/graphic",
+                "esri/SpatialReference",
+                "esri/Color",
+                "esri/InfoTemplate",
+                "esri/geometry/webMercatorUtils",
+                "esri/symbols/TextSymbol"
+            ], function (GraphicsLayer, arcgisPoint, SimpleMarkerSymbol, PictureMarkerSymbol, Graphic, SpatialReference, Color, InfoTemplate, webMercatorUtils, TextSymbol) {
+                IView.unit_layer.clear();
+                var _loop_1 = function (u) {
+                    pin = new arcgisPoint([u.Longitude, u.Latitude], new SpatialReference({ wkid: 4326 }));
+                    wmPin = webMercatorUtils.geographicToWebMercator(pin);
+                    iT = new InfoTemplate();
+                    iT.setTitle('Vehicle: ' + u.Name);
+                    iT.setContent(function (graphic) {
+                        var value = IView.Unit.UnitView(u);
+                        console.log('html info template', value);
+                        return value;
+                    });
+                    icon = new PictureMarkerSymbol({
+                        "angle": 0,
+                        "xoffset": 0,
+                        "yoffset": 0,
+                        "type": "esriPMS",
+                        "url": u.Unit_Icon_URL,
+                        "contentType": "image/png",
+                        "width": 30,
+                        "height": 30
+                    });
+                    g = new Graphic(wmPin, icon);
+                    g.setInfoTemplate(iT);
+                    IView.unit_layer.add(g);
+                    textSymbol = new TextSymbol(u.Name); //esri.symbol.TextSymbol(data.Records[i].UnitName);
+                    textSymbol.setColor(new dojo.Color([0, 100, 0]));
+                    textSymbol.setOffset(0, -20);
+                    textSymbol.setAlign(TextSymbol.ALIGN_MIDDLE);
+                    font = new esri.symbol.Font();
+                    font.setSize("10pt");
+                    font.setWeight(esri.symbol.Font.WEIGHT_BOLD);
+                    textSymbol.setFont(font);
+                    graphicText = new Graphic(wmPin, textSymbol);
+                    IView.unit_layer.add(graphicText);
+                    //g.setInfoTemplate(iT);
+                };
+                var pin, wmPin, iT, icon, g, textSymbol, font, graphicText;
+                for (var _i = 0, units_1 = units; _i < units_1.length; _i++) {
+                    var u = units_1[_i];
+                    _loop_1(u);
+                }
+                IView.unit_layer.show();
+            });
+        };
         MapController.prototype.UpdateLocationLayer = function (locations) {
             //if (locations.length === 0) return;
             require([
@@ -1178,7 +1286,7 @@ var IView;
                 "esri/symbols/TextSymbol"
             ], function (GraphicsLayer, arcgisPoint, SimpleMarkerSymbol, Graphic, SpatialReference, Color, InfoTemplate, webMercatorUtils, TextSymbol) {
                 IView.location_layer.clear();
-                var _loop_1 = function (l) {
+                var _loop_2 = function (l) {
                     var p = l.point_to_use;
                     pin = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
                     wmPin = webMercatorUtils.geographicToWebMercator(pin);
@@ -1188,48 +1296,6 @@ var IView;
                         var value = l.LocationView().outerHTML;
                         console.log('html info template', value);
                         return value;
-                        // Show the address
-                        // 
-                        // we need a bulk assign area
-                        // with some kind of verbage that indicates that it will only bulk assign
-                        // those that are incomplete
-                        // build a table showing the following:
-                        // Permit #
-                        // Inspection # / Description
-                        // Status
-                        // Assigned
-                        //  If the inspection is complete, just show the name
-                        //  If incomplete, show a dropdown allowing it to be reassigned.
-                        //return "<div></div>";
-                        //export function mapAddressClick(graphic):string
-                        //{
-                        //  let inspections:Array<Inspection> = allInspections.filter(function (k: Inspection)
-                        //  {
-                        //    return k.LookupKey === graphic.attributes.LookupKey;
-                        //  });
-                        //  let today = inspections.filter(function (k) { return k.ScheduledDay === "Today" });
-                        //  let tomorrow = inspections.filter(function (k) { return k.ScheduledDay !== "Today" });
-                        //  var x = [];
-                        //  x.push("<ol>");
-                        //  let InspectorName: string = currentDay === "Today" ? today[0].InspectorName : tomorrow[0].InspectorName;
-                        //  let isCompletedCheck: boolean = currentDay === "Today" ? today[0].IsCompleted : tomorrow[0].IsCompleted;
-                        //  console.log('Inspector Name', InspectorName, 'completedcheck', isCompletedCheck, inspections[0].CanBeAssigned);
-                        //  if (!isCompletedCheck && inspections[0].CanBeAssigned)
-                        //  {
-                        //    x.push(buildInspectorAssign(InspectorName, graphic.attributes.LookupKey));
-                        //  }
-                        //  else
-                        //  {
-                        //    if (isCompletedCheck)
-                        //    {
-                        //      x.push("<li>This inspection is already completed.</li>");
-                        //    }
-                        //  }
-                        //  x.push(buildAddressDisplayByDay(today, "Today"));
-                        //  x.push(buildAddressDisplayByDay(tomorrow, "Tomorrow"));
-                        //  x.push("</ol>");
-                        //  return x.join('');
-                        //}
                     });
                     if (l.icons.length > 1) {
                         for (var i = 0; i < l.icons.length; i++) {
@@ -1261,7 +1327,7 @@ var IView;
                 var pin, wmPin, iT, g, g, textSymbol, font, graphicText;
                 for (var _i = 0, locations_1 = locations; _i < locations_1.length; _i++) {
                     var l = locations_1[_i];
-                    _loop_1(l);
+                    _loop_2(l);
                 }
                 IView.location_layer.show();
             });
@@ -1753,6 +1819,7 @@ var IView;
                 console.log('inspectors', inspectors);
                 IView.allInspectors = inspectors;
                 IView.Inspection.GetInspections();
+                IView.Unit.GetUnits();
                 window.setInterval(IView.Inspection.GetInspections, 60 * 5 * 1000);
                 window.setInterval(IView.Unit.GetUnits, 60 * 1000);
                 Inspector.BuildInspectorList();
@@ -1767,6 +1834,9 @@ var IView;
                 .then(function (inspectors) {
                 console.log('inspectors to edit', inspectors);
                 IView.inspectors_to_edit = inspectors;
+                if (inspectors.length > 0) {
+                    Utilities.Show_Inline_Flex("editInspectors");
+                }
             }, function (e) {
                 console.log('error getting inspectors');
                 IView.allInspectors = [];
@@ -2352,6 +2422,10 @@ var IView;
         document.getElementById("filters").classList.add("is-active");
     }
     IView.ShowFilters = ShowFilters;
+    function ShowInspectors() {
+        document.getElementById("inspectorEdit").classList.add("is-active");
+    }
+    IView.ShowInspectors = ShowInspectors;
     function CloseModals() {
         //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));
         var modals = document.querySelectorAll(".modal");

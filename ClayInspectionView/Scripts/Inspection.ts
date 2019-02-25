@@ -100,6 +100,7 @@ namespace IView
           Utilities.Toggle_Loading_Button("filterButton", false);
           Location.CreateLocations(IView.ApplyFilters(inspections));
           Inspector.GetInspectorsToEdit();
+          
         }, function (e)
           {
             console.log('error getting inspectors', e);

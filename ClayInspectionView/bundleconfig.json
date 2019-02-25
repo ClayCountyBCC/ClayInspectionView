@@ -5,6 +5,7 @@
       "bower_components/promise-polyfill/dist/polyfill.js",
       "bower_components/fetch/fetch.js",
       "Scripts/Utilities.js",
+      "Scripts/unit.js",
       "Scripts/ui.js",
       "Scripts/map.js",
       "Scripts/Location.js",

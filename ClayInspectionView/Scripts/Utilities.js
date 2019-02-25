@@ -31,6 +31,16 @@ var Utilities;
         e.classList.remove("show-flex");
     }
     Utilities.Show_Inline = Show_Inline;
+    function Show_Inline_Flex(e) {
+        if (typeof e == "string") {
+            e = document.getElementById(e);
+        }
+        e.classList.add("show-inline-flex");
+        e.classList.remove("hide");
+        e.classList.remove("show");
+        e.classList.remove("show-flex");
+    }
+    Utilities.Show_Inline_Flex = Show_Inline_Flex;
     function Show_Flex(e) {
         if (typeof e == "string") {
             e = document.getElementById(e);
@@ -240,6 +250,13 @@ var Utilities;
         return new Date(date).toLocaleDateString('en-US');
     }
     Utilities.Format_Date = Format_Date;
+    function Format_DateTime(date) {
+        if (date instanceof Date) {
+            return date.toLocaleString('en-us');
+        }
+        return new Date(date).toLocaleString('en-US');
+    }
+    Utilities.Format_DateTime = Format_DateTime;
     function Validate_Text(e, errorElementId, errorText) {
         // this should only be used for required elements.
         if (typeof e == "string") {

@@ -9,7 +9,7 @@ using System.Runtime.Caching;
 
 namespace ClayInspectionView.Controllers
 {
-  [RoutePrefix("API/Inspector")]
+  [RoutePrefix("API/Inspectors")]
   public class InspectorsController : ApiController
   {
     // GET: api/Inspectors
