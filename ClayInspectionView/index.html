@@ -275,9 +275,6 @@
           </div>
         </div>
 
-
-
-
       </section>
       <footer style="justify-content: flex-end;"
               class="modal-card-foot hide-for-print">
@@ -286,11 +283,15 @@
           <span style="padding-left: .5em;"
                 id="inspectionCount"></span>
         </p>
-
         <button type="button"
                 onclick="IView.ResetFilters();"
                 class="button is-warning">
           Reset to Defaults
+        </button>
+        <button type="button"
+                onclick="IView.SaveCookie();"
+                class="button is-info">
+          Save Settings as Default
         </button>
         <button type="button"
                 onclick="IView.CloseModals();"
@@ -415,7 +416,7 @@
       <section class="modal-card-body">
         <div id="bulkAssignInspectionsContainer">
           <div class="field">
-            <label class="label">Assign All Inspections to this inspector</label>
+            <label class="label">Assign All Inspections to this Inspector</label>
             <div class="control">
               <div class="select">
                 <select onchange="IView.Bulk_Assign_Location(event);"

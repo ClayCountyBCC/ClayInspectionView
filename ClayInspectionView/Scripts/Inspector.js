@@ -18,6 +18,7 @@ var IView;
                 Inspector.BuildBulkAssignDropdown(inspectors);
                 IView.Inspection.GetInspections();
                 Inspector.BuildInspectorList();
+                IView.LoadDefaultsFromCookie();
                 window.setInterval(IView.Inspection.GetInspections, 60 * 5 * 1000);
                 window.setInterval(IView.Unit.GetUnits, 60 * 1000);
                 Inspector.GetInspectorsToEdit();

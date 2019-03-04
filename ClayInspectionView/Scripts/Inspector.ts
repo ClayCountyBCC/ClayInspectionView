@@ -59,6 +59,7 @@ namespace IView
           Inspector.BuildBulkAssignDropdown(inspectors);
           Inspection.GetInspections();          
           Inspector.BuildInspectorList();
+          IView.LoadDefaultsFromCookie();
           window.setInterval(Inspection.GetInspections, 60 * 5 * 1000);
           window.setInterval(Unit.GetUnits, 60 * 1000);
           Inspector.GetInspectorsToEdit();
@@ -114,7 +115,7 @@ namespace IView
       {
         container.appendChild(Inspector.AddInspector(i.Name));
       }
-      IView.FilterInputEvents();
+      IView.FilterInputEvents();      
     }
 
     static AddInspector(name: string): DocumentFragment
