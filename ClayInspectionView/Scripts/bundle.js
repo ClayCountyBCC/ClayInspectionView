@@ -965,7 +965,6 @@ var Utilities;
             },
             credentials: "include"
         }).then(function (response) {
-            console.log('Post Response', response);
             if (!response.ok) {
                 throw new Error(response.statusText);
             }
@@ -1127,9 +1126,7 @@ var IView;
             var path = Utilities.Get_Path("/inspectionview");
             Utilities.Get(path + "API/Unit/List")
                 .then(function (units) {
-                console.log('units', units);
                 IView.allUnits = units;
-                console.log('build units layer');
                 IView.mapController.UpdateUnitLayer(units);
             }, function (e) {
                 console.log('error getting units');
@@ -1162,40 +1159,69 @@ var IView;
                 "esri/map",
                 "esri/layers/ArcGISDynamicMapServiceLayer",
                 "esri/layers/GraphicsLayer",
-                "esri/dijit/Legend",
+                "esri/dijit/HomeButton",
+                //"esri/dijit/Legend",
                 "dojo/_base/array",
                 "dojo/parser",
+                "esri/Color",
                 "dijit/layout/BorderContainer",
                 "esri/toolbars/draw",
                 "dojo/domReady!"
-            ], function (Map, ArcGISDynamicMapServiceLayer, GraphicsLayer, Legend, arrayUtils, Parser, BorderContainer, Draw) {
+            ], function (Map, ArcGISDynamicMapServiceLayer, GraphicsLayer, HomeButton, 
+            //Legend,
+            arrayUtils, Parser, Color, BorderContainer, Draw) {
+                var defaultExtent = new esri.geometry.Extent(-82.31395416259558, 29.752280075700344, -81.28604583740163, 30.14732756963145, new esri.SpatialReference({ wkid: 4326 }));
                 var mapOptions = {
                     basemap: "osm",
                     zoom: 11,
                     logo: false,
-                    center: [-81.80, 29.950]
+                    //center: [-81.80, 29.950]
+                    extent: defaultExtent
                     //showInfoWindowOnClick: false
                 };
                 mapController.map = new Map(mapDiv, mapOptions);
-                mapController.map.infoWindow.resize(600, 100);
-                //map.infoWindow.resize(300, 200); // changes the size of the info window used in the InfoTemplate
                 // default size is 250wide by 100 high
                 mapController.map.on("load", function (evt) {
-                    //  mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
-                    //  mapController.drawToolbar.on("DrawEnd", IView.FindItemsInExtent);
+                    mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
+                    mapController.drawToolbar.on("DrawEnd", IView.FindItemsInExtent);
+                    console.log('map loaded');
                     IView.mapLoadCompleted();
                 });
                 var dynamicLayerOptions = {
                     opacity: .3
                 };
+                var home = new HomeButton({
+                    map: mapController.map,
+                    extent: defaultExtent
+                }, "HomeButton");
+                home.startup();
                 var BuildingLayer = new ArcGISDynamicMapServiceLayer("https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer", dynamicLayerOptions);
                 IView.location_layer = new GraphicsLayer();
                 IView.location_layer.id = "locations";
+                IView.location_layer.on("click", function (event) {
+                    if (event === undefined)
+                        return;
+                    //console.log('graphics layer clicked - event', event); 
+                    IView.last_symbol_color = event.graphic.symbol.color;
+                    IView.last_selected_graphic = event.graphic;
+                    event.graphic.symbol.color = new Color([255, 0, 0, 1]);
+                    IView.location_layer.redraw();
+                    MapController.GetLocation(event.graphic.attributes.LookupKey);
+                });
                 IView.unit_layer = new GraphicsLayer();
                 IView.unit_layer.id = "units";
                 mapController.map.addLayers([BuildingLayer, IView.location_layer, IView.unit_layer]);
             });
         }
+        MapController.GetLocation = function (lookup_key) {
+            var location = IView.filteredLocations.filter(function (j) { return j.lookup_key === lookup_key; });
+            if (location.length === 0)
+                return;
+            IView.current_location = location[0];
+            console.log('location found', location[0]);
+            IView.mapController.CenterOnPoint(location[0].point_to_use);
+            location[0].LocationView();
+        };
         MapController.prototype.ToggleDraw = function (toggle) {
             if (toggle === void 0) { toggle = null; }
             var mapController = this;
@@ -1286,161 +1312,189 @@ var IView;
                 "esri/symbols/TextSymbol"
             ], function (GraphicsLayer, arcgisPoint, SimpleMarkerSymbol, Graphic, SpatialReference, Color, InfoTemplate, webMercatorUtils, TextSymbol) {
                 IView.location_layer.clear();
-                var _loop_2 = function (l) {
+                for (var _i = 0, locations_1 = locations; _i < locations_1.length; _i++) {
+                    var l = locations_1[_i];
                     var p = l.point_to_use;
-                    pin = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
-                    wmPin = webMercatorUtils.geographicToWebMercator(pin);
-                    iT = new InfoTemplate();
-                    iT.setTitle('Inspections: ' + l.inspections.length.toString());
-                    iT.setContent(function (graphic) {
-                        var value = l.LocationView().outerHTML;
-                        console.log('html info template', value);
-                        return value;
-                    });
-                    if (l.icons.length > 1) {
-                        for (var i = 0; i < l.icons.length; i++) {
-                            g = new Graphic(wmPin, l.icons[i]);
-                            g.setInfoTemplate(iT);
-                            IView.location_layer.add(g);
-                        }
-                        // need to add circle around grouped inspections
-                    }
-                    else {
-                        g = new Graphic(wmPin, l.icons[0]);
-                        g.setInfoTemplate(iT);
+                    var pin = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
+                    var wmPin = webMercatorUtils.geographicToWebMercator(pin);
+                    //var iT = new InfoTemplate();
+                    //iT.setTitle('Inspections: ' + l.inspections.length.toString());
+                    //iT.setContent(function (graphic:any)
+                    //{
+                    //  let value = l.LocationView().outerHTML;
+                    //  console.log('html info template', value);
+                    //  return value;
+                    //});
+                    //var g = new Graphic(wmPin, l.icons[0]);
+                    //g.setInfoTemplate(iT);
+                    //IView.location_layer.add(g);
+                    //if (l.icons.length > 1)
+                    //{
+                    for (var i = 0; i < l.icons.length; i++) {
+                        var g = new Graphic(wmPin, l.icons[i]);
+                        g.setAttributes({
+                            "LookupKey": l.lookup_key
+                        });
+                        //g.setInfoTemplate(iT);
+                        //g.addEventListener("click", function (e)
+                        //{
+                        //  IView.mapController.CenterAndZoom(p);
+                        //});
                         IView.location_layer.add(g);
                     }
+                    //}
                     if (l.inspections.length > 1) {
-                        textSymbol = new TextSymbol(l.inspections.length.toString()); //esri.symbol.TextSymbol(data.Records[i].UnitName);
+                        var textSymbol = new TextSymbol(l.inspections.length.toString()); //esri.symbol.TextSymbol(data.Records[i].UnitName);
                         textSymbol.setColor(new dojo.Color([0, 100, 0]));
                         textSymbol.setOffset(0, -20);
                         textSymbol.setAlign(TextSymbol.ALIGN_MIDDLE);
-                        font = new esri.symbol.Font();
-                        font.setSize("8pt");
+                        var font = new esri.symbol.Font();
+                        font.setSize("10pt");
                         font.setWeight(esri.symbol.Font.WEIGHT_BOLD);
                         textSymbol.setFont(font);
-                        graphicText = new Graphic(wmPin, textSymbol);
+                        var graphicText = new Graphic(wmPin, textSymbol);
                         IView.location_layer.add(graphicText);
                     }
                     //g.setInfoTemplate(iT);
-                };
-                var pin, wmPin, iT, g, g, textSymbol, font, graphicText;
-                for (var _i = 0, locations_1 = locations; _i < locations_1.length; _i++) {
-                    var l = locations_1[_i];
-                    _loop_2(l);
                 }
                 IView.location_layer.show();
             });
         };
-        MapController.prototype.CreateLayers = function (inspectorData, day, completed) {
-            if (inspectorData.length === 0)
-                return [];
-            var layers;
-            require([
-                "esri/layers/GraphicsLayer",
-                "esri/geometry/Point",
-                "esri/symbols/SimpleMarkerSymbol",
-                "esri/graphic",
-                "esri/SpatialReference",
-                "esri/Color",
-                "esri/InfoTemplate",
-                "esri/geometry/webMercatorUtils"
-            ], function (GraphicsLayer, arcgisPoint, SimpleMarkerSymbol, Graphic, SpatialReference, Color, InfoTemplate, webMercatorUtils) {
-                layers = inspectorData.map(function (i) {
-                    var l = new GraphicsLayer();
-                    l.id = i.Name + '-' + day + '-' + completed;
-                    l.inspector = i.Id;
-                    l.completed = completed;
-                    l.day = day;
-                    l.color = i.Color;
-                    l.numberInspections = i.Inspections.length;
-                    var c = Color.fromHex(i.Color);
-                    // ak is now a list of unique lookup keys for this user.
-                    var ak = i.Inspections.map(function (n) { return n.LookupKey; });
-                    ak = ak.filter(function (v, i) { return ak.indexOf(v) == i; });
-                    ak.forEach(function (n) {
-                        var inspections = i.Inspections.filter(function (v) {
-                            return v.LookupKey == n;
-                        });
-                        // Need to get total number o                
-                        var p = inspections[0].PointToUse;
-                        var compactAddress = inspections[0].StreetAddressCombined + '<br/> ' +
-                            inspections[0].City + ', ' + inspections[0].Zip;
-                        if (!p.IsValid) {
-                            console.log('Invalid data', n, i);
-                        }
-                        if (p.IsValid) {
-                            var iT = new InfoTemplate();
-                            iT.setTitle('Address: ${CompactAddress}');
-                            //iT.setContent(IView.mapAddressClick);
-                            var s = new SimpleMarkerSymbol({
-                                "color": c,
-                                "size": 12,
-                                "angle": 0,
-                                "xoffset": 0,
-                                "yoffset": -5,
-                                "type": "esriSMS",
-                                "style": "esriSMSCircle",
-                                "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
-                            });
-                            var inspection = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
-                            var wmInspection = webMercatorUtils.geographicToWebMercator(inspection);
-                            var g = new Graphic(wmInspection, s);
-                            g.setAttributes({
-                                "CompactAddress": compactAddress,
-                                "LookupKey": n
-                            });
-                            g.setInfoTemplate(iT);
-                            l.add(g);
-                        }
-                    });
-                    //l.visible = isVisible;
-                    return l;
-                });
-            });
-            return layers;
-        };
-        MapController.prototype.ApplyLayers = function (layers) {
-            var mapController = this;
-            this.map.addLayers(layers);
-        };
-        MapController.prototype.ToggleLayers = function (inspectorId, day, isComplete, visible) {
-            var m = this.map;
-            this.map.graphicsLayerIds.forEach(function (layerId) {
-                var l = m.getLayer(layerId);
-                if (l.inspector === inspectorId && l.day === day && l.completed === isComplete) {
-                    if (visible) {
-                        l.show();
-                    }
-                    else {
-                        l.hide();
-                    }
-                }
-            });
-        };
-        MapController.prototype.ToggleLayersByDay = function (day, isComplete) {
-            var m = this.map;
-            m.graphicsLayerIds.forEach(function (layerId) {
-                var l = m.getLayer(layerId);
-                if (l.day === day && l.completed === isComplete) {
-                    l.show();
-                }
-                else {
-                    l.hide();
-                }
-            });
-        };
-        MapController.prototype.ClearLayers = function () {
-            var m = this.map;
-            if (!m.graphicsLayerIds)
-                return;
-            while (m.graphicsLayerIds.length > 0) {
-                for (var _i = 0, _a = m.graphicsLayerIds; _i < _a.length; _i++) {
-                    var glid = _a[_i];
-                    m.removeLayer(m.getLayer(glid));
-                }
-            }
-        };
+        //public CreateLayers(inspectorData: Array<Inspector>, day: string, completed: boolean): Array<any>
+        //{
+        //  if (inspectorData.length === 0) return [];
+        //  var layers: Array<any>;
+        //  require([
+        //    "esri/layers/GraphicsLayer",
+        //    "esri/geometry/Point",
+        //    "esri/symbols/SimpleMarkerSymbol",
+        //    "esri/graphic",
+        //    "esri/SpatialReference",
+        //    "esri/Color",
+        //    "esri/InfoTemplate",
+        //    "esri/geometry/webMercatorUtils"],
+        //    function (
+        //      GraphicsLayer,
+        //      arcgisPoint,
+        //      SimpleMarkerSymbol,
+        //      Graphic,
+        //      SpatialReference,
+        //      Color,
+        //      InfoTemplate,
+        //      webMercatorUtils)
+        //    {
+        //      layers = inspectorData.map(
+        //        function (i: Inspector)
+        //        {
+        //          var l = new GraphicsLayer();
+        //          l.id = i.Name + '-' + day + '-' + completed;
+        //          l.inspector = i.Id;
+        //          l.completed = completed;
+        //          l.day = day;
+        //          l.color = i.Color;
+        //          l.numberInspections = i.Inspections.length;
+        //          var c = Color.fromHex(i.Color);
+        //          // ak is now a list of unique lookup keys for this user.
+        //          var ak = i.Inspections.map(function (n) { return n.LookupKey });
+        //          ak = ak.filter(function (v, i) { return ak.indexOf(v) == i });
+        //          ak.forEach(function (n: string) //loop through each unique lookupkey
+        //          {
+        //            var inspections: Array<Inspection> = i.Inspections.filter(function (v)
+        //            {
+        //              return v.LookupKey == n;
+        //            });
+        //            // Need to get total number o                
+        //            let p: Point = inspections[0].PointToUse;
+        //            var compactAddress = inspections[0].StreetAddressCombined + '<br/> ' +
+        //              inspections[0].City + ', ' + inspections[0].Zip;
+        //            if (!p.IsValid)
+        //            {
+        //              console.log('Invalid data', n, i);
+        //            }
+        //            if (p.IsValid)
+        //            {
+        //              var iT = new InfoTemplate();
+        //              iT.setTitle('Address: ${CompactAddress}');
+        //              //iT.setContent(IView.mapAddressClick);
+        //              var s = new SimpleMarkerSymbol({
+        //                "color": c,
+        //                "size": 12, // + inspections.length * 3
+        //                "angle": 0,
+        //                "xoffset": 0,
+        //                "yoffset": -5,
+        //                "type": "esriSMS",
+        //                "style": "esriSMSCircle",
+        //                "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
+        //              });
+        //              var inspection = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
+        //              var wmInspection = webMercatorUtils.geographicToWebMercator(inspection); 
+        //              var g = new Graphic(wmInspection, s);
+        //              g.setAttributes({                    
+        //                "CompactAddress": compactAddress,
+        //                "LookupKey": n
+        //              });
+        //              g.setInfoTemplate(iT);
+        //              l.add(g);
+        //            }
+        //          });
+        //          //l.visible = isVisible;
+        //          return l;
+        //        });
+        //    });
+        //  return layers;
+        //}
+        //public ApplyLayers(layers: Array<any>)
+        //{
+        //  var mapController = this;
+        //  this.map.addLayers(layers);      
+        //}
+        //public ToggleLayers(inspectorId: number, day: string, isComplete:boolean, visible: boolean)
+        //{
+        //  let m = this.map;
+        //  this.map.graphicsLayerIds.forEach(function (layerId)
+        //  {
+        //    let l = m.getLayer(layerId);
+        //    if (l.inspector === inspectorId && l.day === day && l.completed === isComplete)
+        //    {
+        //      if (visible)
+        //      {
+        //        l.show();
+        //      }
+        //      else
+        //      {
+        //        l.hide();
+        //      }
+        //    }
+        //  });
+        //}
+        //public ToggleLayersByDay(day: string, isComplete:boolean):void
+        //{
+        //  let m = this.map;
+        //  m.graphicsLayerIds.forEach(function (layerId)
+        //  {
+        //    let l = m.getLayer(layerId);
+        //    if (l.day === day && l.completed === isComplete)
+        //    {
+        //      l.show();
+        //    }
+        //    else
+        //    {
+        //      l.hide();
+        //    }
+        //  });
+        //}
+        //public ClearLayers()
+        //{
+        //  let m = this.map;
+        //  if (!m.graphicsLayerIds) return;
+        //  while (m.graphicsLayerIds.length > 0)
+        //  {
+        //    for (let glid of m.graphicsLayerIds)
+        //    {
+        //      m.removeLayer(m.getLayer(glid));
+        //    }
+        //  }
+        //}
         MapController.prototype.FindItemsInExtent = function (extent) {
             var mapController = this;
             var m = this.map;
@@ -1450,23 +1504,26 @@ var IView;
                 "esri/symbols/SimpleLineSymbol",
                 "esri/Color"
             ], function (SimpleMarkerSymbol, SimpleLineSymbol, Color) {
-                m.graphicsLayerIds.forEach(function (layerId) {
-                    var l = m.getLayer(layerId);
-                    if (l.visible) {
-                        for (var _i = 0, _a = l.graphics; _i < _a.length; _i++) {
-                            var g = _a[_i];
-                            if (extent.contains(g.geometry)) {
-                                var fluxSymbol = new SimpleMarkerSymbol();
-                                fluxSymbol.color = g.symbol.color;
-                                fluxSymbol.size = g.symbol.size;
-                                fluxSymbol.style = SimpleMarkerSymbol.STYLE_SQUARE;
-                                fluxSymbol.outline = g.symbol.outline;
-                                g.setSymbol(fluxSymbol);
-                                lookupKeys.push(g.attributes.LookupKey);
-                            }
-                        }
+                //m.graphicsLayerIds.forEach(function (layerId)
+                //{
+                //let l = m.getLayer(layerId);
+                //if (l.visible)
+                //{
+                for (var _i = 0, _a = IView.location_layer.graphics; _i < _a.length; _i++) {
+                    var g = _a[_i];
+                    if (extent.contains(g.geometry) && g.attributes && g.attributes.LookupKey) {
+                        var fluxSymbol = new SimpleMarkerSymbol();
+                        fluxSymbol.color = g.symbol.color;
+                        fluxSymbol.size = g.symbol.size;
+                        fluxSymbol.style = SimpleMarkerSymbol.STYLE_CROSS;
+                        fluxSymbol.outline = g.symbol.outline;
+                        g.setSymbol(fluxSymbol);
+                        if (lookupKeys.indexOf(g.attributes.LookupKey) === -1)
+                            lookupKeys.push(g.attributes.LookupKey);
                     }
-                });
+                }
+                //}
+                //});
             });
             mapController.isDrawing = false;
             mapController.drawToolbar.deactivate();
@@ -1479,6 +1536,19 @@ var IView;
                 var pt = new Point([p.Longitude, p.Latitude]);
                 m.centerAndZoom(pt, 18);
             });
+        };
+        MapController.prototype.CenterOnPoint = function (p) {
+            var mapController = this;
+            var m = this.map;
+            require(["esri/geometry/Point"], function (Point) {
+                var pt = new Point([p.Longitude, p.Latitude]);
+                m.centerAt(pt);
+            });
+        };
+        MapController.prototype.GetCurrentZoom = function () {
+            var m = document.getElementById("map");
+            var zoom = m.getAttribute("data-zoom");
+            return parseInt(zoom);
         };
         return MapController;
     }());
@@ -1615,9 +1685,16 @@ var IView;
             // If this address has both residential and commercial permits (usually an error)
             // then we'll give it a diamond icon.
             var x = 0;
-            if (this.assigned_inspectors.length > 1)
-                x = 1;
             var offsets = this.GetOffsets();
+            if (this.assigned_inspectors.length > 1) {
+                //let t = this;
+                //let bigicon = this.CreateIcon("esriSMSCircle", "#333333", offsets[x++], 20);
+                //bigicon.then(function (j)
+                //{
+                //  t.icons.push(j);
+                //});
+                x = 1;
+            }
             var _loop_1 = function (i) {
                 if (x > offsets.length)
                     return { value: void 0 };
@@ -1648,13 +1725,14 @@ var IView;
                     return state_1.value;
             }
         };
-        Location.prototype.CreateIcon = function (icon, color, offset) {
+        Location.prototype.CreateIcon = function (icon, color, offset, size) {
+            if (size === void 0) { size = 12; }
             // this is our base function that we'll use to simplify our icon creation.
             var d = new dojo.Deferred();
             require(["esri/symbols/SimpleMarkerSymbol", "esri/Color"], function (SimpleMarkerSymbol, Color) {
                 var s = new SimpleMarkerSymbol({
                     "color": Color.fromHex(color),
-                    "size": 12,
+                    "size": size,
                     "angle": 0,
                     "xoffset": offset[0],
                     "yoffset": offset[1],
@@ -1669,14 +1747,14 @@ var IView;
         Location.prototype.GetOffsets = function () {
             return [
                 [0, 0],
-                [-5, 5],
-                [5, -5],
-                [-5, -5],
-                [5, 5],
-                [-5, 0],
-                [0, 5],
-                [5, 0],
-                [0, 5]
+                [-4, 0],
+                [4, 0],
+                [0, -4],
+                [0, 4],
+                [-4, 4],
+                [4, -4],
+                [-4, -4],
+                [4, 4]
             ];
         };
         Location.CreateLocations = function (inspections) {
@@ -1697,33 +1775,30 @@ var IView;
                 var key = lookupKeys_1[_a];
                 _loop_2(key);
             }
-            console.log('locations', IView.filteredLocations);
-            console.log('inspectors > 1', IView.filteredLocations.filter(function (k) { return k.icons.length > 2; }));
-            console.log('inspections > 2', IView.filteredLocations.filter(function (k) { return k.inspections.length > 2; }));
-            console.log('mixed inspections', IView.filteredLocations.filter(function (k) { return k.has_commercial && k.has_residential; }));
             IView.dataLoaded = true;
             IView.BuildAndLoadInitialLayers();
         };
         Location.prototype.LocationView = function () {
-            var container = document.createElement("div");
-            var df = document.createDocumentFragment();
-            df.appendChild(this.AddressView());
-            df.appendChild(this.BulkAssignControl());
-            df.appendChild(this.CreateInspectionTable());
-            container.appendChild(df);
-            return container;
+            var title = document.getElementById("locationAddress");
+            Utilities.Clear_Element(title);
+            Utilities.Set_Text(title, this.Address());
+            var bulkassignContainer = document.getElementById("bulkAssignInspectionsContainer");
+            console.log('Location View Test This', this);
+            if (this.can_be_bulk_assigned) {
+                Utilities.Show(bulkassignContainer);
+                this.UpdateBulkAssignmentDropdown();
+            }
+            else {
+                Utilities.Hide(bulkassignContainer);
+            }
+            var container = document.getElementById("locationInfoContainer");
+            Utilities.Clear_Element(container);
+            container.appendChild(this.CreateInspectionTable());
+            document.getElementById("locationInfo").classList.add("is-active");
         };
-        Location.prototype.AddressView = function () {
+        Location.prototype.Address = function () {
             var i = this.inspections[0];
-            var p = document.createElement("p");
-            p.appendChild(document.createTextNode(i.StreetAddressCombined));
-            p.appendChild(document.createTextNode(i.City + ', ' + i.Zip));
-            return p;
-        };
-        Location.prototype.BulkAssignControl = function () {
-            var container = document.createElement("div");
-            container.appendChild;
-            return container;
+            return i.StreetAddressCombined + ', ' + i.City + ', ' + i.Zip;
         };
         Location.prototype.CreateInspectionTable = function () {
             var table = document.createElement("table");
@@ -1742,6 +1817,7 @@ var IView;
             var thead = document.createElement("thead");
             var tr = document.createElement("tr");
             tr.appendChild(this.CreateTableCell(true, "Permit"));
+            tr.appendChild(this.CreateTableCell(true, "Scheduled"));
             tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
             tr.appendChild(this.CreateTableCell(true, "Kind"));
             tr.appendChild(this.CreateTableCell(true, "Private Provider"));
@@ -1758,15 +1834,79 @@ var IView;
             td.appendChild(document.createTextNode(value));
             return td;
         };
+        Location.prototype.CreateTableCellLink = function (value, href, className) {
+            if (className === void 0) { className = ""; }
+            var td = document.createElement("td");
+            if (className.length > 0)
+                td.classList.add(className);
+            var link = document.createElement("a");
+            link.href = href;
+            link.appendChild(document.createTextNode(value));
+            td.appendChild(link);
+            return td;
+        };
         Location.prototype.CreateInspectionRow = function (inspection) {
             var tr = document.createElement("tr");
-            tr.appendChild(this.CreateTableCell(false, inspection.PermitNo));
+            var href = "/InspectionScheduler/#permit=" + inspection.PermitNo + "&inspectionid=" + inspection.InspReqID;
+            tr.appendChild(this.CreateTableCellLink(inspection.PermitNo, href));
+            tr.appendChild(this.CreateTableCell(false, Utilities.Format_Date(inspection.ScheduledDate)));
             tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription));
             tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));
-            tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+            if (inspection.IsCompleted) {
+                tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+            }
+            else {
+                var td = document.createElement("td");
+                td.appendChild(this.CreateInspectorDropdown(inspection));
+                tr.appendChild(td);
+            }
             return tr;
+        };
+        Location.prototype.CreateInspectorDropdown = function (inspection) {
+            var control = document.createElement("div");
+            control.classList.add("control");
+            var container = document.createElement("div");
+            container.classList.add("select");
+            var select = document.createElement("select");
+            for (var _i = 0, _a = inspection.ValidInspectors; _i < _a.length; _i++) {
+                var i = _a[_i];
+                var o = document.createElement("option");
+                o.value = i.Name;
+                o.selected = (i.Name === inspection.InspectorName);
+                o.appendChild(document.createTextNode(i.Name));
+                select.appendChild(o);
+            }
+            select.onchange = function (event) {
+                var inspectors = IView.allInspectors.filter(function (i) { return i.Name === Utilities.Get_Value(event.srcElement); });
+                var parent = event.srcElement.parentElement;
+                if (inspectors.length === 1) {
+                    var id = inspectors[0].Id;
+                    var inspectionIds = [inspection.InspReqID];
+                    IView.Inspection.BulkAssign(id, inspectionIds, parent);
+                }
+            };
+            container.appendChild(select);
+            control.appendChild(container);
+            return control;
+        };
+        Location.prototype.UpdateBulkAssignmentDropdown = function () {
+            var select = document.getElementById("bulkAssignInspections");
+            Utilities.Clear_Element(select);
+            var base = document.createElement("option");
+            base.value = "";
+            base.selected = true;
+            base.appendChild(document.createTextNode("Select Inspector"));
+            select.appendChild(base);
+            for (var _i = 0, _a = this.valid_inspectors; _i < _a.length; _i++) {
+                var i = _a[_i];
+                var o = document.createElement("option");
+                o.value = i.Name;
+                o.selected = false;
+                o.appendChild(document.createTextNode(i.Name));
+                select.appendChild(o);
+            }
         };
         return Location;
     }());
@@ -1802,13 +1942,14 @@ var IView;
     IView.LocationHash = LocationHash;
 })(IView || (IView = {}));
 //# sourceMappingURL=LocationHash.js.map
-/// <reference path="point.ts" />
+/// <refrence path="point.ts" />
 /// <reference path="ui.ts" />
 /// <reference path="app.ts" />
 var IView;
 (function (IView) {
     var Inspector = /** @class */ (function () {
         function Inspector() {
+            this.CurrentCount = 0;
         }
         Inspector.GetAllInspectors = function () {
             Utilities.Toggle_Loading_Button("refreshButton", true);
@@ -1818,11 +1959,12 @@ var IView;
                 .then(function (inspectors) {
                 console.log('inspectors', inspectors);
                 IView.allInspectors = inspectors;
+                Inspector.BuildBulkAssignDropdown(inspectors);
                 IView.Inspection.GetInspections();
-                IView.Unit.GetUnits();
+                Inspector.BuildInspectorList();
                 window.setInterval(IView.Inspection.GetInspections, 60 * 5 * 1000);
                 window.setInterval(IView.Unit.GetUnits, 60 * 1000);
-                Inspector.BuildInspectorList();
+                Inspector.GetInspectorsToEdit();
             }, function (e) {
                 console.log('error getting inspectors');
                 IView.allInspectors = [];
@@ -1835,12 +1977,22 @@ var IView;
                 console.log('inspectors to edit', inspectors);
                 IView.inspectors_to_edit = inspectors;
                 if (inspectors.length > 0) {
-                    Utilities.Show_Inline_Flex("editInspectors");
+                    Utilities.Show_Flex("editInspectors");
                 }
             }, function (e) {
                 console.log('error getting inspectors');
                 IView.allInspectors = [];
             });
+        };
+        Inspector.BuildBulkAssignDropdown = function (inspectors) {
+            var select = document.getElementById("bulkAssignSelect");
+            for (var _i = 0, inspectors_1 = inspectors; _i < inspectors_1.length; _i++) {
+                var i = inspectors_1[_i];
+                var o = document.createElement("option");
+                o.value = i.Id.toString();
+                o.appendChild(document.createTextNode(i.Name));
+                select.appendChild(o);
+            }
         };
         Inspector.BuildInspectorList = function () {
             var container = document.getElementById("inspectorList");
@@ -1873,6 +2025,18 @@ var IView;
         };
         Inspector.BuildInspectorControl = function () {
         };
+        Inspector.UpdateCurrentCount = function (inspectors, inspections) {
+            var byinspector = [];
+            var _loop_1 = function (inspector) {
+                inspector.CurrentCount = 0;
+                byinspector = inspections.filter(function (i) { return i.InspectorName === inspector.Name; });
+                inspector.CurrentCount = byinspector.length;
+            };
+            for (var _i = 0, inspectors_2 = inspectors; _i < inspectors_2.length; _i++) {
+                var inspector = inspectors_2[_i];
+                _loop_1(inspector);
+            }
+        };
         return Inspector;
     }());
     IView.Inspector = Inspector;
@@ -1888,17 +2052,28 @@ var IView;
             this.Age = -1;
             this.ValidInspectors = [];
         }
+        Inspection.GetValidInspectors = function (inspection) {
+            return IView.allInspectors.filter(function (i) {
+                return ((inspection.RBL === i.RBL === true) || !inspection.RBL) &&
+                    ((inspection.CBL === i.CBL === true) || !inspection.CBL) &&
+                    ((inspection.REL === i.REL === true) || !inspection.REL) &&
+                    ((inspection.CEL === i.CEL === true) || !inspection.CEL) &&
+                    ((inspection.RME === i.RME === true) || !inspection.RME) &&
+                    ((inspection.CME === i.CME === true) || !inspection.CME) &&
+                    ((inspection.RPL === i.RPL === true) || !inspection.RPL) &&
+                    ((inspection.CPL === i.CPL === true) || !inspection.CPL) &&
+                    ((inspection.Fire === i.Fire === true) || !inspection.Fire);
+            });
+        };
         Inspection.GetInspections = function () {
             Utilities.Toggle_Loading_Button("refreshButton", true);
             Utilities.Toggle_Loading_Button("filterButton", true);
             var path = Utilities.Get_Path("/inspectionview");
             Utilities.Get(path + "API/Inspections/GetInspections")
                 .then(function (inspections) {
-                IView.allInspections = inspections;
+                Inspection.HandleInspections(inspections);
                 Utilities.Toggle_Loading_Button("refreshButton", false);
                 Utilities.Toggle_Loading_Button("filterButton", false);
-                IView.Location.CreateLocations(IView.ApplyFilters(inspections));
-                IView.Inspector.GetInspectorsToEdit();
             }, function (e) {
                 console.log('error getting inspectors', e);
                 IView.allInspectors = [];
@@ -1919,6 +2094,63 @@ var IView;
             //  });
             //});
         };
+        Inspection.HandleInspections = function (inspections) {
+            for (var _i = 0, inspections_1 = inspections; _i < inspections_1.length; _i++) {
+                var i = inspections_1[_i];
+                i.ValidInspectors = Inspection.GetValidInspectors(i);
+            }
+            IView.allInspections = inspections;
+            IView.Location.CreateLocations(IView.ApplyFilters(inspections));
+            if (IView.current_location !== null) {
+                var locations = IView.filteredLocations.filter(function (i) { return i.lookup_key === IView.current_location.lookup_key; });
+                if (locations.length === 1) {
+                    IView.current_location = locations[0];
+                    IView.current_location.LocationView();
+                }
+            }
+        };
+        Inspection.BulkAssign = function (InspectorId, InspectionIds, parentElement) {
+            if (parentElement === void 0) { parentElement = undefined; }
+            if (parentElement)
+                parentElement.classList.add("is-loading");
+            var button = document.getElementById("bulkAssignButton");
+            Utilities.Toggle_Loading_Button(button, true);
+            var path = Utilities.Get_Path("/inspectionview");
+            //IView.toggle('showSpin', true);
+            var AssignData = {
+                InspectorId: InspectorId,
+                InspectionIds: InspectionIds
+            };
+            var x = Utilities.Post(path + "API/Assign/BulkAssign/", AssignData)
+                .then(function (inspections) {
+                Utilities.Toggle_Loading_Button(button, false);
+                if (inspections.length === 0) {
+                    alert("Server error in Bulk Assign.");
+                    return;
+                }
+                Inspection.HandleInspections(inspections);
+                if (parentElement)
+                    parentElement.classList.remove("is-loading");
+            }, function (e) {
+                console.log('error in Bulk Assign', e);
+                Utilities.Toggle_Loading_Button(button, false);
+                if (parentElement)
+                    parentElement.classList.remove("is-loading");
+            });
+            //new Promise<boolean>(function (resolve, reject)
+            //{
+            //  x.then(function (response)
+            //  {
+            //    IView.GetAllInspections();
+            //    IView.toggle('showSpin', false);
+            //    button.textContent = "Bulk Assign";
+            //  }).catch(function ()
+            //  {
+            //    console.log("error in Bulk Assign Inspections");
+            //    IView.toggle('showSpin', false);
+            //    button.textContent = "Bulk Assign";
+            //  });
+        };
         return Inspection;
     }());
     IView.Inspection = Inspection;
@@ -1934,6 +2166,7 @@ var IView;
     IView.allInspectors = []; // populated from web service
     IView.allUnits = [];
     IView.filteredLocations = [];
+    IView.current_location = null;
     //export let currentDay: string = "today";
     //export let currentIsComplete: boolean = false;
     IView.day_filter = "today";
@@ -1943,6 +2176,7 @@ var IView;
     IView.inspector_filter = [];
     IView.private_provider_only = false;
     IView.invalid_address_only = false;
+    IView.show_bulk_assign = true;
     IView.permit_types_toggle_status = false;
     IView.inspector_toggle_status = false;
     IView.mapLoaded = false;
@@ -1988,6 +2222,16 @@ var IView;
         IView.Location.CreateLocations(ApplyFilters(IView.allInspections));
     }
     IView.Toggle_Group = Toggle_Group;
+    function Toggle_Bulk_Assign() {
+        IView.show_bulk_assign = !IView.show_bulk_assign;
+        if (IView.show_bulk_assign) {
+            Utilities.Show("BulkAssignContainer");
+        }
+        else {
+            Utilities.Hide("BulkAssignContainer");
+        }
+    }
+    IView.Toggle_Bulk_Assign = Toggle_Bulk_Assign;
     function Toggle_Input_Group(querystring, checked) {
         var inputs = document.querySelectorAll(querystring);
         for (var i = 0; i < inputs.length; i++) {
@@ -2056,9 +2300,35 @@ var IView;
                 return IView.inspector_filter.indexOf(j.InspectorName) !== -1;
             });
         }
+        IView.Inspector.UpdateCurrentCount(IView.allInspectors, filtered);
+        UpdateLegend(IView.allInspectors.filter(function (j) { return j.CurrentCount > 0; }));
         return filtered;
     }
     IView.ApplyFilters = ApplyFilters;
+    function UpdateLegend(inspectors) {
+        var ol = document.getElementById("InspectorList");
+        Utilities.Clear_Element(ol);
+        for (var _i = 0, inspectors_1 = inspectors; _i < inspectors_1.length; _i++) {
+            var i = inspectors_1[_i];
+            var li = document.createElement("li");
+            li.style.color = i.Id === 0 ? "black" : "white";
+            //li.id = "inspector" + i.Id;
+            li.style.paddingLeft = "1em";
+            li.style.paddingRight = "1em";
+            li.style.backgroundColor = i.Color;
+            li.style.display = "flex";
+            li.style.justifyContent = "space-between";
+            var inspectorName = document.createElement("span");
+            inspectorName.appendChild(document.createTextNode(i.Name));
+            inspectorName.style.textAlign = "left";
+            var count = document.createElement("span");
+            count.appendChild(document.createTextNode(i.CurrentCount.toString()));
+            count.style.textAlign = "right";
+            li.appendChild(inspectorName);
+            li.appendChild(count);
+            ol.appendChild(li);
+        }
+    }
     function Get_Single_Filter(selector) {
         return document.querySelector(selector).value;
     }
@@ -2093,9 +2363,11 @@ var IView;
     function BuildAndLoadInitialLayers() {
         if (!IView.mapLoaded || !IView.dataLoaded)
             return;
+        console.log('build and load initial layers');
         window.onhashchange = HandleHash;
         HandleHash();
         IView.mapController.UpdateLocationLayer(IView.filteredLocations);
+        IView.Unit.GetUnits();
         //mapController.ClearLayers();
         //let days = ["Today", "Tomorrow"];
         //if (currentDay === "") currentDay = days[0];
@@ -2182,21 +2454,17 @@ var IView;
     //    mapController.ToggleLayers(i.Id, currentDay, currentIsComplete, false);
     //  }
     //}
-    //export function DrawToggle():void
-    //{
-    //  let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
-    //  let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
-    //  let o = select.selectedOptions[0];
-    //  if (!button.disabled)
-    //  {
-    //    button.textContent = "Bulk Assigning to: " + o.label;
-    //  }
-    //  else
-    //  {
-    //    button.textContent = "Bulk Assign";
-    //  }
-    //  mapController.ToggleDraw();
-    //}
+    function DrawToggle() {
+        var select = document.getElementById("bulkAssignSelect");
+        var button = document.getElementById("bulkAssignButton");
+        var selectedInspector = Utilities.Get_Value(select);
+        if (selectedInspector === "-1") {
+            Utilities.Error_Show("bulkAssignError", "Please choose an inspector.", true);
+            return;
+        }
+        IView.mapController.ToggleDraw();
+    }
+    IView.DrawToggle = DrawToggle;
     //export function toggle(id: string, show: boolean): void
     //{
     //  document.getElementById(id).style.display = show ? "inline-block" : "none";
@@ -2319,49 +2587,56 @@ var IView;
     //  }
     //  return lookupKeys;
     //}
-    function buildInspectorData(inspections) {
-        var iData = IView.allInspectors.map(function (i) {
-            var x = new IView.Inspector();
-            x.Id = i.Id;
-            x.Name = i.Name;
-            x.Inspections = inspections.filter(function (v) {
-                return v.InspectorName === x.Name;
-            });
-            if (x.Inspections.length > 0) {
-                x.Color = x.Inspections[0].Color;
-            }
-            else {
-                x.Color = '#FFFFFF';
-            }
-            return x;
-        });
-        iData = iData.filter(function (v) { return v.Inspections.length > 0; });
-        return iData;
-    }
-    function buildAddressDisplayByDay(i, day) {
-        var x = [];
-        x.push("<li><span>");
-        x.push(day);
-        x.push(" - Total Inspections: ");
-        x.push(i.length);
-        x.push("</span></li>");
-        i.map(function (n) {
-            x.push("<li><a target='clayinspections' href='/InspectionScheduler/#permit=");
-            x.push(n.PermitNo);
-            x.push("&inspectionid=");
-            x.push(n.InspReqID);
-            x.push("'>");
-            x.push(n.PermitNo);
-            x.push(" - ");
-            x.push(n.InspectionDescription);
-            x.push(" - ");
-            x.push(n.IsCommercial ? "Commercial" : "Residential");
-            x.push(" - ");
-            x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
-            x.push("</a></li>");
-        });
-        return x.join('');
-    }
+    //function buildInspectorData(inspections): Array<Inspector>
+    //{
+    //  let iData = allInspectors.map(function (i)
+    //  {
+    //    let x: Inspector = new Inspector();
+    //    x.Id = i.Id
+    //    x.Name = i.Name;
+    //    x.Inspections = inspections.filter(
+    //      function (v)
+    //      {
+    //        return v.InspectorName === x.Name;
+    //      });
+    //    if (x.Inspections.length > 0)
+    //    {
+    //      x.Color = x.Inspections[0].Color;
+    //    } else
+    //    {
+    //      x.Color = '#FFFFFF';
+    //    }
+    //    return x;
+    //  });
+    //  iData = iData.filter(function (v) { return v.Inspections.length > 0 });
+    //  return iData;
+    //}
+    //function buildAddressDisplayByDay(i: Array<Inspection>, day: string):string
+    //{
+    //  var x = [];
+    //  x.push("<li><span>")
+    //  x.push(day);
+    //  x.push(" - Total Inspections: ")
+    //  x.push(i.length)
+    //  x.push("</span></li>");
+    //  i.map(function (n)
+    //  {
+    //    x.push("<li><a target='clayinspections' href='/InspectionScheduler/#permit=");
+    //    x.push(n.PermitNo);
+    //    x.push("&inspectionid=")
+    //    x.push(n.InspReqID)
+    //    x.push("'>");
+    //    x.push(n.PermitNo);
+    //    x.push(" - ");
+    //    x.push(n.InspectionDescription);
+    //    x.push(" - ");
+    //    x.push(n.IsCommercial ? "Commercial" : "Residential");
+    //    x.push(" - ");
+    //    x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
+    //    x.push("</a></li>");
+    //  });
+    //  return x.join('');
+    //}
     //export function Assign(e: HTMLElement, InspectorId:number)
     //{
     //  let LookupKey = e.id;
@@ -2426,6 +2701,17 @@ var IView;
         document.getElementById("inspectorEdit").classList.add("is-active");
     }
     IView.ShowInspectors = ShowInspectors;
+    function CloseLocationModal() {
+        IView.current_location = null;
+        var symbol = IView.last_selected_graphic.symbol;
+        var color = IView.last_symbol_color;
+        window.setTimeout(function (j) {
+            symbol.color = color;
+            IView.location_layer.redraw();
+        }, 10000);
+        CloseModals();
+    }
+    IView.CloseLocationModal = CloseLocationModal;
     function CloseModals() {
         //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));
         var modals = document.querySelectorAll(".modal");
@@ -2471,28 +2757,37 @@ var IView;
     //    node.removeChild(node.firstChild);
     //  }
     //}
-    //export function FindItemsInExtent(extent: any): void
-    //{
-    //  let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
-    //  let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("BulkAssignSelect")).value);
-    //  BulkAssign(InspectorId, LookupKeys);
-    //}
-    //function BulkAssign(InspectorId: number, LookupKeys: Array<string>)
-    //{
-    //  let InspectionIds: Array<number> = [];
-    //  for (let i of allInspections)
-    //  {
-    //    if (LookupKeys.indexOf(i.LookupKey) !== -1 &&
-    //      i.ScheduledDay === currentDay)
-    //    {
-    //      if (currentIsComplete || (!currentIsComplete && !i.IsCompleted))
-    //      {
-    //        InspectionIds.push(i.InspReqID);
-    //      }
-    //    }
-    //  }
-    //  //let i = new Inspection();
-    //  Inspection.BulkAssign(InspectorId, InspectionIds);
-    //}
+    function Bulk_Assign_Location(event) {
+        if (IView.current_location === null)
+            return;
+        var selectedInspector = Utilities.Get_Value(event.srcElement);
+        if (selectedInspector.length === 0)
+            return;
+        var inspectors = IView.allInspectors.filter(function (i) { return i.Name === selectedInspector; });
+        var parent = event.srcElement.parentElement;
+        if (inspectors.length === 1) {
+            var id = inspectors[0].Id;
+            var inspectionIds = IView.current_location.inspections.map(function (i) { return i.InspReqID; });
+            IView.Inspection.BulkAssign(id, inspectionIds, parent);
+        }
+    }
+    IView.Bulk_Assign_Location = Bulk_Assign_Location;
+    function FindItemsInExtent(extent) {
+        var LookupKeys = IView.mapController.FindItemsInExtent(extent);
+        var InspectorId = parseInt(document.getElementById("bulkAssignSelect").value);
+        BulkAssign(InspectorId, LookupKeys);
+    }
+    IView.FindItemsInExtent = FindItemsInExtent;
+    function BulkAssign(InspectorId, LookupKeys) {
+        var InspectionIds = [];
+        for (var _i = 0, allInspections_1 = IView.allInspections; _i < allInspections_1.length; _i++) {
+            var i = allInspections_1[_i];
+            if (LookupKeys.indexOf(i.LookupKey) !== -1) {
+                InspectionIds.push(i.InspReqID);
+            }
+        }
+        //let i = new Inspection();
+        IView.Inspection.BulkAssign(InspectorId, InspectionIds);
+    }
 })(IView || (IView = {}));
 //# sourceMappingURL=app.js.map

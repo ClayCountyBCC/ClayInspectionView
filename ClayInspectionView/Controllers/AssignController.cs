@@ -20,7 +20,7 @@ namespace ClayInspectionView.Controllers
       if (ua.current_access == UserAccess.access_type.inspector_access ||
         ua.current_access == UserAccess.access_type.admin_access)
       {
-        return Ok(AD.BulkAssign());
+        return Ok(AD.BulkAssign(ua));
       }
       else
       {

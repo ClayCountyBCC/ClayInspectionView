@@ -8,6 +8,7 @@ var IView;
     IView.allInspectors = []; // populated from web service
     IView.allUnits = [];
     IView.filteredLocations = [];
+    IView.current_location = null;
     //export let currentDay: string = "today";
     //export let currentIsComplete: boolean = false;
     IView.day_filter = "today";
@@ -17,6 +18,7 @@ var IView;
     IView.inspector_filter = [];
     IView.private_provider_only = false;
     IView.invalid_address_only = false;
+    IView.show_bulk_assign = true;
     IView.permit_types_toggle_status = false;
     IView.inspector_toggle_status = false;
     IView.mapLoaded = false;
@@ -62,6 +64,16 @@ var IView;
         IView.Location.CreateLocations(ApplyFilters(IView.allInspections));
     }
     IView.Toggle_Group = Toggle_Group;
+    function Toggle_Bulk_Assign() {
+        IView.show_bulk_assign = !IView.show_bulk_assign;
+        if (IView.show_bulk_assign) {
+            Utilities.Show("BulkAssignContainer");
+        }
+        else {
+            Utilities.Hide("BulkAssignContainer");
+        }
+    }
+    IView.Toggle_Bulk_Assign = Toggle_Bulk_Assign;
     function Toggle_Input_Group(querystring, checked) {
         var inputs = document.querySelectorAll(querystring);
         for (var i = 0; i < inputs.length; i++) {
@@ -130,9 +142,35 @@ var IView;
                 return IView.inspector_filter.indexOf(j.InspectorName) !== -1;
             });
         }
+        IView.Inspector.UpdateCurrentCount(IView.allInspectors, filtered);
+        UpdateLegend(IView.allInspectors.filter(function (j) { return j.CurrentCount > 0; }));
         return filtered;
     }
     IView.ApplyFilters = ApplyFilters;
+    function UpdateLegend(inspectors) {
+        var ol = document.getElementById("InspectorList");
+        Utilities.Clear_Element(ol);
+        for (var _i = 0, inspectors_1 = inspectors; _i < inspectors_1.length; _i++) {
+            var i = inspectors_1[_i];
+            var li = document.createElement("li");
+            li.style.color = i.Id === 0 ? "black" : "white";
+            //li.id = "inspector" + i.Id;
+            li.style.paddingLeft = "1em";
+            li.style.paddingRight = "1em";
+            li.style.backgroundColor = i.Color;
+            li.style.display = "flex";
+            li.style.justifyContent = "space-between";
+            var inspectorName = document.createElement("span");
+            inspectorName.appendChild(document.createTextNode(i.Name));
+            inspectorName.style.textAlign = "left";
+            var count = document.createElement("span");
+            count.appendChild(document.createTextNode(i.CurrentCount.toString()));
+            count.style.textAlign = "right";
+            li.appendChild(inspectorName);
+            li.appendChild(count);
+            ol.appendChild(li);
+        }
+    }
     function Get_Single_Filter(selector) {
         return document.querySelector(selector).value;
     }
@@ -167,9 +205,11 @@ var IView;
     function BuildAndLoadInitialLayers() {
         if (!IView.mapLoaded || !IView.dataLoaded)
             return;
+        console.log('build and load initial layers');
         window.onhashchange = HandleHash;
         HandleHash();
         IView.mapController.UpdateLocationLayer(IView.filteredLocations);
+        IView.Unit.GetUnits();
         //mapController.ClearLayers();
         //let days = ["Today", "Tomorrow"];
         //if (currentDay === "") currentDay = days[0];
@@ -256,21 +296,17 @@ var IView;
     //    mapController.ToggleLayers(i.Id, currentDay, currentIsComplete, false);
     //  }
     //}
-    //export function DrawToggle():void
-    //{
-    //  let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
-    //  let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
-    //  let o = select.selectedOptions[0];
-    //  if (!button.disabled)
-    //  {
-    //    button.textContent = "Bulk Assigning to: " + o.label;
-    //  }
-    //  else
-    //  {
-    //    button.textContent = "Bulk Assign";
-    //  }
-    //  mapController.ToggleDraw();
-    //}
+    function DrawToggle() {
+        var select = document.getElementById("bulkAssignSelect");
+        var button = document.getElementById("bulkAssignButton");
+        var selectedInspector = Utilities.Get_Value(select);
+        if (selectedInspector === "-1") {
+            Utilities.Error_Show("bulkAssignError", "Please choose an inspector.", true);
+            return;
+        }
+        IView.mapController.ToggleDraw();
+    }
+    IView.DrawToggle = DrawToggle;
     //export function toggle(id: string, show: boolean): void
     //{
     //  document.getElementById(id).style.display = show ? "inline-block" : "none";
@@ -393,49 +429,56 @@ var IView;
     //  }
     //  return lookupKeys;
     //}
-    function buildInspectorData(inspections) {
-        var iData = IView.allInspectors.map(function (i) {
-            var x = new IView.Inspector();
-            x.Id = i.Id;
-            x.Name = i.Name;
-            x.Inspections = inspections.filter(function (v) {
-                return v.InspectorName === x.Name;
-            });
-            if (x.Inspections.length > 0) {
-                x.Color = x.Inspections[0].Color;
-            }
-            else {
-                x.Color = '#FFFFFF';
-            }
-            return x;
-        });
-        iData = iData.filter(function (v) { return v.Inspections.length > 0; });
-        return iData;
-    }
-    function buildAddressDisplayByDay(i, day) {
-        var x = [];
-        x.push("<li><span>");
-        x.push(day);
-        x.push(" - Total Inspections: ");
-        x.push(i.length);
-        x.push("</span></li>");
-        i.map(function (n) {
-            x.push("<li><a target='clayinspections' href='/InspectionScheduler/#permit=");
-            x.push(n.PermitNo);
-            x.push("&inspectionid=");
-            x.push(n.InspReqID);
-            x.push("'>");
-            x.push(n.PermitNo);
-            x.push(" - ");
-            x.push(n.InspectionDescription);
-            x.push(" - ");
-            x.push(n.IsCommercial ? "Commercial" : "Residential");
-            x.push(" - ");
-            x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
-            x.push("</a></li>");
-        });
-        return x.join('');
-    }
+    //function buildInspectorData(inspections): Array<Inspector>
+    //{
+    //  let iData = allInspectors.map(function (i)
+    //  {
+    //    let x: Inspector = new Inspector();
+    //    x.Id = i.Id
+    //    x.Name = i.Name;
+    //    x.Inspections = inspections.filter(
+    //      function (v)
+    //      {
+    //        return v.InspectorName === x.Name;
+    //      });
+    //    if (x.Inspections.length > 0)
+    //    {
+    //      x.Color = x.Inspections[0].Color;
+    //    } else
+    //    {
+    //      x.Color = '#FFFFFF';
+    //    }
+    //    return x;
+    //  });
+    //  iData = iData.filter(function (v) { return v.Inspections.length > 0 });
+    //  return iData;
+    //}
+    //function buildAddressDisplayByDay(i: Array<Inspection>, day: string):string
+    //{
+    //  var x = [];
+    //  x.push("<li><span>")
+    //  x.push(day);
+    //  x.push(" - Total Inspections: ")
+    //  x.push(i.length)
+    //  x.push("</span></li>");
+    //  i.map(function (n)
+    //  {
+    //    x.push("<li><a target='clayinspections' href='/InspectionScheduler/#permit=");
+    //    x.push(n.PermitNo);
+    //    x.push("&inspectionid=")
+    //    x.push(n.InspReqID)
+    //    x.push("'>");
+    //    x.push(n.PermitNo);
+    //    x.push(" - ");
+    //    x.push(n.InspectionDescription);
+    //    x.push(" - ");
+    //    x.push(n.IsCommercial ? "Commercial" : "Residential");
+    //    x.push(" - ");
+    //    x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
+    //    x.push("</a></li>");
+    //  });
+    //  return x.join('');
+    //}
     //export function Assign(e: HTMLElement, InspectorId:number)
     //{
     //  let LookupKey = e.id;
@@ -500,6 +543,17 @@ var IView;
         document.getElementById("inspectorEdit").classList.add("is-active");
     }
     IView.ShowInspectors = ShowInspectors;
+    function CloseLocationModal() {
+        IView.current_location = null;
+        var symbol = IView.last_selected_graphic.symbol;
+        var color = IView.last_symbol_color;
+        window.setTimeout(function (j) {
+            symbol.color = color;
+            IView.location_layer.redraw();
+        }, 10000);
+        CloseModals();
+    }
+    IView.CloseLocationModal = CloseLocationModal;
     function CloseModals() {
         //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));
         var modals = document.querySelectorAll(".modal");
@@ -545,28 +599,37 @@ var IView;
     //    node.removeChild(node.firstChild);
     //  }
     //}
-    //export function FindItemsInExtent(extent: any): void
-    //{
-    //  let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
-    //  let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("BulkAssignSelect")).value);
-    //  BulkAssign(InspectorId, LookupKeys);
-    //}
-    //function BulkAssign(InspectorId: number, LookupKeys: Array<string>)
-    //{
-    //  let InspectionIds: Array<number> = [];
-    //  for (let i of allInspections)
-    //  {
-    //    if (LookupKeys.indexOf(i.LookupKey) !== -1 &&
-    //      i.ScheduledDay === currentDay)
-    //    {
-    //      if (currentIsComplete || (!currentIsComplete && !i.IsCompleted))
-    //      {
-    //        InspectionIds.push(i.InspReqID);
-    //      }
-    //    }
-    //  }
-    //  //let i = new Inspection();
-    //  Inspection.BulkAssign(InspectorId, InspectionIds);
-    //}
+    function Bulk_Assign_Location(event) {
+        if (IView.current_location === null)
+            return;
+        var selectedInspector = Utilities.Get_Value(event.srcElement);
+        if (selectedInspector.length === 0)
+            return;
+        var inspectors = IView.allInspectors.filter(function (i) { return i.Name === selectedInspector; });
+        var parent = event.srcElement.parentElement;
+        if (inspectors.length === 1) {
+            var id = inspectors[0].Id;
+            var inspectionIds = IView.current_location.inspections.map(function (i) { return i.InspReqID; });
+            IView.Inspection.BulkAssign(id, inspectionIds, parent);
+        }
+    }
+    IView.Bulk_Assign_Location = Bulk_Assign_Location;
+    function FindItemsInExtent(extent) {
+        var LookupKeys = IView.mapController.FindItemsInExtent(extent);
+        var InspectorId = parseInt(document.getElementById("bulkAssignSelect").value);
+        BulkAssign(InspectorId, LookupKeys);
+    }
+    IView.FindItemsInExtent = FindItemsInExtent;
+    function BulkAssign(InspectorId, LookupKeys) {
+        var InspectionIds = [];
+        for (var _i = 0, allInspections_1 = IView.allInspections; _i < allInspections_1.length; _i++) {
+            var i = allInspections_1[_i];
+            if (LookupKeys.indexOf(i.LookupKey) !== -1) {
+                InspectionIds.push(i.InspReqID);
+            }
+        }
+        //let i = new Inspection();
+        IView.Inspection.BulkAssign(InspectorId, InspectionIds);
+    }
 })(IView || (IView = {}));
 //# sourceMappingURL=app.js.map

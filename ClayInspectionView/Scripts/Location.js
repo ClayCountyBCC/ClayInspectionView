@@ -128,9 +128,16 @@ var IView;
             // If this address has both residential and commercial permits (usually an error)
             // then we'll give it a diamond icon.
             var x = 0;
-            if (this.assigned_inspectors.length > 1)
-                x = 1;
             var offsets = this.GetOffsets();
+            if (this.assigned_inspectors.length > 1) {
+                //let t = this;
+                //let bigicon = this.CreateIcon("esriSMSCircle", "#333333", offsets[x++], 20);
+                //bigicon.then(function (j)
+                //{
+                //  t.icons.push(j);
+                //});
+                x = 1;
+            }
             var _loop_1 = function (i) {
                 if (x > offsets.length)
                     return { value: void 0 };
@@ -161,13 +168,14 @@ var IView;
                     return state_1.value;
             }
         };
-        Location.prototype.CreateIcon = function (icon, color, offset) {
+        Location.prototype.CreateIcon = function (icon, color, offset, size) {
+            if (size === void 0) { size = 12; }
             // this is our base function that we'll use to simplify our icon creation.
             var d = new dojo.Deferred();
             require(["esri/symbols/SimpleMarkerSymbol", "esri/Color"], function (SimpleMarkerSymbol, Color) {
                 var s = new SimpleMarkerSymbol({
                     "color": Color.fromHex(color),
-                    "size": 12,
+                    "size": size,
                     "angle": 0,
                     "xoffset": offset[0],
                     "yoffset": offset[1],
@@ -182,14 +190,14 @@ var IView;
         Location.prototype.GetOffsets = function () {
             return [
                 [0, 0],
-                [-5, 5],
-                [5, -5],
-                [-5, -5],
-                [5, 5],
-                [-5, 0],
-                [0, 5],
-                [5, 0],
-                [0, 5]
+                [-4, 0],
+                [4, 0],
+                [0, -4],
+                [0, 4],
+                [-4, 4],
+                [4, -4],
+                [-4, -4],
+                [4, 4]
             ];
         };
         Location.CreateLocations = function (inspections) {
@@ -210,33 +218,30 @@ var IView;
                 var key = lookupKeys_1[_a];
                 _loop_2(key);
             }
-            console.log('locations', IView.filteredLocations);
-            console.log('inspectors > 1', IView.filteredLocations.filter(function (k) { return k.icons.length > 2; }));
-            console.log('inspections > 2', IView.filteredLocations.filter(function (k) { return k.inspections.length > 2; }));
-            console.log('mixed inspections', IView.filteredLocations.filter(function (k) { return k.has_commercial && k.has_residential; }));
             IView.dataLoaded = true;
             IView.BuildAndLoadInitialLayers();
         };
         Location.prototype.LocationView = function () {
-            var container = document.createElement("div");
-            var df = document.createDocumentFragment();
-            df.appendChild(this.AddressView());
-            df.appendChild(this.BulkAssignControl());
-            df.appendChild(this.CreateInspectionTable());
-            container.appendChild(df);
-            return container;
+            var title = document.getElementById("locationAddress");
+            Utilities.Clear_Element(title);
+            Utilities.Set_Text(title, this.Address());
+            var bulkassignContainer = document.getElementById("bulkAssignInspectionsContainer");
+            console.log('Location View Test This', this);
+            if (this.can_be_bulk_assigned) {
+                Utilities.Show(bulkassignContainer);
+                this.UpdateBulkAssignmentDropdown();
+            }
+            else {
+                Utilities.Hide(bulkassignContainer);
+            }
+            var container = document.getElementById("locationInfoContainer");
+            Utilities.Clear_Element(container);
+            container.appendChild(this.CreateInspectionTable());
+            document.getElementById("locationInfo").classList.add("is-active");
         };
-        Location.prototype.AddressView = function () {
+        Location.prototype.Address = function () {
             var i = this.inspections[0];
-            var p = document.createElement("p");
-            p.appendChild(document.createTextNode(i.StreetAddressCombined));
-            p.appendChild(document.createTextNode(i.City + ', ' + i.Zip));
-            return p;
-        };
-        Location.prototype.BulkAssignControl = function () {
-            var container = document.createElement("div");
-            container.appendChild;
-            return container;
+            return i.StreetAddressCombined + ', ' + i.City + ', ' + i.Zip;
         };
         Location.prototype.CreateInspectionTable = function () {
             var table = document.createElement("table");
@@ -255,6 +260,7 @@ var IView;
             var thead = document.createElement("thead");
             var tr = document.createElement("tr");
             tr.appendChild(this.CreateTableCell(true, "Permit"));
+            tr.appendChild(this.CreateTableCell(true, "Scheduled"));
             tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
             tr.appendChild(this.CreateTableCell(true, "Kind"));
             tr.appendChild(this.CreateTableCell(true, "Private Provider"));
@@ -271,15 +277,79 @@ var IView;
             td.appendChild(document.createTextNode(value));
             return td;
         };
+        Location.prototype.CreateTableCellLink = function (value, href, className) {
+            if (className === void 0) { className = ""; }
+            var td = document.createElement("td");
+            if (className.length > 0)
+                td.classList.add(className);
+            var link = document.createElement("a");
+            link.href = href;
+            link.appendChild(document.createTextNode(value));
+            td.appendChild(link);
+            return td;
+        };
         Location.prototype.CreateInspectionRow = function (inspection) {
             var tr = document.createElement("tr");
-            tr.appendChild(this.CreateTableCell(false, inspection.PermitNo));
+            var href = "/InspectionScheduler/#permit=" + inspection.PermitNo + "&inspectionid=" + inspection.InspReqID;
+            tr.appendChild(this.CreateTableCellLink(inspection.PermitNo, href));
+            tr.appendChild(this.CreateTableCell(false, Utilities.Format_Date(inspection.ScheduledDate)));
             tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription));
             tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));
-            tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+            if (inspection.IsCompleted) {
+                tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+            }
+            else {
+                var td = document.createElement("td");
+                td.appendChild(this.CreateInspectorDropdown(inspection));
+                tr.appendChild(td);
+            }
             return tr;
+        };
+        Location.prototype.CreateInspectorDropdown = function (inspection) {
+            var control = document.createElement("div");
+            control.classList.add("control");
+            var container = document.createElement("div");
+            container.classList.add("select");
+            var select = document.createElement("select");
+            for (var _i = 0, _a = inspection.ValidInspectors; _i < _a.length; _i++) {
+                var i = _a[_i];
+                var o = document.createElement("option");
+                o.value = i.Name;
+                o.selected = (i.Name === inspection.InspectorName);
+                o.appendChild(document.createTextNode(i.Name));
+                select.appendChild(o);
+            }
+            select.onchange = function (event) {
+                var inspectors = IView.allInspectors.filter(function (i) { return i.Name === Utilities.Get_Value(event.srcElement); });
+                var parent = event.srcElement.parentElement;
+                if (inspectors.length === 1) {
+                    var id = inspectors[0].Id;
+                    var inspectionIds = [inspection.InspReqID];
+                    IView.Inspection.BulkAssign(id, inspectionIds, parent);
+                }
+            };
+            container.appendChild(select);
+            control.appendChild(container);
+            return control;
+        };
+        Location.prototype.UpdateBulkAssignmentDropdown = function () {
+            var select = document.getElementById("bulkAssignInspections");
+            Utilities.Clear_Element(select);
+            var base = document.createElement("option");
+            base.value = "";
+            base.selected = true;
+            base.appendChild(document.createTextNode("Select Inspector"));
+            select.appendChild(base);
+            for (var _i = 0, _a = this.valid_inspectors; _i < _a.length; _i++) {
+                var i = _a[_i];
+                var o = document.createElement("option");
+                o.value = i.Name;
+                o.selected = false;
+                o.appendChild(document.createTextNode(i.Name));
+                select.appendChild(o);
+            }
         };
         return Location;
     }());

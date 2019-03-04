@@ -291,7 +291,6 @@ namespace Utilities
         credentials: "include"
       }).then(response =>
       {
-        console.log('Post Response', response);
         if (!response.ok)
         {
           throw new Error(response.statusText)

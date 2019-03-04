@@ -10,9 +10,7 @@ var IView;
             var path = Utilities.Get_Path("/inspectionview");
             Utilities.Get(path + "API/Unit/List")
                 .then(function (units) {
-                console.log('units', units);
                 IView.allUnits = units;
-                console.log('build units layer');
                 IView.mapController.UpdateUnitLayer(units);
             }, function (e) {
                 console.log('error getting units');

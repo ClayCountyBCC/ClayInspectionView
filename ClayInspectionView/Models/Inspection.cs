@@ -76,7 +76,7 @@ namespace ClayInspectionView.Models
 
     }
 
-    public static List<Inspection> GetInspections()
+    public static List<Inspection> GetInspections(UserAccess UA)
     {
 
       string query = @"
@@ -145,14 +145,21 @@ namespace ClayInspectionView.Models
         LEFT OUTER JOIN FireInspections FI ON IR.InspectionCode = FI.InspCd
         INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
         WHERE 
-          CAST(IR.SchecDateTime AS DATE) IN (@Today, @Tomorrow)
+          1=1
+          AND M.VoidDate IS NULL
+          AND A.VoidDate IS NULL
+          AND (CAST(IR.SchecDateTime AS DATE) IN (@Today, @Tomorrow)
           OR (CAST(IR.SchecDateTime AS DATE) < @Today
-            AND ResultADC IS NULL)";
+            AND ResultADC IS NULL))";
       try
       {
         var li = Constants.Get_Data<Inspection>(query, Constants.csWATSC);
         int badPointCount = 0;
-        foreach(Inspection i in li)
+        if (UA.current_access == UserAccess.access_type.contract_access)
+        {
+          li.RemoveAll((i) => i.InspectorName != "Universal Eng");
+        }
+        foreach (Inspection i in li)
         {
           i.AddressPoint = new Point(i.Project_Address_X, i.Project_Address_Y);
           i.ParcelPoint = new Point(i.Parcel_Centroid_X, i.Parcel_Centroid_Y);
@@ -161,6 +168,11 @@ namespace ClayInspectionView.Models
           {
             i.PointToUse = new Point(440000, 2100000 - (25 * badPointCount));
             badPointCount += 1;
+          }
+          if (UA.current_access == UserAccess.access_type.inspector_access ||
+            UA.current_access == UserAccess.access_type.admin_access)
+          {
+            if (i.ResultADC == "") i.CanBeAssigned = true;
           }
         }
         return li;

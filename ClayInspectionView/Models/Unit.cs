@@ -27,8 +27,6 @@ namespace ClayInspectionView.Models
             return "//static.arcgis.com/images/Symbols/Transportation/CarRedFront.png";
           default:
             return "//static.arcgis.com/images/Symbols/Transportation/CarRedFront.png";
-
-
         }
       }
     }
@@ -54,7 +52,6 @@ namespace ClayInspectionView.Models
 
     public Unit()
     {
-
     }
 
     public static List<Unit> GetInspectionUnits()

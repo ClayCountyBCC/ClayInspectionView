@@ -11,6 +11,7 @@ namespace ClayInspectionView.Models
     private const string basic_access_group = "gInspectionAppAccess"; // We may make this an argument if we end up using this code elsewhere.
     private const string inspector_access_group = "gInspectionAppInspectors";
     private const string mis_access_group = "gMISDeveloper_Group";
+    private const string building_admin_group = "gBuildingAppAdmin";
     private const string contract_inspection_access_group = "gUniversalEngineering";
 
     public bool authenticated { get; set; } = false;
@@ -75,7 +76,7 @@ namespace ClayInspectionView.Models
           }
           var groups = (from g in up.GetAuthorizationGroups()
                         select g.Name).ToList();
-          if (groups.Contains(mis_access_group))
+          if (groups.Contains(mis_access_group) || groups.Contains(building_admin_group))
           {
             current_access = access_type.admin_access;
           }

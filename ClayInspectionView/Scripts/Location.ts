@@ -61,7 +61,7 @@ namespace IView
 
       this.UpdateFlags();
 
-      this.CreateIcons();
+      this.CreateIcons();      
       this.AddValidInspectors(IView.allInspectors);
     }
 
@@ -165,8 +165,18 @@ namespace IView
       // If this address has both residential and commercial permits (usually an error)
       // then we'll give it a diamond icon.
       let x = 0;
-      if (this.assigned_inspectors.length > 1) x = 1;
       let offsets = this.GetOffsets();
+      if (this.assigned_inspectors.length > 1)
+      {
+        //let t = this;
+        //let bigicon = this.CreateIcon("esriSMSCircle", "#333333", offsets[x++], 20);
+        //bigicon.then(function (j)
+        //{
+        //  t.icons.push(j);
+        //});
+        x = 1;
+      }
+      
       for (let i of this.assigned_inspectors)
       {
         if (x > offsets.length) return;
@@ -199,7 +209,7 @@ namespace IView
 
     }
 
-    private CreateIcon(icon: string, color: string, offset: Array<number>): any
+    private CreateIcon(icon: string, color: string, offset: Array<number>, size: number = 12): any
     {
       // this is our base function that we'll use to simplify our icon creation.
       var d = new dojo.Deferred();
@@ -208,7 +218,7 @@ namespace IView
       {
         let s = new SimpleMarkerSymbol({
           "color": Color.fromHex(color),
-          "size": 12, 
+          "size": size, 
           "angle": 0,
           "xoffset": offset[0],
           "yoffset": offset[1],
@@ -225,14 +235,14 @@ namespace IView
     {
       return [
         [0, 0],
-        [-5, 5],
-        [5, -5],
-        [-5, -5],
-        [5, 5],
-        [-5, 0],
-        [0, 5],
-        [5, 0],
-        [0, 5]
+        [-4, 0],
+        [4, 0],
+        [0, -4],
+        [0, 4],
+        [-4, 4],
+        [4, -4],
+        [-4, -4],
+        [4, 4]
       ];
     }
 
@@ -251,39 +261,36 @@ namespace IView
         let filtered = inspections.filter(function (k) { return k.LookupKey === key; });
         IView.filteredLocations.push(new Location(filtered));
       }
-      console.log('locations', IView.filteredLocations);
-      console.log('inspectors > 1', IView.filteredLocations.filter(function (k) { return k.icons.length > 2; }));
-      console.log('inspections > 2', IView.filteredLocations.filter(function (k) { return k.inspections.length > 2; }));
-      console.log('mixed inspections', IView.filteredLocations.filter(function (k) { return k.has_commercial && k.has_residential; }));
+
       IView.dataLoaded = true;
       IView.BuildAndLoadInitialLayers();
     }
 
-    public LocationView():HTMLDivElement
+    public LocationView():void
     {
-      let container = document.createElement("div");
-      let df = document.createDocumentFragment();
-      df.appendChild(this.AddressView());
-      df.appendChild(this.BulkAssignControl());
-      df.appendChild(this.CreateInspectionTable());
-      container.appendChild(df);
-      return container;
+      let title = document.getElementById("locationAddress");
+      Utilities.Clear_Element(title);
+      Utilities.Set_Text(title, this.Address());
+      let bulkassignContainer = document.getElementById("bulkAssignInspectionsContainer");
+      console.log('Location View Test This', this);
+      if (this.can_be_bulk_assigned)
+      {
+        Utilities.Show(bulkassignContainer);
+        this.UpdateBulkAssignmentDropdown();
+      } else
+      {
+        Utilities.Hide(bulkassignContainer);
+      }
+      let container = document.getElementById("locationInfoContainer");
+      Utilities.Clear_Element(container);
+      container.appendChild(this.CreateInspectionTable());
+      document.getElementById("locationInfo").classList.add("is-active");
     }
 
-    private AddressView():HTMLParagraphElement
+    public Address(): string
     {
       let i = this.inspections[0];
-      let p = document.createElement("p");
-      p.appendChild(document.createTextNode(i.StreetAddressCombined));
-      p.appendChild(document.createTextNode(i.City + ', ' + i.Zip));
-      return p;
-    }
-
-    private BulkAssignControl(): HTMLDivElement
-    {
-      let container = document.createElement("div");
-      container.appendChild
-      return container;
+      return i.StreetAddressCombined + ', ' + i.City + ', ' + i.Zip;
     }
 
     private CreateInspectionTable():HTMLTableElement
@@ -306,6 +313,7 @@ namespace IView
       let thead = document.createElement("thead");
       let tr = document.createElement("tr");
       tr.appendChild(this.CreateTableCell(true, "Permit"));
+      tr.appendChild(this.CreateTableCell(true, "Scheduled"));
       tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
       tr.appendChild(this.CreateTableCell(true, "Kind"));
       tr.appendChild(this.CreateTableCell(true, "Private Provider"));
@@ -323,18 +331,90 @@ namespace IView
       return td;
     }
 
-    
+    private CreateTableCellLink(value: string, href: string, className: string = ""): HTMLTableCellElement
+    {
+      let td = document.createElement("td");
+      if (className.length > 0) td.classList.add(className);
+      let link = document.createElement("a");
+      link.href = href;
+      link.appendChild(document.createTextNode(value))
+      td.appendChild(link);
+      return td;
+    }
 
     private CreateInspectionRow(inspection: Inspection): HTMLTableRowElement
     {
       let tr = document.createElement("tr")
-      tr.appendChild(this.CreateTableCell(false, inspection.PermitNo));
+      let href = "/InspectionScheduler/#permit=" + inspection.PermitNo + "&inspectionid=" + inspection.InspReqID;
+      tr.appendChild(this.CreateTableCellLink(inspection.PermitNo, href));
+      tr.appendChild(this.CreateTableCell(false, Utilities.Format_Date(inspection.ScheduledDate)));
       tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription));
       tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
       tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
       tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));
-      tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+      if (inspection.IsCompleted)
+      {
+        tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
+      }
+      else
+      {
+        let td = document.createElement("td");
+        td.appendChild(this.CreateInspectorDropdown(inspection));
+        tr.appendChild(td);
+      }
+      
       return tr;
+    }
+
+    private CreateInspectorDropdown(inspection: Inspection):HTMLElement
+    {
+      let control = document.createElement("div");
+      control.classList.add("control");
+      let container = document.createElement("div");
+      container.classList.add("select");
+      let select = document.createElement("select");
+      for (let i of inspection.ValidInspectors)
+      {
+        let o = document.createElement("option");
+        o.value = i.Name;
+        o.selected = (i.Name === inspection.InspectorName);
+        o.appendChild(document.createTextNode(i.Name));
+        select.appendChild(o);
+      }
+      select.onchange = function (event:any)
+      {
+        let inspectors = IView.allInspectors.filter(function (i) { return i.Name === Utilities.Get_Value(event.srcElement) });
+        let parent = event.srcElement.parentElement;        
+        if (inspectors.length === 1)
+        {          
+          let id = inspectors[0].Id;
+          let inspectionIds = [inspection.InspReqID];
+          Inspection.BulkAssign(id, inspectionIds, parent);
+        }        
+      }
+
+      container.appendChild(select);
+      control.appendChild(container);
+      return control;      
+    }
+
+    public UpdateBulkAssignmentDropdown(): void
+    {
+      let select = document.getElementById("bulkAssignInspections");
+      Utilities.Clear_Element(select);
+      let base = document.createElement("option");
+      base.value = "";
+      base.selected = true;
+      base.appendChild(document.createTextNode("Select Inspector"));
+      select.appendChild(base);
+      for (let i of this.valid_inspectors)
+      {
+        let o = document.createElement("option");
+        o.value = i.Name;
+        o.selected = false;
+        o.appendChild(document.createTextNode(i.Name));
+        select.appendChild(o);
+      }
     }
 
   }

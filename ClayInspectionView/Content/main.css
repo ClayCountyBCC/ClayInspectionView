@@ -3,8 +3,21 @@
   width: calc(100%);
 }
 
-
-
+#HomeButton
+{
+  position: absolute;
+  top: 144px;
+  left: 20px;
+  z-index: 30;
+}
+#Legend
+{
+  position: absolute;
+  right: 20px;
+  z-index: 30;
+  top: 225px;
+  min-width: 240px !important;
+}
 
 html, body
 {
@@ -34,6 +47,15 @@ div.titlePane div.title
   cursor: default;
 }
 
+.titlePane div.title
+{
+  margin-bottom: 0 !important;
+}
+.sizer.content
+{
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
 /*.strike {
   text-decoration: line-through;
 }

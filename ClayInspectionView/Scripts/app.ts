@@ -12,6 +12,7 @@ namespace IView
   export let allInspectors: Array<Inspector> = []; // populated from web service
   export let allUnits: Array<Unit> = [];
   export let filteredLocations: Array<Location> = [];
+  export let current_location: Location = null;
   export let location_layer: any;
   export let unit_layer: any;
   export let allLayers: Array<any>; // all of the layers created.
@@ -24,6 +25,10 @@ namespace IView
   export let inspector_filter: Array<string> = [];
   export let private_provider_only: boolean = false;
   export let invalid_address_only: boolean = false;
+  export let show_bulk_assign: boolean = true;
+  export let last_selected_graphic: any; 
+  export let last_symbol_color: any;
+  
 
   export let permit_types_toggle_status: boolean = false;
   export let inspector_toggle_status: boolean = false;
@@ -82,6 +87,19 @@ namespace IView
       Toggle_Input_Group("input[name='permitType']", permit_types_toggle_status);
     }
     Location.CreateLocations(ApplyFilters(IView.allInspections));
+  }
+
+  export function Toggle_Bulk_Assign(): void
+  {
+    IView.show_bulk_assign = !IView.show_bulk_assign;
+    if (IView.show_bulk_assign)
+    {
+      Utilities.Show("BulkAssignContainer");
+    }
+    else
+    {
+      Utilities.Hide("BulkAssignContainer");
+    }
   }
 
   function Toggle_Input_Group(querystring: string, checked: boolean):void
@@ -180,7 +198,39 @@ namespace IView
         return IView.inspector_filter.indexOf(j.InspectorName) !== -1;
       });
     }
+
+    Inspector.UpdateCurrentCount(IView.allInspectors, filtered);
+    UpdateLegend(IView.allInspectors.filter(function (j) { return j.CurrentCount > 0; }));
+
     return filtered;
+  }
+
+  function UpdateLegend(inspectors: Array<Inspector>):void
+  {
+    let ol = document.getElementById("InspectorList");
+    Utilities.Clear_Element(ol);
+    for(let i of inspectors)
+    {
+
+      let li = document.createElement("li");
+      li.style.color = i.Id === 0 ? "black" : "white";
+      //li.id = "inspector" + i.Id;
+      li.style.paddingLeft = "1em";
+      li.style.paddingRight = "1em";
+      li.style.backgroundColor = i.Color;
+      li.style.display = "flex";
+      li.style.justifyContent = "space-between";
+      let inspectorName = document.createElement("span");
+      inspectorName.appendChild(document.createTextNode(i.Name));
+      inspectorName.style.textAlign = "left";
+      let count = document.createElement("span");
+      count.appendChild(document.createTextNode(i.CurrentCount.toString()));
+      count.style.textAlign = "right";
+      li.appendChild(inspectorName);
+      li.appendChild(count);
+      ol.appendChild(li);
+    }
+    
   }
 
   function Get_Single_Filter(selector: string): string
@@ -226,9 +276,12 @@ namespace IView
   export function BuildAndLoadInitialLayers()
   {
     if (!mapLoaded || !dataLoaded) return;
+    console.log('build and load initial layers');
     window.onhashchange = HandleHash;
     HandleHash();
     mapController.UpdateLocationLayer(IView.filteredLocations);
+    Unit.GetUnits();
+
     //mapController.ClearLayers();
 
     //let days = ["Today", "Tomorrow"];
@@ -324,21 +377,18 @@ namespace IView
   //  }
   //}
 
-  //export function DrawToggle():void
-  //{
-  //  let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("BulkAssignSelect");
-  //  let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
-  //  let o = select.selectedOptions[0];
-  //  if (!button.disabled)
-  //  {
-  //    button.textContent = "Bulk Assigning to: " + o.label;
-  //  }
-  //  else
-  //  {
-  //    button.textContent = "Bulk Assign";
-  //  }
-  //  mapController.ToggleDraw();
-  //}
+  export function DrawToggle():void
+  {
+    let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("bulkAssignSelect");
+    let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("bulkAssignButton");
+    let selectedInspector = Utilities.Get_Value(select)
+    if (selectedInspector === "-1")
+    {
+      Utilities.Error_Show("bulkAssignError", "Please choose an inspector.", true);
+      return;
+    }
+    mapController.ToggleDraw();
+  }
 
   //export function toggle(id: string, show: boolean): void
   //{
@@ -470,58 +520,58 @@ namespace IView
   //  return lookupKeys;
   //}
 
-  function buildInspectorData(inspections): Array<Inspector>
-  {
-    let iData = allInspectors.map(function (i)
-    {
-      let x: Inspector = new Inspector();
-      x.Id = i.Id
-      x.Name = i.Name;
-      x.Inspections = inspections.filter(
-        function (v)
-        {
-          return v.InspectorName === x.Name;
-        });
-      if (x.Inspections.length > 0)
-      {
-        x.Color = x.Inspections[0].Color;
-      } else
-      {
-        x.Color = '#FFFFFF';
-      }
-      return x;
-    });
+  //function buildInspectorData(inspections): Array<Inspector>
+  //{
+  //  let iData = allInspectors.map(function (i)
+  //  {
+  //    let x: Inspector = new Inspector();
+  //    x.Id = i.Id
+  //    x.Name = i.Name;
+  //    x.Inspections = inspections.filter(
+  //      function (v)
+  //      {
+  //        return v.InspectorName === x.Name;
+  //      });
+  //    if (x.Inspections.length > 0)
+  //    {
+  //      x.Color = x.Inspections[0].Color;
+  //    } else
+  //    {
+  //      x.Color = '#FFFFFF';
+  //    }
+  //    return x;
+  //  });
 
-    iData = iData.filter(function (v) { return v.Inspections.length > 0 });
-    return iData;
-  }
+  //  iData = iData.filter(function (v) { return v.Inspections.length > 0 });
+  //  return iData;
+  //}
 
-  function buildAddressDisplayByDay(i: Array<Inspection>, day: string):string
-  {
-    var x = [];
-    x.push("<li><span>")
-    x.push(day);
-    x.push(" - Total Inspections: ")
-    x.push(i.length)
-    x.push("</span></li>");
-    i.map(function (n)
-    {
-      x.push("<li><a target='clayinspections' href='/InspectionScheduler/#permit=");
-      x.push(n.PermitNo);
-      x.push("&inspectionid=")
-      x.push(n.InspReqID)
-      x.push("'>");
-      x.push(n.PermitNo);
-      x.push(" - ");
-      x.push(n.InspectionDescription);
-      x.push(" - ");
-      x.push(n.IsCommercial ? "Commercial" : "Residential");
-      x.push(" - ");
-      x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
-      x.push("</a></li>");
-    });
-    return x.join('');
-  }
+  //function buildAddressDisplayByDay(i: Array<Inspection>, day: string):string
+  //{
+  //  var x = [];
+  //  x.push("<li><span>")
+  //  x.push(day);
+  //  x.push(" - Total Inspections: ")
+  //  x.push(i.length)
+  //  x.push("</span></li>");
+  //  i.map(function (n)
+  //  {
+  //    x.push("<li><a target='clayinspections' href='/InspectionScheduler/#permit=");
+  //    x.push(n.PermitNo);
+  //    x.push("&inspectionid=")
+  //    x.push(n.InspReqID)
+  //    x.push("'>");
+  //    x.push(n.PermitNo);
+  //    x.push(" - ");
+  //    x.push(n.InspectionDescription);
+  //    x.push(" - ");
+  //    x.push(n.IsCommercial ? "Commercial" : "Residential");
+  //    x.push(" - ");
+  //    x.push(n.IsPrivateProvider ? "Private Provider" : "Not Private");
+  //    x.push("</a></li>");
+  //  });
+  //  return x.join('');
+  //}
 
   //export function Assign(e: HTMLElement, InspectorId:number)
   //{
@@ -597,6 +647,19 @@ namespace IView
     document.getElementById("inspectorEdit").classList.add("is-active");
   }
 
+  export function CloseLocationModal()
+  {
+    IView.current_location = null;
+    let symbol = IView.last_selected_graphic.symbol;
+    let color = IView.last_symbol_color;
+    window.setTimeout(function (j)
+    {
+      symbol.color = color;       
+      IView.location_layer.redraw();      
+    }, 10000)
+    CloseModals();
+  }
+
   export function CloseModals(): void
   {
     //Location.CreateLocations(IView.ApplyFilters(IView.allInspections));
@@ -648,30 +711,41 @@ namespace IView
   //  }
   //}
 
-  //export function FindItemsInExtent(extent: any): void
-  //{
-  //  let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
-  //  let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("BulkAssignSelect")).value);
-  //  BulkAssign(InspectorId, LookupKeys);
-  //}
+  export function Bulk_Assign_Location(event: any): void
+  {
+    if (IView.current_location === null) return;
+    let selectedInspector = Utilities.Get_Value(event.srcElement);
+    if (selectedInspector.length === 0) return;
+    let inspectors = IView.allInspectors.filter(function (i) { return i.Name === selectedInspector });
+    let parent = event.srcElement.parentElement;
+    if (inspectors.length === 1)
+    {
+      let id = inspectors[0].Id;
+      let inspectionIds = IView.current_location.inspections.map(function (i) { return i.InspReqID });
+      Inspection.BulkAssign(id, inspectionIds, parent);
+    }        
+  }
 
-  //function BulkAssign(InspectorId: number, LookupKeys: Array<string>)
-  //{
-  //  let InspectionIds: Array<number> = [];
-  //  for (let i of allInspections)
-  //  {
-  //    if (LookupKeys.indexOf(i.LookupKey) !== -1 &&
-  //      i.ScheduledDay === currentDay)
-  //    {
-  //      if (currentIsComplete || (!currentIsComplete && !i.IsCompleted))
-  //      {
-  //        InspectionIds.push(i.InspReqID);
-  //      }
-  //    }
-  //  }
-  //  //let i = new Inspection();
-  //  Inspection.BulkAssign(InspectorId, InspectionIds);
-  //}
+  export function FindItemsInExtent(extent: any): void
+  {
+    let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
+    let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("bulkAssignSelect")).value);
+    BulkAssign(InspectorId, LookupKeys);
+  }
+
+  function BulkAssign(InspectorId: number, LookupKeys: Array<string>)
+  {
+    let InspectionIds: Array<number> = [];
+    for (let i of allInspections)
+    {
+      if (LookupKeys.indexOf(i.LookupKey) !== -1)
+      {
+        InspectionIds.push(i.InspReqID);
+      }
+    }
+    //let i = new Inspection();
+    Inspection.BulkAssign(InspectorId, InspectionIds);
+  }
 
 
 }

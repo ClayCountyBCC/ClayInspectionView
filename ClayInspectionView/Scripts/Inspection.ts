@@ -87,6 +87,22 @@ namespace IView
 
     }
 
+    public static GetValidInspectors(inspection: Inspection): Array<Inspector>
+    {
+      return IView.allInspectors.filter(function (i)
+      {
+        return ((inspection.RBL === i.RBL === true) || !inspection.RBL) &&
+          ((inspection.CBL === i.CBL === true) || !inspection.CBL) &&
+          ((inspection.REL === i.REL === true) || !inspection.REL) &&
+          ((inspection.CEL === i.CEL === true) || !inspection.CEL) &&
+          ((inspection.RME === i.RME === true) || !inspection.RME) &&
+          ((inspection.CME === i.CME === true) || !inspection.CME) &&
+          ((inspection.RPL === i.RPL === true) || !inspection.RPL) &&
+          ((inspection.CPL === i.CPL === true) || !inspection.CPL) &&
+          ((inspection.Fire === i.Fire === true) || !inspection.Fire);
+      });
+    }
+
     public static GetInspections(): void
     {
       Utilities.Toggle_Loading_Button("refreshButton", true);
@@ -95,11 +111,13 @@ namespace IView
       Utilities.Get<Array<Inspection>>(path + "API/Inspections/GetInspections")
         .then(function (inspections: Array<Inspection>)
         {
-          IView.allInspections = inspections;
+          Inspection.HandleInspections(inspections);
+          
           Utilities.Toggle_Loading_Button("refreshButton", false);
           Utilities.Toggle_Loading_Button("filterButton", false);
-          Location.CreateLocations(IView.ApplyFilters(inspections));
-          Inspector.GetInspectorsToEdit();
+
+          
+          
           
         }, function (e)
           {
@@ -123,34 +141,68 @@ namespace IView
       //});
     }
 
-    //public static BulkAssign(InspectorId: number, InspectionIds: Array<number>): void
-    //{
-    //  let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("BulkAssignButton");
-    //  IView.toggle('showSpin', true);
-    //  let AssignData = {
-    //    InspectorId: InspectorId,
-    //    InspectionIds: InspectionIds
-    //  }
-    //  var x = XHR.Post("API/Assign/BulkAssign/",  JSON.stringify(AssignData));
-    //  new Promise<boolean>(function (resolve, reject)
-    //  {
-    //    x.then(function (response)
-    //    {
-    //      IView.GetAllInspections();
-    //      IView.toggle('showSpin', false);
-    //      button.textContent = "Bulk Assign";
-    //    }).catch(function ()
-    //    {
-    //      console.log("error in Bulk Assign Inspections");
-    //      IView.toggle('showSpin', false);
-    //      button.textContent = "Bulk Assign";
-    //    });
-    //  });
-    //}
+    static HandleInspections(inspections: Array<Inspection>): void
+    {
+      for (let i of inspections)
+      {
+        i.ValidInspectors = Inspection.GetValidInspectors(i);
+      }
+      IView.allInspections = inspections;
+      Location.CreateLocations(IView.ApplyFilters(inspections));
+      if (IView.current_location !== null)
+      {
+        let locations = IView.filteredLocations.filter(function (i) { return i.lookup_key === IView.current_location.lookup_key; });
+        if (locations.length === 1)
+        {
+          IView.current_location = locations[0];
+          IView.current_location.LocationView();
+        }
+      }
+    }
 
-    
+    public static BulkAssign(InspectorId: number, InspectionIds: Array<number>, parentElement: HTMLElement = undefined): void
+    {
+      if (parentElement) parentElement.classList.add("is-loading");
+      let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("bulkAssignButton");
+      Utilities.Toggle_Loading_Button(button, true);
+      let path = Utilities.Get_Path("/inspectionview");
+      //IView.toggle('showSpin', true);
+      let AssignData = {
+        InspectorId: InspectorId,
+        InspectionIds: InspectionIds
+      };
+      var x = Utilities.Post<Array<Inspection>>(path + "API/Assign/BulkAssign/", AssignData)
+        .then(function (inspections: Array<Inspection>)
+        {
+          Utilities.Toggle_Loading_Button(button, false);
+          if (inspections.length === 0)
+          {
+            alert("Server error in Bulk Assign.");
+            return;
+          }
+          Inspection.HandleInspections(inspections);
+          if (parentElement) parentElement.classList.remove("is-loading");
 
-
+        }, function (e)
+          {
+            console.log('error in Bulk Assign', e);
+            Utilities.Toggle_Loading_Button(button, false);
+            if (parentElement) parentElement.classList.remove("is-loading");
+          });
+      //new Promise<boolean>(function (resolve, reject)
+      //{
+      //  x.then(function (response)
+      //  {
+      //    IView.GetAllInspections();
+      //    IView.toggle('showSpin', false);
+      //    button.textContent = "Bulk Assign";
+      //  }).catch(function ()
+      //  {
+      //    console.log("error in Bulk Assign Inspections");
+      //    IView.toggle('showSpin', false);
+      //    button.textContent = "Bulk Assign";
+      //  });
+    }
 
   }
 

@@ -211,7 +211,6 @@ var Utilities;
             },
             credentials: "include"
         }).then(function (response) {
-            console.log('Post Response', response);
             if (!response.ok) {
                 throw new Error(response.statusText);
             }

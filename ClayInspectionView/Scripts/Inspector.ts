@@ -1,4 +1,4 @@
-﻿/// <reference path="point.ts" />
+﻿/// <refrence path="point.ts" />
 /// <reference path="ui.ts" />
 /// <reference path="app.ts" />
 
@@ -21,7 +21,7 @@ namespace IView
     Fire: boolean;
     PrivateProvider: boolean;
     Inspections: Array<Inspection>;
-
+    CurrentCount: number;
   }
   export class Inspector implements IInspector
   {
@@ -39,6 +39,7 @@ namespace IView
     public Fire: boolean;
     public PrivateProvider: boolean;
     public Inspections: Array<Inspection>;
+    public CurrentCount: number = 0;
 
     constructor()
     {
@@ -55,12 +56,12 @@ namespace IView
         {
           console.log('inspectors', inspectors);
           IView.allInspectors = inspectors;
-          Inspection.GetInspections();
-          Unit.GetUnits();
+          Inspector.BuildBulkAssignDropdown(inspectors);
+          Inspection.GetInspections();          
+          Inspector.BuildInspectorList();
           window.setInterval(Inspection.GetInspections, 60 * 5 * 1000);
           window.setInterval(Unit.GetUnits, 60 * 1000);
-          Inspector.BuildInspectorList();
-
+          Inspector.GetInspectorsToEdit();
 
         }, function (e)
           {
@@ -80,7 +81,7 @@ namespace IView
           IView.inspectors_to_edit = inspectors;
           if (inspectors.length > 0)
           {
-            Utilities.Show_Inline_Flex("editInspectors");
+            Utilities.Show_Flex("editInspectors");
           }
 
         }, function (e)
@@ -89,6 +90,19 @@ namespace IView
             IView.allInspectors = [];
           });
 
+    }
+
+    static BuildBulkAssignDropdown(inspectors: Array<Inspector>):void
+    {
+      let select = <HTMLSelectElement>document.getElementById("bulkAssignSelect");
+      for (let i of inspectors)
+      {
+        let o = document.createElement("option");
+        o.value = i.Id.toString();
+        o.appendChild(document.createTextNode(i.Name));
+        select.appendChild(o);
+
+      }
     }
 
     static BuildInspectorList(): void
@@ -127,6 +141,17 @@ namespace IView
     static BuildInspectorControl(): void
     {
 
+    }
+
+    static UpdateCurrentCount(inspectors: Array<Inspector>, inspections: Array<Inspection>): void
+    {
+      let byinspector = [];
+      for (let inspector of inspectors)
+      {
+        inspector.CurrentCount = 0;
+        byinspector = inspections.filter(function (i) { return i.InspectorName === inspector.Name });
+        inspector.CurrentCount = byinspector.length;
+      }
     }
   }
 

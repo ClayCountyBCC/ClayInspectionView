@@ -54,6 +54,7 @@ namespace ClayInspectionView.Models
         LEFT OUTER JOIN FireInspections FI ON IR.InspectionCode = FI.InspCd
         WHERE 
           InspReqID IN @Ids
+          AND IR.ResultADC IS NULL -- if it is completed, let's make it unassignable
         )
 
         UPDATE IR
@@ -78,7 +79,7 @@ namespace ClayInspectionView.Models
       Constants.Exec_Query(query, dp, Constants.csWATSC);      
     }
 
-    public List<Inspection> BulkAssign()
+    public List<Inspection> BulkAssign(UserAccess UA)
     {
       if (InspectionIds.Count == 0) return new List<Inspection>();
       if (InspectorId == 0)
@@ -89,7 +90,7 @@ namespace ClayInspectionView.Models
       {
         BulkAssignToInspector();
       }
-      return Inspection.GetInspections();
+      return Inspection.GetInspections(UA);
     }
 
     private void BulkAssignToUnassigned()

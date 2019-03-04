@@ -30,9 +30,7 @@ namespace IView
       Utilities.Get<Array<Unit>>(path + "API/Unit/List")
         .then(function (units: Array<Unit>)
         {
-          console.log('units', units);
           IView.allUnits = units;
-          console.log('build units layer');
           IView.mapController.UpdateUnitLayer(units);
 
         }, function (e)

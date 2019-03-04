@@ -27,31 +27,39 @@
 
         </div>
         <div class="navbar-end">
-          <div class="navbar-item">
-            <button id="editInspectors"
-                    onclick="IView.ShowInspectors()"
-                    class="button is-warning hide">
-              Inspectors
-            </button>
-          </div>
-          <div class="navbar-item">
-
-            <button id="filterButton"
-                    onclick="IView.ShowFilters()"
-                    class="button is-info">
-              Filters
-            </button>
-          </div>
-          <div class="navbar-item">
-            <button id="refreshButton"
-                    onclick="IView.Inspection.GetInspections()"
-                    class="button is-success">
-              Refresh Inspections
-            </button>
-          </div>
-
-          <div class="navbar-item">
-            <span id="OpenInspectionsNav"></span>
+          <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">
+              Options
+            </a>
+            <div class="navbar-dropdown">
+              <button style="width: 100%; border-radius: 0;"
+                      id="refreshButton"
+                      type="button"
+                      onclick="IView.Inspection.GetInspections()"
+                      class="button navbar-item is-success">
+                Refresh Inspections
+              </button>
+              <button style="width: 100%; border-radius: 0;"
+                      id="filterButton"
+                      type="button"
+                      onclick="IView.ShowFilters()"
+                      class="button navbar-item is-info">
+                Filters
+              </button>
+              <button style="width: 100%; background-color: darkorange; color: white; border-radius: 0;"
+                      onclick="IView.Toggle_Bulk_Assign();"
+                      type="button"
+                      class="navbar-item button">
+                Toggle Bulk Assign
+              </button>
+              <button style="width: 100%; border-radius: 0;"
+                      id="editInspectors"
+                      type="button"
+                      onclick="IView.ShowInspectors()"
+                      class="button navbar-item hide is-warning">
+                Edit Inspectors
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -59,7 +67,43 @@
   </nav>
 
   <div id="map">
+    <div id="HomeButton"></div>
+    <div class="box"
+         id="Legend">
+      <div style="margin-bottom: 1em;"
+           id="BulkAssignContainer">
+        <div class="field">
+          <div class="control">
+            <div class="select">
+              <select class="is-small"
+                      id="bulkAssignSelect">
+                <option value="-1">Select Inspector</option>
+              </select>
 
+            </div>
+          </div>
+
+        </div>
+        <div class="field">
+          <div style="justify-content: center;"
+               class="control is-flex">
+            <button onclick="IView.DrawToggle();"
+                    class="button is-warning is-small"
+                    id="bulkAssignButton">
+              Bulk Assign
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="hide"
+           id="bulkAssignError">
+
+      </div>
+      <ol 
+          id="InspectorList">
+
+      </ol>
+    </div>
   </div>
 
   <div class="modal"
@@ -330,7 +374,7 @@
           </tbody>
         </table>
 
-      
+
 
 
 
@@ -349,6 +393,47 @@
                 onclick="IView.SaveInspectors();"
                 class="button is-success">
           Save & Close
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <div class="modal"
+       id="locationInfo">
+    <div onclick="IView.CloseLocationModal();"
+         class="modal-background"></div>
+    <div class="modal-card container">
+      <header class="modal-card-head">
+        <p id="locationAddress"
+           class="modal-card-title">
+        </p>
+        <button onclick="IView.CloseLocationModal();"
+                type="button"
+                class="delete"
+                aria-label="close"></button>
+      </header>
+      <section class="modal-card-body">
+        <div id="bulkAssignInspectionsContainer">
+          <div class="field">
+            <label class="label">Assign All Inspections to this inspector</label>
+            <div class="control">
+              <div class="select">
+                <select onchange="IView.Bulk_Assign_Location(event);"
+                        id="bulkAssignInspections"></select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="locationInfoContainer">
+
+        </div>
+      </section>
+      <footer style="justify-content: flex-end;"
+              class="modal-card-foot hide-for-print">
+        <button type="button"
+                onclick="IView.CloseLocationModal();"
+                class="button is-success">
+          Close
         </button>
       </footer>
     </div>

@@ -1,10 +1,11 @@
-/// <reference path="point.ts" />
+/// <refrence path="point.ts" />
 /// <reference path="ui.ts" />
 /// <reference path="app.ts" />
 var IView;
 (function (IView) {
     var Inspector = /** @class */ (function () {
         function Inspector() {
+            this.CurrentCount = 0;
         }
         Inspector.GetAllInspectors = function () {
             Utilities.Toggle_Loading_Button("refreshButton", true);
@@ -14,11 +15,12 @@ var IView;
                 .then(function (inspectors) {
                 console.log('inspectors', inspectors);
                 IView.allInspectors = inspectors;
+                Inspector.BuildBulkAssignDropdown(inspectors);
                 IView.Inspection.GetInspections();
-                IView.Unit.GetUnits();
+                Inspector.BuildInspectorList();
                 window.setInterval(IView.Inspection.GetInspections, 60 * 5 * 1000);
                 window.setInterval(IView.Unit.GetUnits, 60 * 1000);
-                Inspector.BuildInspectorList();
+                Inspector.GetInspectorsToEdit();
             }, function (e) {
                 console.log('error getting inspectors');
                 IView.allInspectors = [];
@@ -31,12 +33,22 @@ var IView;
                 console.log('inspectors to edit', inspectors);
                 IView.inspectors_to_edit = inspectors;
                 if (inspectors.length > 0) {
-                    Utilities.Show_Inline_Flex("editInspectors");
+                    Utilities.Show_Flex("editInspectors");
                 }
             }, function (e) {
                 console.log('error getting inspectors');
                 IView.allInspectors = [];
             });
+        };
+        Inspector.BuildBulkAssignDropdown = function (inspectors) {
+            var select = document.getElementById("bulkAssignSelect");
+            for (var _i = 0, inspectors_1 = inspectors; _i < inspectors_1.length; _i++) {
+                var i = inspectors_1[_i];
+                var o = document.createElement("option");
+                o.value = i.Id.toString();
+                o.appendChild(document.createTextNode(i.Name));
+                select.appendChild(o);
+            }
         };
         Inspector.BuildInspectorList = function () {
             var container = document.getElementById("inspectorList");
@@ -68,6 +80,18 @@ var IView;
             return df;
         };
         Inspector.BuildInspectorControl = function () {
+        };
+        Inspector.UpdateCurrentCount = function (inspectors, inspections) {
+            var byinspector = [];
+            var _loop_1 = function (inspector) {
+                inspector.CurrentCount = 0;
+                byinspector = inspections.filter(function (i) { return i.InspectorName === inspector.Name; });
+                inspector.CurrentCount = byinspector.length;
+            };
+            for (var _i = 0, inspectors_2 = inspectors; _i < inspectors_2.length; _i++) {
+                var inspector = inspectors_2[_i];
+                _loop_1(inspector);
+            }
         };
         return Inspector;
     }());

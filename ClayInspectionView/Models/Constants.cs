@@ -99,7 +99,7 @@ namespace ClayInspectionView.Models
           return false;
 
         //case "MISHL05":
-        case "MISSL01":
+        //case "MISSL01":
         case "CLAYBCCIIS01":
         case "CLAYBCCDMZIIS01":
           return true;
