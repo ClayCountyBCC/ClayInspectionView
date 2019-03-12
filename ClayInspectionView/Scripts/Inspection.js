@@ -5,6 +5,8 @@ var IView;
 (function (IView) {
     var Inspection = /** @class */ (function () {
         function Inspection() {
+            this.MasterPermitNumber = "";
+            this.PropUseInfo = "";
             this.Age = -1;
             this.ValidInspectors = [];
         }
@@ -36,19 +38,34 @@ var IView;
                 Utilities.Toggle_Loading_Button("refreshButton", false);
                 Utilities.Toggle_Loading_Button("filterButton", false);
             });
-            //var x = XHR.Get("API/Inspections/GetInspections");
-            //return new Promise<Array<Inspection>>(function (resolve, reject)
-            //{
-            //  x.then(function (response)
-            //  {
-            //    let ar: Array<Inspection> = JSON.parse(response.Text);
-            //    return resolve(ar);
-            //  }).catch(function ()
-            //  {
-            //    console.log("error in Get Inspections");
-            //    return reject(null);
-            //  });
-            //});
+        };
+        Inspection.GetPermitNotes = function (PermitNo, button, target) {
+            if (PermitNo.length === 0)
+                return;
+            Utilities.Toggle_Loading_Button(button, true);
+            var path = Utilities.Get_Path("/inspectionview");
+            Utilities.Get(path + "API/Inspections/GetPermitNotes?PermitNo=" + PermitNo)
+                .then(function (notes) {
+                if (notes.length > 0) {
+                    for (var _i = 0, notes_1 = notes; _i < notes_1.length; _i++) {
+                        var n = notes_1[_i];
+                        var p = document.createElement("p");
+                        p.classList.add("has-text-left");
+                        p.appendChild(document.createTextNode(IView.Strip_Html(n)));
+                        target.appendChild(p);
+                    }
+                }
+                else {
+                    var p = document.createElement("p");
+                    p.classList.add("has-text-left");
+                    p.appendChild(document.createTextNode("No notes found."));
+                    target.appendChild(p);
+                }
+                Utilities.Toggle_Loading_Button(button, false);
+            }, function (e) {
+                console.log('error getting permit notes', e);
+                Utilities.Toggle_Loading_Button(button, false);
+            });
         };
         Inspection.HandleInspections = function (inspections) {
             for (var _i = 0, inspections_1 = inspections; _i < inspections_1.length; _i++) {
@@ -67,6 +84,8 @@ var IView;
         };
         Inspection.BulkAssign = function (InspectorId, InspectionIds, parentElement) {
             if (parentElement === void 0) { parentElement = undefined; }
+            if (InspectionIds.length === 0)
+                return;
             if (parentElement)
                 parentElement.classList.add("is-loading");
             var button = document.getElementById("bulkAssignButton");
@@ -77,7 +96,7 @@ var IView;
                 InspectorId: InspectorId,
                 InspectionIds: InspectionIds
             };
-            var x = Utilities.Post(path + "API/Assign/BulkAssign/", AssignData)
+            Utilities.Post(path + "API/Assign/BulkAssign/", AssignData)
                 .then(function (inspections) {
                 Utilities.Toggle_Loading_Button(button, false);
                 if (inspections.length === 0) {

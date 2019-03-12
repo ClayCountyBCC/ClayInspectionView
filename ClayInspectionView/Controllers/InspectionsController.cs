@@ -9,10 +9,12 @@ using System.Runtime.Caching;
 
 namespace ClayInspectionView.Controllers
 {
+  [RoutePrefix("API/Inspections")]
   public class InspectionsController : ApiController
   {
     // GET: api/Inspections
     [HttpGet]
+    [Route("GetInspections")]
     public IHttpActionResult GetInspections()
     {
       try
@@ -36,8 +38,18 @@ namespace ClayInspectionView.Controllers
         new ErrorLog(ex);
         return InternalServerError();
       }
+    }
 
-
+    [HttpGet]
+    [Route("GetPermitNotes")]
+    public IHttpActionResult GetPermitNotes(string PermitNo)
+    {
+      var notes = Inspection.GetPermitNotes(PermitNo);
+      if(notes == null)
+      {
+        return InternalServerError();
+      }
+      return Ok(notes);
     }
 
   }

@@ -16,8 +16,6 @@ namespace IView
   export let location_layer: any;
   export let unit_layer: any;
   export let allLayers: Array<any>; // all of the layers created.
-  //export let currentDay: string = "today";
-  //export let currentIsComplete: boolean = false;
   export let day_filter: string = "today";  
   export let inspection_status_filter = "open";
   export let permit_kind_filter: string = "all";
@@ -41,7 +39,6 @@ namespace IView
     // things to do:
     // setup default map
     mapController = new MapController("map");
-    // get the data for today/tomorrow
     Inspector.GetAllInspectors();
   }
 
@@ -57,7 +54,7 @@ namespace IView
     let inspector = GetMapCookie("inspector_filter");
     let bulk = GetMapCookie("show_bulk_assign");
 
-    console.log(status, day, kind, private, invalid, permittype, inspector);
+    if (status === null) return;
 
     if (status !== null) IView.inspection_status_filter = status;
     if (day !== null) IView.day_filter = day;
@@ -69,6 +66,7 @@ namespace IView
     if (bulk !== null) IView.show_bulk_assign = (bulk.toLowerCase() === "true");
 
     // load defaults into form
+    
     if (IView.show_bulk_assign)
     {
       Utilities.Show("BulkAssignContainer");
@@ -462,6 +460,12 @@ namespace IView
       let inspectionIds = IView.current_location.inspections.map(function (i) { return i.InspReqID });
       Inspection.BulkAssign(id, inspectionIds, parent);
     }        
+  }
+
+  export function Strip_Html(html: string)
+  {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || "";
   }
 
   export function FindItemsInExtent(extent: any): void

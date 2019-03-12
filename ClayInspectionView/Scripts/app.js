@@ -9,8 +9,6 @@ var IView;
     IView.allUnits = [];
     IView.filteredLocations = [];
     IView.current_location = null;
-    //export let currentDay: string = "today";
-    //export let currentIsComplete: boolean = false;
     IView.day_filter = "today";
     IView.inspection_status_filter = "open";
     IView.permit_kind_filter = "all";
@@ -27,7 +25,6 @@ var IView;
         // things to do:
         // setup default map
         IView.mapController = new IView.MapController("map");
-        // get the data for today/tomorrow
         IView.Inspector.GetAllInspectors();
     }
     IView.Start = Start;
@@ -40,7 +37,8 @@ var IView;
         var permittype = GetMapCookie("permit_type_filter");
         var inspector = GetMapCookie("inspector_filter");
         var bulk = GetMapCookie("show_bulk_assign");
-        console.log(status, day, kind, private, invalid, permittype, inspector);
+        if (status === null)
+            return;
         if (status !== null)
             IView.inspection_status_filter = status;
         if (day !== null)
@@ -369,6 +367,11 @@ var IView;
         }
     }
     IView.Bulk_Assign_Location = Bulk_Assign_Location;
+    function Strip_Html(html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || "";
+    }
+    IView.Strip_Html = Strip_Html;
     function FindItemsInExtent(extent) {
         var LookupKeys = IView.mapController.FindItemsInExtent(extent);
         var InspectorId = parseInt(document.getElementById("bulkAssignSelect").value);

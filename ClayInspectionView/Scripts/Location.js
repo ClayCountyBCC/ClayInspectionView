@@ -98,8 +98,10 @@ var IView;
             //    private provider
             //    fire
             // Some people can have combinations, like Commercial / Electrical, and not others.
-            if (!this.can_be_bulk_assigned)
+            if (!this.can_be_bulk_assigned) {
+                console.log('this cannot be bulk assigned');
                 return;
+            }
             var current = this;
             this.valid_inspectors = inspectors.filter(function (i) {
                 //console.log('location', current.lookup_key, current.Fire, i.Name, i.Fire, ((current.Fire === true && i.Fire === true) || current.Fire === false))
@@ -226,7 +228,6 @@ var IView;
             Utilities.Clear_Element(title);
             Utilities.Set_Text(title, this.Address());
             var bulkassignContainer = document.getElementById("bulkAssignInspectionsContainer");
-            console.log('Location View Test This', this);
             if (this.can_be_bulk_assigned) {
                 Utilities.Show(bulkassignContainer);
                 this.UpdateBulkAssignmentDropdown();
@@ -249,12 +250,45 @@ var IView;
             table.classList.add("is-fullwidth");
             table.appendChild(this.CreateInspectionTableHeading());
             var tbody = document.createElement("tbody");
+            var master_permit = null;
             for (var _i = 0, _a = this.inspections; _i < _a.length; _i++) {
                 var i = _a[_i];
-                tbody.appendChild(this.CreateInspectionRow(i));
+                if (master_permit === null || master_permit !== i.MasterPermitNumber) {
+                    // if it's null, we just started so we're going to build whatever is there.
+                    tbody.appendChild(this.BuildMasterPermitPropUseRow(i));
+                    master_permit = i.MasterPermitNumber;
+                }
+                var notes_row = null;
+                if (i.PermitNo.substr(0, 1) !== '1') {
+                    notes_row = document.createElement("tr");
+                }
+                tbody.appendChild(this.CreateInspectionRow(i, notes_row));
+                if (notes_row !== null)
+                    tbody.appendChild(notes_row);
             }
             table.appendChild(tbody);
             return table;
+        };
+        Location.prototype.BuildMasterPermitPropUseRow = function (inspection) {
+            var tr = document.createElement("tr");
+            if (inspection.MasterPermitNumber.length > 0) {
+                var href = "/InspectionScheduler/#permit=" + inspection.MasterPermitNumber;
+                tr.appendChild(this.CreateTableCellLink(inspection.MasterPermitNumber, href, "has-text-left"));
+                var td = document.createElement("td");
+                td.colSpan = 7;
+                td.classList.add("has-text-left");
+                td.appendChild(document.createTextNode(inspection.PropUseInfo));
+                tr.appendChild(td);
+            }
+            else {
+                tr.appendChild(document.createElement("td"));
+                var td = document.createElement("td");
+                td.colSpan = 7;
+                td.classList.add("has-text-left");
+                td.appendChild(document.createTextNode("NO MASTER PERMIT"));
+                tr.appendChild(td);
+            }
+            return tr;
         };
         Location.prototype.CreateInspectionTableHeading = function () {
             var thead = document.createElement("thead");
@@ -262,6 +296,9 @@ var IView;
             tr.appendChild(this.CreateTableCell(true, "Permit"));
             tr.appendChild(this.CreateTableCell(true, "Scheduled"));
             tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
+            var button_column = this.CreateTableCell(true, "");
+            button_column.style.width = "5%";
+            tr.appendChild(button_column);
             tr.appendChild(this.CreateTableCell(true, "Kind"));
             tr.appendChild(this.CreateTableCell(true, "Private Provider"));
             tr.appendChild(this.CreateTableCell(true, "Status"));
@@ -283,17 +320,52 @@ var IView;
             if (className.length > 0)
                 td.classList.add(className);
             var link = document.createElement("a");
+            link.target = "_blank";
             link.href = href;
             link.appendChild(document.createTextNode(value));
             td.appendChild(link);
             return td;
         };
-        Location.prototype.CreateInspectionRow = function (inspection) {
+        Location.prototype.CreateInspectionRow = function (inspection, notes_row) {
             var tr = document.createElement("tr");
             var href = "/InspectionScheduler/#permit=" + inspection.PermitNo + "&inspectionid=" + inspection.InspReqID;
-            tr.appendChild(this.CreateTableCellLink(inspection.PermitNo, href));
+            tr.appendChild(this.CreateTableCellLink(inspection.PermitNo, href, "has-text-right"));
             tr.appendChild(this.CreateTableCell(false, Utilities.Format_Date(inspection.ScheduledDate)));
-            tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription));
+            tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription, "has-text-left"));
+            var button_td = document.createElement("td");
+            if (inspection.PermitNo.substr(0, 1) !== '1') {
+                var notes_button_1 = document.createElement("button");
+                notes_button_1.type = "button";
+                notes_button_1.classList.add("button");
+                notes_button_1.classList.add("is-info");
+                notes_button_1.classList.add("is-small");
+                notes_button_1.appendChild(document.createTextNode("Notes"));
+                notes_button_1.onclick = function () {
+                    if (notes_row.childElementCount === 0) {
+                        // we haven't rendered anything yet
+                        var base_td = document.createElement("td");
+                        base_td.colSpan = 8;
+                        IView.Inspection.GetPermitNotes(inspection.PermitNo, notes_button_1, base_td);
+                        //base_td.appendChild(document.createTextNode("Test"));
+                        notes_row.appendChild(base_td);
+                    }
+                    else {
+                        notes_row.style.display = notes_row.style.display === "" ? "none" : "";
+                        //console.log('notes_row display', notes_row.style.display);
+                        //if (notes_row.style.display === "")
+                        //{
+                        //  notes_row.style.display = "none";
+                        //}
+                        //else
+                        //{
+                        //  notes_row.style.display = "table-row";
+                        //}
+                        return;
+                    }
+                };
+                button_td.appendChild(notes_button_1);
+            }
+            tr.appendChild(button_td);
             tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));

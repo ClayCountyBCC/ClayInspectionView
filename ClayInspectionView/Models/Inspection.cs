@@ -32,6 +32,8 @@ namespace ClayInspectionView.Models
     public string InspectionCode { get; set; }
     public string ResultADC { get; set; } = "";
     public DateTime ScheduledDate { get; set; }
+    public string MasterPermitNumber { get; set; } = "";
+    public string PropUseInfo { get; set; } = "";
     public DateTime? InspDateTime { get; set; }
     public bool CanBeAssigned { get; set; } = false;
     public string ScheduledDay
@@ -128,6 +130,11 @@ namespace ClayInspectionView.Models
           ISNULL(LTRIM(RTRIM(IR.ResultADC)), '') ResultADC,
           IR.InspectionCode, 
           IR.SchecDateTime AS ScheduledDate,
+          LTRIM(RTRIM(CASE WHEN M.PermitNo IS NOT NULL 
+          THEN M.PermitNo 
+          ELSE ISNULL(A.MPermitNo, '')
+          END)) AS MasterPermitNumber,
+          ISNULL(LTRIM(RTRIM(B.PropUseCode)) + ' - ' + LTRIM(RTRIM(PR.UseDescription)), '') PropUseInfo,
           B.ParcelNo,
           IR.InspReqID,
           IR.InspDateTime,
@@ -144,13 +151,15 @@ namespace ClayInspectionView.Models
         LEFT OUTER JOIN bpASSOC_PERMIT A ON A.PermitNo = IR.PermitNo
         LEFT OUTER JOIN FireInspections FI ON IR.InspectionCode = FI.InspCd
         INNER JOIN bpBASE_PERMIT B ON B.BaseID = IR.BaseId
+        LEFT OUTER JOIN bpPROPUSE_REF PR ON B.PropUseCode = PR.UseCode
         WHERE 
           1=1
           AND M.VoidDate IS NULL
           AND A.VoidDate IS NULL
           AND (CAST(IR.SchecDateTime AS DATE) IN (@Today, @Tomorrow)
           OR (CAST(IR.SchecDateTime AS DATE) < @Today
-            AND ResultADC IS NULL))";
+            AND ResultADC IS NULL))
+        ORDER BY MasterPermitNumber DESC, PermitNo ASC";
       try
       {
         var li = Constants.Get_Data<Inspection>(query, Constants.csWATSC);
@@ -185,6 +194,20 @@ namespace ClayInspectionView.Models
 
     }
 
+
+    public static List<string> GetPermitNotes(string PermitNo)
+    {
+      var dp = new DynamicParameters();
+      dp.Add("@PermitNo", PermitNo);
+      string sql = @"
+          SELECT DISTINCT            
+            CAST(Note AS VARCHAR(MAX)) note
+          FROM bpNotes n
+          WHERE 
+            permitno = @PermitNo
+            AND INFOTYPE =  'T'";
+      return Constants.Get_Data<string>(sql, dp, Constants.csWATSC);
+    }
 
 
     //public static bool Assign(string LookupKey, int InspectorId, string Day)

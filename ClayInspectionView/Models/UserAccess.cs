@@ -167,8 +167,8 @@ namespace ClayInspectionView.Models
         string un = Username.Replace(@"CLAYBCC\", "").ToLower();
         switch (Environment.MachineName.ToUpper())
         {
-          case "MISSL01":
-            return new UserAccess(un);
+          //case "MISSL01":
+            //return new UserAccess(un);
           default:
             var d = GetCachedAllUserAccess();
 

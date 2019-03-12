@@ -17,11 +17,7 @@ namespace ClayInspectionView.Controllers
     [Route("List")]
     public IHttpActionResult Get()
     {
-      var CIP = new CacheItemPolicy()
-      {
-        AbsoluteExpiration = DateTime.Now.AddHours(1)
-      };
-      List<Inspector> inspectors = (List<Inspector>)myCache.GetItem("inspectors", CIP);
+      var inspectors = Inspector.GetCachedInspectors();
       if (inspectors != null)
       {
         return Ok(inspectors);
@@ -38,7 +34,35 @@ namespace ClayInspectionView.Controllers
     {
       if (UserAccess.GetUserAccess(User.Identity.Name).current_access == UserAccess.access_type.admin_access)
       {
-        return Ok(Inspector.Get());
+        return Ok(Inspector.GetEditList());
+      }
+      else
+      {
+        return Ok();
+      }
+    }
+
+    [HttpPost]
+    [Route("Update")]
+    public IHttpActionResult Update(Inspector inspector)
+    {
+      if (UserAccess.GetUserAccess(User.Identity.Name).current_access == UserAccess.access_type.admin_access)
+      {
+        return Ok(inspector.Update());
+      }
+      else
+      {
+        return Ok();
+      }
+    }
+    // Add something to update the inspector cache when this or the update is run.
+    [HttpPost]
+    [Route("Insert")]
+    public IHttpActionResult Insert(Inspector inspector)
+    {
+      if (UserAccess.GetUserAccess(User.Identity.Name).current_access == UserAccess.access_type.admin_access)
+      {
+        return Ok(inspector.Insert());
       }
       else
       {

@@ -11,7 +11,7 @@
   <!--<link href="Content/bulma.min.css" rel="stylesheet" />
   <link href="Content/main.css" rel="stylesheet" />
   <link href="Content/Utilities.min.css" rel="stylesheet" />-->
-  <link href="Content/bundle.css" rel="stylesheet" />
+  <link href="Content/bundle.css?20190312-0952" rel="stylesheet" />
 </head>
 <body>
   <nav class="navbar is-light hide-for-print" role="navigation" aria-label="main navigation">
@@ -76,8 +76,7 @@
           <div class="control">
             <div class="select">
               <select class="is-small"
-                      id="bulkAssignSelect">
-                <option value="-1">Select Inspector</option>
+                      id="bulkAssignSelect">                
               </select>
 
             </div>
@@ -99,8 +98,7 @@
            id="bulkAssignError">
 
       </div>
-      <ol 
-          id="InspectorList">
+      <ol id="InspectorList">
 
       </ol>
     </div>
@@ -288,7 +286,8 @@
                 class="button is-warning">
           Reset to Defaults
         </button>
-        <button type="button"
+        <button style="margin-right: 4em;"
+                type="button"
                 onclick="IView.SaveCookie();"
                 class="button is-info">
           Save Settings as Default
@@ -332,7 +331,7 @@
                   colspan="4">
                 Residential
               </th>
-              <th colspan="2">
+              <th colspan="3">
                 &nbsp;
               </th>
             </tr>
@@ -351,49 +350,39 @@
               <th>P</th>
               <th>M</th>
               <th>Fire</th>
-              <th>Private Provider</th>
+              <th>P P</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Chet Barr</td>
-              <td>Yes</td>
-              <td>CB</td>
-              <td>#FF6600</td>
-              <td>None</td>
-              <td>Yes</td>
-              <td>Yes</td>
-              <td>Yes</td>
-              <td>Yes</td>
-              <td>Yes</td>
-              <td>Yes</td>
-              <td>Yes</td>
-              <td>Yes</td>
-              <td>No</td>
-              <td>Yes</td>
-            </tr>
+          <tbody id="inspectorControlList">
+
           </tbody>
+          <tfoot>
+            <tr>
+              <td>
+                <div class="control">
+                  <button onclick="IView.Inspector.AddInspectorToEdit()"
+                          type="button"
+                          class="button is-warning">
+                    Add Inspector
+                  </button>
+                </div>
+              </td>
+              <td colspan="15"></td>
+            </tr>
+          </tfoot>
         </table>
-
-
-
-
-
-
       </section>
       <footer style="justify-content: flex-end;"
               class="modal-card-foot hide-for-print">
-
+        <p id="inspectorUpdateMessage"
+           class="modal-card-title">
+        </p>
 
         <button type="button"
                 onclick="IView.CloseModals();"
                 class="button is-warning">
-          Cancel Without Saving
-        </button>
-        <button type="button"
-                onclick="IView.SaveInspectors();"
-                class="button is-success">
-          Save & Close
+          Close
         </button>
       </footer>
     </div>
@@ -431,6 +420,7 @@
       </section>
       <footer style="justify-content: flex-end;"
               class="modal-card-foot hide-for-print">
+
         <button type="button"
                 onclick="IView.CloseLocationModal();"
                 class="button is-success">
@@ -449,7 +439,7 @@
 
   </script>
 
-  <script src="Scripts/bundle.js"></script>
+  <script src="Scripts/bundle.js?20190312-0952"></script>
 </body>
 
 </html>

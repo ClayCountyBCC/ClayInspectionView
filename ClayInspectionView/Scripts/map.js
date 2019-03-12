@@ -52,6 +52,8 @@ var IView;
                 IView.location_layer.on("click", function (event) {
                     if (event === undefined)
                         return;
+                    if (!event.graphic || !event.graphic.attributes)
+                        return;
                     //console.log('graphics layer clicked - event', event); 
                     IView.last_symbol_color = event.graphic.symbol.color;
                     IView.last_selected_graphic = event.graphic;

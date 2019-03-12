@@ -6880,7 +6880,8 @@ label.panel-block {
   }
 }*/
 
-#map {
+#map 
+{
   height: calc(100% - 52px);
   width: calc(100%);
 }
@@ -6938,6 +6939,21 @@ div.titlePane div.title
   margin-bottom: 0 !important;
   margin-top: 0 !important;
 }
+.table tr > th, thead
+{
+  position: sticky !important;
+  top: -20px;
+  background-color: white;
+  opacity: 1;
+  border-bottom: 1px dotted #333333;
+  z-index: 41;
+}
+th, td
+{
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
 /*.strike {
   text-decoration: line-through;
 }

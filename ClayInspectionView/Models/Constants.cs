@@ -34,13 +34,27 @@ namespace ClayInspectionView.Models
       }
     }
 
+    public static List<T> Get_Data<T>(string query, T item, string cs)
+    {
+      try
+      {
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
+        {
+          return (List<T>)db.Query<T>(query, item);
+        }
+      }
+      catch (Exception ex)
+      {
+        new ErrorLog(ex, query);
+        return null;
+      }
+    }
+
     public static List<T> Get_Data<T>(string query, DynamicParameters dbA, string cs, int timeOut = 60)
     {
       try
       {
-        using (IDbConnection db =
-          new SqlConnection(
-            Get_ConnStr(cs)))
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
         {
           return (List<T>)db.Query<T>(query, dbA, commandTimeout: timeOut);
         }
@@ -56,11 +70,25 @@ namespace ClayInspectionView.Models
     {
       try
       {
-        using (IDbConnection db =
-          new SqlConnection(
-            Get_ConnStr(cs)))
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
         {
           return db.Execute(query, dbA);
+        }
+      }
+      catch (Exception ex)
+      {
+        new ErrorLog(ex, query);
+        return -1;
+      }
+    }
+
+    public static int Exec_Query<T>(string query, T item, string cs)
+    {
+      try
+      {
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
+        {
+          return db.Execute(query, item);
         }
       }
       catch (Exception ex)

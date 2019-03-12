@@ -23,6 +23,8 @@ namespace IView
     Parcel: string;
     IsCompleted: boolean;
     InspectionCode: string;
+    MasterPermitNumber: string;
+    PropUseInfo: string;
     ScheduledDate: Date;
     InspDateTime: Date;
     ScheduledDay: string;
@@ -64,6 +66,8 @@ namespace IView
     public IsCompleted: boolean;
     public InspectionCode: string;
     public CanBeAssigned: boolean;
+    public MasterPermitNumber: string = "";
+    public PropUseInfo: string = "";
     public ScheduledDate: Date;
     public InspDateTime: Date;
     public ScheduledDay: string;
@@ -115,9 +119,6 @@ namespace IView
           
           Utilities.Toggle_Loading_Button("refreshButton", false);
           Utilities.Toggle_Loading_Button("filterButton", false);
-
-          
-          
           
         }, function (e)
           {
@@ -126,20 +127,45 @@ namespace IView
           Utilities.Toggle_Loading_Button("refreshButton", false);
           Utilities.Toggle_Loading_Button("filterButton", false);
           });
-      //var x = XHR.Get("API/Inspections/GetInspections");
-      //return new Promise<Array<Inspection>>(function (resolve, reject)
-      //{
-      //  x.then(function (response)
-      //  {
-      //    let ar: Array<Inspection> = JSON.parse(response.Text);
-      //    return resolve(ar);
-      //  }).catch(function ()
-      //  {
-      //    console.log("error in Get Inspections");
-      //    return reject(null);
-      //  });
-      //});
     }
+
+    public static GetPermitNotes(PermitNo: string, button: HTMLButtonElement, target: HTMLElement): void
+    {
+      if (PermitNo.length === 0) return;
+      Utilities.Toggle_Loading_Button(button, true);      
+      let path = Utilities.Get_Path("/inspectionview");
+      Utilities.Get<Array<string>>(path + "API/Inspections/GetPermitNotes?PermitNo=" + PermitNo)
+        .then(function (notes: Array<string>)
+        {
+          if (notes.length > 0)
+          {
+            for (let n of notes)
+            {
+              let p = document.createElement("p");
+              p.classList.add("has-text-left");
+              p.appendChild(document.createTextNode(IView.Strip_Html(n)));
+              target.appendChild(p);
+            }
+          }
+          else
+          {
+            let p = document.createElement("p");
+            p.classList.add("has-text-left");
+            p.appendChild(document.createTextNode("No notes found."));
+            target.appendChild(p);
+          }
+
+
+          Utilities.Toggle_Loading_Button(button, false);
+        }, function (e)
+          {
+            console.log('error getting permit notes', e);
+          
+            Utilities.Toggle_Loading_Button(button, false);
+          });
+    }
+
+
 
     static HandleInspections(inspections: Array<Inspection>): void
     {
@@ -162,6 +188,7 @@ namespace IView
 
     public static BulkAssign(InspectorId: number, InspectionIds: Array<number>, parentElement: HTMLElement = undefined): void
     {
+      if (InspectionIds.length === 0) return;
       if (parentElement) parentElement.classList.add("is-loading");
       let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("bulkAssignButton");
       Utilities.Toggle_Loading_Button(button, true);
@@ -171,7 +198,7 @@ namespace IView
         InspectorId: InspectorId,
         InspectionIds: InspectionIds
       };
-      var x = Utilities.Post<Array<Inspection>>(path + "API/Assign/BulkAssign/", AssignData)
+      Utilities.Post<Array<Inspection>>(path + "API/Assign/BulkAssign/", AssignData)
         .then(function (inspections: Array<Inspection>)
         {
           Utilities.Toggle_Loading_Button(button, false);
