@@ -29,7 +29,7 @@ namespace ClayInspectionView.Models
       admin_access = 5
     }
     public access_type current_access { get; set; } = access_type.public_access; // default to public access.
-
+        
     public UserAccess(string name)
     {
       user_name = name;
@@ -142,6 +142,11 @@ namespace ClayInspectionView.Models
           case "CLAYBCCDMZIIS01":
             d[""] = new UserAccess("");
             break;
+
+          case "MISSL01":
+            d["mccartneyd"] = new UserAccess("mccartneyd");
+            break;
+
           default:
             ParseGroup(inspector_access_group, ref d);
             ParseGroup(mis_access_group, ref d);
@@ -164,11 +169,10 @@ namespace ClayInspectionView.Models
     {
       try
       {
+
         string un = Username.Replace(@"CLAYBCC\", "").ToLower();
         switch (Environment.MachineName.ToUpper())
         {
-          //case "MISSL01":
-            //return new UserAccess(un);
           default:
             var d = GetCachedAllUserAccess();
 

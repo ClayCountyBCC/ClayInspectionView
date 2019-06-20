@@ -43,7 +43,12 @@ namespace IView
     RPL: boolean;
     CPL: boolean;
     Fire: boolean;
-
+    Sort_Order: number;
+    myInspection: boolean;
+    IMSLink: string;
+    PermitTypeString: string;
+    MasterPermitIMSLink: string;
+    PreviousInspectionRemarks: string;
     //GetInspections(Day: string, Total: string): Promise<Array<Inspection>>;
     //BulkAssign(InspectorId: number, InspectionIds: Array<number>);
   }
@@ -85,6 +90,12 @@ namespace IView
     public RPL: boolean;
     public CPL: boolean;
     public Fire: boolean;
+    public Sort_Order: number = 0;
+    public myInspection: boolean = false;
+    public IMSLink: string = "";
+    public PermitTypeString: string = "";
+    public MasterPermitIMSLink: string = "";
+    public PreviousInspectionRemarks: string = "";
 
     constructor()
     {
@@ -110,21 +121,26 @@ namespace IView
     public static GetInspections(): void
     {
       Utilities.Toggle_Loading_Button("refreshButton", true);
+      Utilities.Toggle_Loading_Button("myRefreshButton", true);
       Utilities.Toggle_Loading_Button("filterButton", true);
       let path = Utilities.Get_Path("/inspectionview");
       Utilities.Get<Array<Inspection>>(path + "API/Inspections/GetInspections")
         .then(function (inspections: Array<Inspection>)
         {
+          let i = inspections.filter(function (j) { return j.PreviousInspectionRemarks.length > 0; });
+          console.log('inspections with previous remarks', i);
           Inspection.HandleInspections(inspections);
           
           Utilities.Toggle_Loading_Button("refreshButton", false);
+          Utilities.Toggle_Loading_Button("myRefreshButton", false);
           Utilities.Toggle_Loading_Button("filterButton", false);
           
         }, function (e)
           {
             console.log('error getting inspectors', e);
             IView.allInspectors = [];
-          Utilities.Toggle_Loading_Button("refreshButton", false);
+            Utilities.Toggle_Loading_Button("refreshButton", false);
+            Utilities.Toggle_Loading_Button("myRefreshButton", false);
           Utilities.Toggle_Loading_Button("filterButton", false);
           });
     }
@@ -184,6 +200,9 @@ namespace IView
           IView.current_location.LocationView();
         }
       }
+      IView.myInspections = inspections.filter(function (j) { return j.myInspection && j.ScheduledDay === "today" && !j.IsCompleted; });
+      console.log('my inspections', IView.myInspections);      
+      Location.HandleMyLocations(IView.myInspections);
     }
 
     public static BulkAssign(InspectorId: number, InspectionIds: Array<number>, parentElement: HTMLElement = undefined): void

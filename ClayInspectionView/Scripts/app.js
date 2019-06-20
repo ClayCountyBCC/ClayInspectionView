@@ -4,6 +4,8 @@
 var IView;
 (function (IView) {
     IView.allInspections = []; // populated from web service
+    IView.myLocations = [];
+    IView.myInspections = [];
     IView.inspectors_to_edit = []; // only populated if the user has admin access.
     IView.allInspectors = []; // populated from web service
     IView.allUnits = [];
@@ -17,6 +19,7 @@ var IView;
     IView.private_provider_only = false;
     IView.invalid_address_only = false;
     IView.show_bulk_assign = true;
+    IView.contractor_check = true;
     IView.permit_types_toggle_status = false;
     IView.inspector_toggle_status = false;
     IView.mapLoaded = false;
@@ -26,8 +29,81 @@ var IView;
         // setup default map
         IView.mapController = new IView.MapController("map");
         IView.Inspector.GetAllInspectors();
+        SetupDragula();
     }
     IView.Start = Start;
+    function SetupDragula() {
+        var container = document.getElementById("sortableInspections");
+        var drake = dragula([container], {
+            direction: 'vertical',
+            copy: false,
+            revertOnSplit: true,
+            ignoreInputTextSelection: false
+        });
+        var scroll = autoScroll([container], {
+            margin: 20,
+            maxSpeed: 30,
+            scrollWhenOutside: true,
+            autoScroll: function () {
+                return this.down && drake.dragging;
+            }
+        });
+        //console.log('drake', drake);
+        drake.on("drop", function (el, target, source, sibling) {
+            //console.log('on drop', el, target, source, sibling);
+            for (var i = 0; i < target.children.length; i++) {
+                var child = target.children[i];
+                var index = IView.Location.GetLocationIndex(child.id, IView.myLocations);
+                if (index !== -1) {
+                    var location_1 = IView.myLocations[index];
+                    location_1.order = i + 1;
+                    if (el.id === location_1.lookup_key && location_1.unordered)
+                        location_1.unordered = false;
+                }
+            }
+            IView.Location.UpdateMyLocations();
+        });
+    }
+    function ReorderLocations() {
+        // need to get the first child of sortableinspections container
+        // get that element's id
+        // then run location.sortbyproximity on it    
+        var e = document.getElementById("sortableInspections").firstChild;
+        if (e.childElementCount < 1)
+            return;
+        IView.myLocations = IView.Location.SortByProximity(IView.myLocations, e.id);
+        IView.Location.UpdateMyLocations();
+    }
+    IView.ReorderLocations = ReorderLocations;
+    function ReverseOrderLocations() {
+        var e = document.getElementById("sortableInspections").lastChild;
+        if (e.childElementCount < 1)
+            return;
+        IView.myLocations = IView.Location.SortByProximity(IView.myLocations, e.id);
+        IView.Location.UpdateMyLocations();
+    }
+    IView.ReverseOrderLocations = ReverseOrderLocations;
+    function ToggleMyInspections(button) {
+        //let currentExtent = mapController.map.extent;
+        var container = document.getElementById("myInspections");
+        if (container.classList.contains("column")) {
+            container.classList.remove("column");
+            button.classList.remove("is-inverted");
+            button.classList.remove("is-outline");
+            button.classList.remove("is-white");
+            Utilities.Hide(container);
+            IView.mapController.ToggleMyLocations(false);
+        }
+        else {
+            container.classList.add("column");
+            button.classList.add("is-white");
+            button.classList.add("is-inverted");
+            button.classList.add("is-outline");
+            Utilities.Show(container);
+            IView.mapController.ToggleMyLocations(true);
+        }
+    }
+    IView.ToggleMyInspections = ToggleMyInspections;
     function LoadDefaultsFromCookie() {
         var status = GetMapCookie("inspection_status_filter");
         var day = GetMapCookie("day_filter");
@@ -284,45 +360,28 @@ var IView;
         HandleHash();
         IView.mapController.UpdateLocationLayer(IView.filteredLocations);
         IView.Unit.GetUnits();
-        //mapController.ClearLayers();
-        //let days = ["Today", "Tomorrow"];
-        //if (currentDay === "") currentDay = days[0];
-        //for (let d of days)
-        //{
-        //  let inspections = allInspections.filter(
-        //    function (k)
-        //    {
-        //      return k.ScheduledDay === d && !k.IsCompleted;
-        //    }); // todays incompleted inspections
-        //  let inspectors = buildInspectorData(inspections);
-        //  mapController.ApplyLayers(
-        //    mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
-        //  );
-        //  inspections = allInspections.filter(
-        //    function (k)
-        //    {
-        //      return k.ScheduledDay === d;
-        //    }); // todays incompleted inspections
-        //  //inspectors = buildInspectorData(inspections);
-        //  mapController.ApplyLayers(
-        //    mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
-        //  );
-        //}
-        //mapController.ToggleLayersByDay(currentDay, currentIsComplete);
-        //BuildLegend();
     }
     IView.BuildAndLoadInitialLayers = BuildAndLoadInitialLayers;
     function DrawToggle() {
         var select = document.getElementById("bulkAssignSelect");
         var button = document.getElementById("bulkAssignButton");
+        Utilities.Toggle_Loading_Button(button, true);
         var selectedInspector = Utilities.Get_Value(select);
         if (selectedInspector === "-1") {
             Utilities.Error_Show("bulkAssignError", "Please choose an inspector.", true);
+            Utilities.Toggle_Loading_Button(button, false);
             return;
         }
-        IView.mapController.ToggleDraw();
+        Utilities.Show("cancelBulkAssign");
+        IView.mapController.ToggleDraw(true);
     }
     IView.DrawToggle = DrawToggle;
+    function CancelDrawToggle() {
+        IView.mapController.ToggleDraw(false);
+        Utilities.Toggle_Loading_Button("bulkAssignButton", false);
+        Utilities.Hide("cancelBulkAssign");
+    }
+    IView.CancelDrawToggle = CancelDrawToggle;
     function ShowFilters() {
         document.getElementById("filters").classList.add("is-active");
     }
@@ -333,12 +392,14 @@ var IView;
     IView.ShowInspectors = ShowInspectors;
     function CloseLocationModal() {
         IView.current_location = null;
-        var symbol = IView.last_selected_graphic.symbol;
-        var color = IView.last_symbol_color;
-        window.setTimeout(function (j) {
-            symbol.color = color;
-            IView.location_layer.redraw();
-        }, 10000);
+        if (!IView.last_selected_graphic === null) {
+            var symbol_1 = IView.last_selected_graphic.symbol;
+            var color_1 = IView.last_symbol_color;
+            window.setTimeout(function (j) {
+                symbol_1.color = color_1;
+                IView.location_layer.redraw();
+            }, 10000);
+        }
         CloseModals();
     }
     IView.CloseLocationModal = CloseLocationModal;
@@ -376,6 +437,8 @@ var IView;
         var LookupKeys = IView.mapController.FindItemsInExtent(extent);
         var InspectorId = parseInt(document.getElementById("bulkAssignSelect").value);
         BulkAssign(InspectorId, LookupKeys);
+        Utilities.Toggle_Loading_Button(document.getElementById("bulkAssignButton"), false);
+        Utilities.Hide("cancelBulkAssign");
     }
     IView.FindItemsInExtent = FindItemsInExtent;
     function BulkAssign(InspectorId, LookupKeys) {

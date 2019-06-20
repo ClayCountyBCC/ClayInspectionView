@@ -2,20 +2,28 @@
 /// <reference path="unit.ts" />
 //import MapController from "./map";
 
+declare var dragula: any;
+declare var autoScroll: any;
+
 
 namespace IView
 {
 
   export let mapController: MapController;
   export let allInspections: Array<Inspection> = [];// populated from web service
+  export let myLocations: Array<Location> = [];
+  export let myInspections: Array<Inspection> = [];
   export let inspectors_to_edit: Array<Inspector> = []; // only populated if the user has admin access.
   export let allInspectors: Array<Inspector> = []; // populated from web service
   export let allUnits: Array<Unit> = [];
   export let filteredLocations: Array<Location> = [];
   export let current_location: Location = null;
+  // map layers
   export let location_layer: any;
   export let unit_layer: any;
+  export let order_layer: any;
   export let allLayers: Array<any>; // all of the layers created.
+
   export let day_filter: string = "today";  
   export let inspection_status_filter = "open";
   export let permit_kind_filter: string = "all";
@@ -26,6 +34,7 @@ namespace IView
   export let show_bulk_assign: boolean = true;
   export let last_selected_graphic: any; 
   export let last_symbol_color: any;
+  export let contractor_check: boolean = true;
 
   export let permit_types_toggle_status: boolean = false;
   export let inspector_toggle_status: boolean = false;
@@ -40,6 +49,93 @@ namespace IView
     // setup default map
     mapController = new MapController("map");
     Inspector.GetAllInspectors();
+    SetupDragula();
+  }
+
+  function SetupDragula()
+  {
+    let container = document.getElementById("sortableInspections");
+    let drake = dragula([container],
+      {
+        direction: 'vertical',
+        copy: false,
+        revertOnSplit: true,
+        ignoreInputTextSelection: false
+
+      });
+    let scroll = autoScroll([container],
+      {
+        margin: 20
+        , maxSpeed: 30
+        , scrollWhenOutside: true
+        , autoScroll: function ()
+        {
+          return this.down && drake.dragging;
+        }
+      });
+    //console.log('drake', drake);
+    drake.on("drop",
+      function (el: HTMLElement, target, source, sibling: HTMLElement)
+      {
+        //console.log('on drop', el, target, source, sibling);
+        for (let i = 0; i < target.children.length; i++)
+        {
+          let child = <HTMLElement>target.children[i];
+          let index = Location.GetLocationIndex(child.id, IView.myLocations);
+          if (index !== -1)
+          {
+            let location = IView.myLocations[index];
+            location.order = i + 1;
+            if (el.id === location.lookup_key && location.unordered) location.unordered = false;
+          }
+        }
+        Location.UpdateMyLocations();
+
+      }
+    );
+  }
+
+  export function ReorderLocations(): void
+  {
+    // need to get the first child of sortableinspections container
+    // get that element's id
+    // then run location.sortbyproximity on it    
+    let e = <HTMLElement>document.getElementById("sortableInspections").firstChild;
+    if (e.childElementCount < 1) return;
+    IView.myLocations = Location.SortByProximity(IView.myLocations, e.id);
+    Location.UpdateMyLocations();
+  }
+
+  export function ReverseOrderLocations(): void
+  {
+    let e = <HTMLElement>document.getElementById("sortableInspections").lastChild;
+    if (e.childElementCount < 1) return;
+    IView.myLocations = Location.SortByProximity(IView.myLocations, e.id);
+    Location.UpdateMyLocations();
+  }
+
+  export function ToggleMyInspections(button: HTMLButtonElement)
+  {    
+    //let currentExtent = mapController.map.extent;
+    let container = document.getElementById("myInspections");
+    if (container.classList.contains("column"))
+    {
+      container.classList.remove("column");
+      button.classList.remove("is-inverted");
+      button.classList.remove("is-outline");
+      button.classList.remove("is-white");
+      Utilities.Hide(container);
+      mapController.ToggleMyLocations(false);      
+    }
+    else
+    {
+      container.classList.add("column");
+      button.classList.add("is-white");
+      button.classList.add("is-inverted");
+      button.classList.add("is-outline");
+      Utilities.Show(container);
+      mapController.ToggleMyLocations(true);      
+    }
   }
 
   export function LoadDefaultsFromCookie()
@@ -364,51 +460,29 @@ namespace IView
     HandleHash();
     mapController.UpdateLocationLayer(IView.filteredLocations);
     Unit.GetUnits();
-
-    //mapController.ClearLayers();
-
-    //let days = ["Today", "Tomorrow"];
-    //if (currentDay === "") currentDay = days[0];
-    //for (let d of days)
-    //{
-    //  let inspections = allInspections.filter(
-    //    function (k)
-    //    {
-    //      return k.ScheduledDay === d && !k.IsCompleted;
-    //    }); // todays incompleted inspections
-
-    //  let inspectors = buildInspectorData(inspections);
-    //  mapController.ApplyLayers(
-    //    mapController.CreateLayers(inspectors, d, false) // , days[0] === currentDay
-    //  );
-    //  inspections = allInspections.filter(
-    //    function (k)
-    //    {
-    //      return k.ScheduledDay === d;
-    //    }); // todays incompleted inspections
-
-    //  //inspectors = buildInspectorData(inspections);
-    //  mapController.ApplyLayers(
-    //    mapController.CreateLayers(inspectors, d, true) // , days[0] === currentDay
-    //  );
-
-    //}
-
-    //mapController.ToggleLayersByDay(currentDay, currentIsComplete);
-    //BuildLegend();
   }
 
   export function DrawToggle():void
   {
     let select: HTMLSelectElement = <HTMLSelectElement>document.getElementById("bulkAssignSelect");
     let button: HTMLButtonElement = <HTMLButtonElement>document.getElementById("bulkAssignButton");
+    Utilities.Toggle_Loading_Button(button, true);
     let selectedInspector = Utilities.Get_Value(select)
     if (selectedInspector === "-1")
     {
       Utilities.Error_Show("bulkAssignError", "Please choose an inspector.", true);
+      Utilities.Toggle_Loading_Button(button, false);
       return;
     }
-    mapController.ToggleDraw();
+    Utilities.Show("cancelBulkAssign");
+    mapController.ToggleDraw(true);
+  }
+
+  export function CancelDrawToggle(): void
+  {
+    mapController.ToggleDraw(false);
+    Utilities.Toggle_Loading_Button("bulkAssignButton", false);
+    Utilities.Hide("cancelBulkAssign")
   }
 
   export function ShowFilters()
@@ -424,13 +498,16 @@ namespace IView
   export function CloseLocationModal()
   {
     IView.current_location = null;
-    let symbol = IView.last_selected_graphic.symbol;
-    let color = IView.last_symbol_color;
-    window.setTimeout(function (j)
+    if (!IView.last_selected_graphic === null)
     {
-      symbol.color = color;       
-      IView.location_layer.redraw();      
-    }, 10000)
+      let symbol = IView.last_selected_graphic.symbol;
+      let color = IView.last_symbol_color;
+      window.setTimeout(function (j)
+      {
+        symbol.color = color;
+        IView.location_layer.redraw();
+      }, 10000);
+    }
     CloseModals();
   }
 
@@ -473,6 +550,8 @@ namespace IView
     let LookupKeys: Array<string> = mapController.FindItemsInExtent(extent);
     let InspectorId: number = parseInt((<HTMLSelectElement>document.getElementById("bulkAssignSelect")).value);
     BulkAssign(InspectorId, LookupKeys);
+    Utilities.Toggle_Loading_Button(<HTMLButtonElement>document.getElementById("bulkAssignButton"), false);
+    Utilities.Hide("cancelBulkAssign");
   }
 
   function BulkAssign(InspectorId: number, LookupKeys: Array<string>)

@@ -11,6 +11,7 @@ namespace ClayInspectionView.Models
     public DateTime Date_Last_Communicated { get; set; }
     public decimal Longitude { get; set; }
     public decimal Latitude { get; set; }
+    public string Assigned_Inspector { get; set; } = "";
     public string Unit_Icon_URL
     {
       get
@@ -65,7 +66,21 @@ namespace ClayInspectionView.Models
       FROM unit_tracking_data UD
       INNER JOIN unit_group UG ON UD.unitcode = UG.unitcode AND UG.group_name = 'INSPECTOR'       
       ORDER BY UD.unitcode ASC";
-      return Constants.Get_Data<Unit>(query, Constants.csTracking);
+
+      var units = Constants.Get_Data<Unit>(query, Constants.csTracking);
+      var inspectors = Inspector.GetCachedInspectors();
+      foreach(Unit u in units)
+      {
+        foreach(Inspector i in inspectors)
+        {
+          if(i.Vehicle == u.Name)
+          {
+            u.Assigned_Inspector = i.Name;
+            break;
+          }
+        }
+      }
+      return units;
     }
 
     public static List<Unit> GetCachedInspectionUnits()

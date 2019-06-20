@@ -24,7 +24,7 @@ namespace ClayInspectionView.Controllers
       }
       else
       {
-        return Ok();
+        return Ok("");
       }
     }
 

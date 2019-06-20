@@ -9,6 +9,12 @@ var IView;
             this.PropUseInfo = "";
             this.Age = -1;
             this.ValidInspectors = [];
+            this.Sort_Order = 0;
+            this.myInspection = false;
+            this.IMSLink = "";
+            this.PermitTypeString = "";
+            this.MasterPermitIMSLink = "";
+            this.PreviousInspectionRemarks = "";
         }
         Inspection.GetValidInspectors = function (inspection) {
             return IView.allInspectors.filter(function (i) {
@@ -25,17 +31,22 @@ var IView;
         };
         Inspection.GetInspections = function () {
             Utilities.Toggle_Loading_Button("refreshButton", true);
+            Utilities.Toggle_Loading_Button("myRefreshButton", true);
             Utilities.Toggle_Loading_Button("filterButton", true);
             var path = Utilities.Get_Path("/inspectionview");
             Utilities.Get(path + "API/Inspections/GetInspections")
                 .then(function (inspections) {
+                var i = inspections.filter(function (j) { return j.PreviousInspectionRemarks.length > 0; });
+                console.log('inspections with previous remarks', i);
                 Inspection.HandleInspections(inspections);
                 Utilities.Toggle_Loading_Button("refreshButton", false);
+                Utilities.Toggle_Loading_Button("myRefreshButton", false);
                 Utilities.Toggle_Loading_Button("filterButton", false);
             }, function (e) {
                 console.log('error getting inspectors', e);
                 IView.allInspectors = [];
                 Utilities.Toggle_Loading_Button("refreshButton", false);
+                Utilities.Toggle_Loading_Button("myRefreshButton", false);
                 Utilities.Toggle_Loading_Button("filterButton", false);
             });
         };
@@ -81,6 +92,9 @@ var IView;
                     IView.current_location.LocationView();
                 }
             }
+            IView.myInspections = inspections.filter(function (j) { return j.myInspection && j.ScheduledDay === "today" && !j.IsCompleted; });
+            console.log('my inspections', IView.myInspections);
+            IView.Location.HandleMyLocations(IView.myInspections);
         };
         Inspection.BulkAssign = function (InspectorId, InspectionIds, parentElement) {
             if (parentElement === void 0) { parentElement = undefined; }

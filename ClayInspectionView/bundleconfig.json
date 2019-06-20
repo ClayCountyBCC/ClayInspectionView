@@ -10,8 +10,12 @@
       "Scripts/map.js",
       "Scripts/Location.js",
       "Scripts/LocationHash.js",
+      "Scripts/LocationDistance.js",
+      "Scripts/ReorderData.js",
       "Scripts/Inspector.js",
       "Scripts/Inspection.js",
+      "Content/dragula/dragula.js",
+      "Content/dom_autoscroller/dom-autoscroller.js",
       "Scripts/app.js"
     ]
   },
@@ -20,7 +24,9 @@
     "inputFiles": [
       "Content/myBulma.css",
       "Content/Utilities.css",
-      "Content/main.css"
+      "Content/main.css",
+      "Content/dragula/dragula.css"
+
     ]
   }
 ]

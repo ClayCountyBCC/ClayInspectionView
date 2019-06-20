@@ -24,6 +24,7 @@ namespace ClayInspectionView.Models
     public bool CPL { get; set; }
     public bool PrivateProvider { get; set; }
     public bool Fire { get; set; }
+    public bool contractor { get; set;  }
     public Inspector()
     {
 
@@ -37,6 +38,16 @@ namespace ClayInspectionView.Models
       };
       return (List<Inspector>)myCache.GetItem("inspectors", CIP);
     }
+
+    public static List<Inspector> GetCachedContractInspectors()
+    {
+      var CIP = new CacheItemPolicy()
+      {
+        AbsoluteExpiration = DateTime.Now.AddHours(1)
+      };
+      return (List<Inspector>)myCache.GetItem("contractinspectors", CIP);
+    }
+
 
     public static List<Inspector>Get()
     {
@@ -57,7 +68,8 @@ namespace ClayInspectionView.Models
           RPL,
           CPL,
           PrivateProvider,
-          Fire
+          Fire,
+          Contractor
         FROM bp_INSPECTORS
         WHERE 
           Active=1
@@ -78,13 +90,51 @@ namespace ClayInspectionView.Models
           1,
           1,
           1,
-          1
+          1,
+          0
         ORDER BY Name ASC";
       try
       {
         return Constants.Get_Data<Inspector>(query, Constants.csWATSC); 
       }
       catch(Exception ex)
+      {
+        new ErrorLog(ex, query);
+        return null;
+      }
+    }
+
+    public static List<Inspector> GetContractInspectors()
+    {
+      string query = @"
+        SELECT 
+          id,
+          Active,
+          Intl,
+          LTRIM(RTRIM(Name)) Name,
+          Color,
+          Vehicle,
+          RBL,
+          CBL,
+          REL,
+          CEL,
+          RME,
+          CME,
+          RPL,
+          CPL,
+          PrivateProvider,
+          Fire,
+          contractor
+        FROM bp_INSPECTORS
+        WHERE 
+          Active=1
+          AND contractor = 1
+        ORDER BY Name ASC";
+      try
+      {
+        return Constants.Get_Data<Inspector>(query, Constants.csWATSC);
+      }
+      catch (Exception ex)
       {
         new ErrorLog(ex, query);
         return null;

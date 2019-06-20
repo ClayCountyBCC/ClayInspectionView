@@ -17,14 +17,15 @@ namespace ClayInspectionView.Controllers
     [Route("List")]
     public IHttpActionResult Get()
     {
-      var inspectors = Inspector.GetCachedInspectors();
-      if (inspectors != null)
+      if (UserAccess.GetUserAccess(User.Identity.Name).current_access == UserAccess.access_type.contract_access)
       {
+        var inspectors = Inspector.GetCachedContractInspectors();
         return Ok(inspectors);
       }
       else
       {
-        return InternalServerError();
+        var inspectors = Inspector.GetCachedInspectors();
+        return Ok(inspectors);
       }
     }
 

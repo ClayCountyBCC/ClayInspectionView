@@ -5,6 +5,7 @@ var IView;
 (function (IView) {
     var Unit = /** @class */ (function () {
         function Unit() {
+            this.Assigned_Inspector = "";
         }
         Unit.GetUnits = function () {
             var path = Utilities.Get_Path("/inspectionview");
@@ -13,7 +14,7 @@ var IView;
                 IView.allUnits = units;
                 IView.mapController.UpdateUnitLayer(units);
             }, function (e) {
-                console.log('error getting units');
+                console.log('error getting units', e);
                 IView.allUnits = [];
             });
         };

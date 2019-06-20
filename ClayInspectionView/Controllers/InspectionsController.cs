@@ -52,5 +52,14 @@ namespace ClayInspectionView.Controllers
       return Ok(notes);
     }
 
+    [HttpPost]
+    [Route("Reorder")]
+    public IHttpActionResult UpdateInspectionOrder(List<ReorderData> data)
+    {
+      var ua = UserAccess.GetUserAccess(User.Identity.Name);
+      ReorderData.Save(data);
+      return Ok(Inspection.GetInspections(ua));
+    }
+
   }
 }

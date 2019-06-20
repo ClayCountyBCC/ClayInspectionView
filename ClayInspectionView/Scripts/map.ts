@@ -10,6 +10,9 @@ namespace IView
     map: any;
     drawToolbar: any;
     isDrawing: boolean = false;
+    defaultExtent: any;
+    //shortExtent: any;
+    //homeButton: any;
 
     constructor(public mapDiv: string)
     {
@@ -39,18 +42,17 @@ namespace IView
           Draw
         )
         {
-          let defaultExtent = new esri.geometry.Extent(-82.31395416259558, 29.752280075700344, -81.28604583740163, 30.14732756963145,
-            new esri.SpatialReference({ wkid: 4326 }));
+          
+          mapController.defaultExtent = new esri.geometry.Extent(-82.17868, 29.69460, -81.45182,  30.21792,
+            new esri.SpatialReference({ wkid: 4326 })); 
+
           var mapOptions = {
             basemap: "osm",
             zoom: 11,
             logo: false,
-            //center: [-81.80, 29.950]
-            extent: defaultExtent
-            //showInfoWindowOnClick: false
+            extent: mapController.defaultExtent
           }
           mapController.map = new Map(mapDiv, mapOptions);
-          // default size is 250wide by 100 high
           mapController.map.on("load", function (evt)
           {
             mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
@@ -58,16 +60,15 @@ namespace IView
             console.log('map loaded');
             IView.mapLoadCompleted();
           });
-          let dynamicLayerOptions = {
-            opacity: .3
-          };
 
-          var home = new HomeButton({
+          let homeButton = new HomeButton({
             map: mapController.map,
-            extent: defaultExtent
+            extent: mapController.defaultExtent
           }, "HomeButton");
-          home.startup();
-          let BuildingLayer = new ArcGISDynamicMapServiceLayer("https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer", dynamicLayerOptions);
+          homeButton.startup();
+
+
+          //let BuildingLayer = new ArcGISDynamicMapServiceLayer("https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer", dynamicLayerOptions);
           IView.location_layer = new GraphicsLayer();
           IView.location_layer.id = "locations";
           IView.location_layer.on("click", function (event: any)
@@ -80,10 +81,29 @@ namespace IView
             event.graphic.symbol.color = new Color([255, 0, 0, 1]);
             IView.location_layer.redraw();
             MapController.GetLocation(event.graphic.attributes.LookupKey);
-          })
+          });
+          IView.location_layer.show();
+
+
           IView.unit_layer = new GraphicsLayer();
           IView.unit_layer.id = "units";
-          mapController.map.addLayers([BuildingLayer, IView.location_layer, IView.unit_layer]);
+          if (IView.order_layer === undefined)
+          {
+            IView.order_layer = new GraphicsLayer();
+            IView.order_layer.id = "myLocations";
+            IView.order_layer.hide();
+          }
+          IView.order_layer.on("click", function (event: any)
+          {
+            if (event === undefined) return;
+            if (!event.graphic || !event.graphic.attributes) return;
+            //console.log('graphics layer clicked - event', event); 
+            IView.last_symbol_color = null;
+            IView.last_selected_graphic = null;                        
+            MapController.GetLocation(event.graphic.attributes.LookupKey);
+          });
+                    
+          mapController.map.addLayers([IView.location_layer, IView.unit_layer, IView.order_layer]);
 
         });
     }
@@ -122,14 +142,58 @@ namespace IView
           else
           {
             mapController.drawToolbar.deactivate();
-          }
+          }          
         });
     }
 
+    public ToggleMyLocations(show: boolean)
+    {
+      let m = this.map;
+      let d = this.defaultExtent;
+
+      if (show)
+      {
+        Utilities.Hide(document.getElementById("Legend"));
+        IView.order_layer.show();
+        IView.location_layer.hide();
+
+        //if (IView.myLocations.length === 0) return;
+
+        //let points = [];
+        //for(let location of IView.myLocations)
+        //{
+        //  let point = [];
+        //  point.push(location.point_to_use.Longitude);
+        //  point.push(location.point_to_use.Latitude);
+        //  points.push(point);
+        //}
+        //var polylineJson = {
+        //  "paths": [points], "spatialReference": { "wkid": 4326 }
+        //};
+        
+
+        //require(["esri/geometry/Extent", "esri/SpatialReference", "esri/geometry/Polyline"],
+        //  function (Extent, SpatialReference, Polyline)
+        //  {
+        //    var polyline = new Polyline(polylineJson);            
+        //    let expanded = polyline.getExtent().expand(2);
+        //    m.setExtent(expanded, true);
+        //  });
+
+      }
+      else
+      {
+        Utilities.Show(document.getElementById("Legend"));
+        IView.order_layer.hide();
+        IView.location_layer.show();
+        //m.setExtent(d);
+      }
+
+
+    }
 
     public UpdateUnitLayer(units: Array<Unit>): void
     {
-      //if (locations.length === 0) return;
       require([
         "esri/layers/GraphicsLayer",
         "esri/geometry/Point",
@@ -179,7 +243,7 @@ namespace IView
             var g = new Graphic(wmPin, icon);
             g.setInfoTemplate(iT);
             IView.unit_layer.add(g);
-            var textSymbol = new TextSymbol(u.Name); //esri.symbol.TextSymbol(data.Records[i].UnitName);
+            var textSymbol = new TextSymbol(u.Assigned_Inspector.length > 0 ? u.Assigned_Inspector : u.Name); //esri.symbol.TextSymbol(data.Records[i].UnitName);
             textSymbol.setColor(new dojo.Color([0, 100, 0]));
             textSymbol.setOffset(0, -20);
             textSymbol.setAlign(TextSymbol.ALIGN_MIDDLE);
@@ -196,7 +260,6 @@ namespace IView
 
         });
     }
-
 
     public UpdateLocationLayer(locations: Array<Location>): void
     {
@@ -271,162 +334,97 @@ namespace IView
 
             //g.setInfoTemplate(iT);
           } 
-          IView.location_layer.show();
+          //IView.location_layer.show();
 
         });
     }
 
-    //public CreateLayers(inspectorData: Array<Inspector>, day: string, completed: boolean): Array<any>
-    //{
-    //  if (inspectorData.length === 0) return [];
-    //  var layers: Array<any>;
-    //  require([
-    //    "esri/layers/GraphicsLayer",
-    //    "esri/geometry/Point",
-    //    "esri/symbols/SimpleMarkerSymbol",
-    //    "esri/graphic",
-    //    "esri/SpatialReference",
-    //    "esri/Color",
-    //    "esri/InfoTemplate",
-    //    "esri/geometry/webMercatorUtils"],
-    //    function (
-    //      GraphicsLayer,
-    //      arcgisPoint,
-    //      SimpleMarkerSymbol,
-    //      Graphic,
-    //      SpatialReference,
-    //      Color,
-    //      InfoTemplate,
-    //      webMercatorUtils)
-    //    {
-    //      layers = inspectorData.map(
-    //        function (i: Inspector)
-    //        {
-    //          var l = new GraphicsLayer();
-    //          l.id = i.Name + '-' + day + '-' + completed;
-    //          l.inspector = i.Id;
-    //          l.completed = completed;
-    //          l.day = day;
-    //          l.color = i.Color;
-    //          l.numberInspections = i.Inspections.length;
-    //          var c = Color.fromHex(i.Color);
-    //          // ak is now a list of unique lookup keys for this user.
-    //          var ak = i.Inspections.map(function (n) { return n.LookupKey });
-    //          ak = ak.filter(function (v, i) { return ak.indexOf(v) == i });
+    public UpdateMyLocationLayer(locations: Array<Location>): void
+    {
+      //if (locations.length === 0) return;
+      require([
+        "esri/layers/GraphicsLayer",
+        "esri/geometry/Point",
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/symbols/SimpleLineSymbol",
+        "esri/graphic",
+        "esri/SpatialReference",
+        "esri/Color",
+        "esri/geometry/webMercatorUtils",
+        "esri/geometry/Polyline"],
+        function (
+          GraphicsLayer,
+          arcgisPoint,
+          SimpleMarkerSymbol,
+          SimpleLineSymbol,
+          Graphic,
+          SpatialReference,
+          Color,
+          webMercatorUtils,
+          Polyline)
+        {
 
-    //          ak.forEach(function (n: string) //loop through each unique lookupkey
-    //          {
+          locations.sort(function (j, k) { return k.order - j.order; });
 
-    //            var inspections: Array<Inspection> = i.Inspections.filter(function (v)
-    //            {
-    //              return v.LookupKey == n;
-    //            });
+          if (IView.order_layer === undefined)
+          {
+            IView.order_layer = new GraphicsLayer();
+            IView.order_layer.id = "myLocations";
+            IView.order_layer.hide();
+          }
+          let this_layer = IView.order_layer;
+          this_layer.clear();
 
-    //            // Need to get total number o                
+          // let's create a line between each point
+          let points = [];
+          for (let i = 0; i < locations.length; i++)
+          {
+            let point = [];
+            point.push(locations[i].point_to_use.Longitude);
+            point.push(locations[i].point_to_use.Latitude);
+            points.push(point);
+          }
+          var polylineJson = {
+            "paths": [points], "spatialReference": { "wkid": 4326 }
+          };
+          var polyline = new Polyline(polylineJson);
+          var polylineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new dojo.Color([0, 0, 0], 255), 3);
+          var myLineGraphic = new Graphic(polyline, polylineSymbol, null, null);
+          this_layer.add(myLineGraphic);
 
-    //            let p: Point = inspections[0].PointToUse;
-    //            var compactAddress = inspections[0].StreetAddressCombined + '<br/> ' +
-    //              inspections[0].City + ', ' + inspections[0].Zip;
+          // now let's add locations to the layer.
+          for (let l of locations)
+          {
+            let p = l.point_to_use;
+            var pin = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
+            var wmPin = webMercatorUtils.geographicToWebMercator(pin);
 
-    //            if (!p.IsValid)
-    //            {
-    //              console.log('Invalid data', n, i);
-    //            }
-    //            if (p.IsValid)
-    //            {
-    //              var iT = new InfoTemplate();
-    //              iT.setTitle('Address: ${CompactAddress}');
-    //              //iT.setContent(IView.mapAddressClick);
-                  
-    //              var s = new SimpleMarkerSymbol({
-    //                "color": c,
-    //                "size": 12, // + inspections.length * 3
-    //                "angle": 0,
-    //                "xoffset": 0,
-    //                "yoffset": -5,
-    //                "type": "esriSMS",
-    //                "style": "esriSMSCircle",
-    //                "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
-    //              });
-
-    //              var inspection = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
-    //              var wmInspection = webMercatorUtils.geographicToWebMercator(inspection); 
-    //              var g = new Graphic(wmInspection, s);
-    //              g.setAttributes({                    
-    //                "CompactAddress": compactAddress,
-    //                "LookupKey": n
-    //              });
-    //              g.setInfoTemplate(iT);
-
-    //              l.add(g);
-    //            }
-
-    //          });
-
-    //          //l.visible = isVisible;
-    //          return l;
-    //        });
-          
-    //    });
-    //  return layers;
-    //}
-
-    //public ApplyLayers(layers: Array<any>)
-    //{
-    //  var mapController = this;
-    //  this.map.addLayers(layers);      
-    //}
-
-    //public ToggleLayers(inspectorId: number, day: string, isComplete:boolean, visible: boolean)
-    //{
-    //  let m = this.map;
-    //  this.map.graphicsLayerIds.forEach(function (layerId)
-    //  {
-    //    let l = m.getLayer(layerId);
-    //    if (l.inspector === inspectorId && l.day === day && l.completed === isComplete)
-    //    {
-    //      if (visible)
-    //      {
-    //        l.show();
-    //      }
-    //      else
-    //      {
-    //        l.hide();
-    //      }
-    //    }
-    //  });
-    //}
-
-    //public ToggleLayersByDay(day: string, isComplete:boolean):void
-    //{
-    //  let m = this.map;
-    //  m.graphicsLayerIds.forEach(function (layerId)
-    //  {
-    //    let l = m.getLayer(layerId);
-    //    if (l.day === day && l.completed === isComplete)
-    //    {
-    //      l.show();
-    //    }
-    //    else
-    //    {
-    //      l.hide();
-    //    }
-    //  });
-    //}
-
-    //public ClearLayers()
-    //{
-    //  let m = this.map;
-    //  if (!m.graphicsLayerIds) return;
-      
-    //  while (m.graphicsLayerIds.length > 0)
-    //  {
-    //    for (let glid of m.graphicsLayerIds)
-    //    {
-    //      m.removeLayer(m.getLayer(glid));
-    //    }
-    //  }
-    //}
+            let s = new SimpleMarkerSymbol({
+              "color": Color.fromHex(!l.unordered ? "#FFFFFF" : "#FFDD57"),
+              "size": 26,
+              "angle": 0,
+              "xoffset": 0,
+              "yoffset": 6.5,
+              "type": "esriSMS",
+              "style": "esriSMSCircle",
+              "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
+            });
+            var g = new Graphic(wmPin, s);
+            g.setAttributes({
+              "LookupKey": l.lookup_key
+            });
+            this_layer.add(g);
+            l.GetSortedIcon().then(function (icon)
+            {
+              g = new Graphic(wmPin, icon); //l.icons[0]);
+              g.setAttributes({
+                "LookupKey": l.lookup_key
+              });
+              this_layer.add(g);
+            });
+          }
+        });
+    }
 
     public FindItemsInExtent(extent: any):Array<string>
     {
@@ -471,7 +469,6 @@ namespace IView
 
     public CenterAndZoom(p: any): void
     {
-      let mapController = this;
       let m = this.map;
       require(["esri/geometry/Point"],
         function (Point)
@@ -483,7 +480,6 @@ namespace IView
 
     public CenterOnPoint(p: any): void
     {
-      let mapController = this;
       let m = this.map;
       require(["esri/geometry/Point"],
         function (Point)

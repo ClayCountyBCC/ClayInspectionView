@@ -2,6 +2,8 @@
 var IView;
 (function (IView) {
     var MapController = /** @class */ (function () {
+        //shortExtent: any;
+        //homeButton: any;
         function MapController(mapDiv) {
             this.mapDiv = mapDiv;
             this.isDrawing = false;
@@ -21,32 +23,26 @@ var IView;
             ], function (Map, ArcGISDynamicMapServiceLayer, GraphicsLayer, HomeButton, 
             //Legend,
             arrayUtils, Parser, Color, BorderContainer, Draw) {
-                var defaultExtent = new esri.geometry.Extent(-82.31395416259558, 29.752280075700344, -81.28604583740163, 30.14732756963145, new esri.SpatialReference({ wkid: 4326 }));
+                mapController.defaultExtent = new esri.geometry.Extent(-82.17868, 29.69460, -81.45182, 30.21792, new esri.SpatialReference({ wkid: 4326 }));
                 var mapOptions = {
                     basemap: "osm",
                     zoom: 11,
                     logo: false,
-                    //center: [-81.80, 29.950]
-                    extent: defaultExtent
-                    //showInfoWindowOnClick: false
+                    extent: mapController.defaultExtent
                 };
                 mapController.map = new Map(mapDiv, mapOptions);
-                // default size is 250wide by 100 high
                 mapController.map.on("load", function (evt) {
                     mapController.drawToolbar = new Draw(evt.map, { showTooltips: false });
                     mapController.drawToolbar.on("DrawEnd", IView.FindItemsInExtent);
                     console.log('map loaded');
                     IView.mapLoadCompleted();
                 });
-                var dynamicLayerOptions = {
-                    opacity: .3
-                };
-                var home = new HomeButton({
+                var homeButton = new HomeButton({
                     map: mapController.map,
-                    extent: defaultExtent
+                    extent: mapController.defaultExtent
                 }, "HomeButton");
-                home.startup();
-                var BuildingLayer = new ArcGISDynamicMapServiceLayer("https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer", dynamicLayerOptions);
+                homeButton.startup();
+                //let BuildingLayer = new ArcGISDynamicMapServiceLayer("https://maps.claycountygov.com:6443/arcgis/rest/services/Building/MapServer", dynamicLayerOptions);
                 IView.location_layer = new GraphicsLayer();
                 IView.location_layer.id = "locations";
                 IView.location_layer.on("click", function (event) {
@@ -61,9 +57,25 @@ var IView;
                     IView.location_layer.redraw();
                     MapController.GetLocation(event.graphic.attributes.LookupKey);
                 });
+                IView.location_layer.show();
                 IView.unit_layer = new GraphicsLayer();
                 IView.unit_layer.id = "units";
-                mapController.map.addLayers([BuildingLayer, IView.location_layer, IView.unit_layer]);
+                if (IView.order_layer === undefined) {
+                    IView.order_layer = new GraphicsLayer();
+                    IView.order_layer.id = "myLocations";
+                    IView.order_layer.hide();
+                }
+                IView.order_layer.on("click", function (event) {
+                    if (event === undefined)
+                        return;
+                    if (!event.graphic || !event.graphic.attributes)
+                        return;
+                    //console.log('graphics layer clicked - event', event); 
+                    IView.last_symbol_color = null;
+                    IView.last_selected_graphic = null;
+                    MapController.GetLocation(event.graphic.attributes.LookupKey);
+                });
+                mapController.map.addLayers([IView.location_layer, IView.unit_layer, IView.order_layer]);
             });
         }
         MapController.GetLocation = function (lookup_key) {
@@ -93,8 +105,41 @@ var IView;
                 }
             });
         };
+        MapController.prototype.ToggleMyLocations = function (show) {
+            var m = this.map;
+            var d = this.defaultExtent;
+            if (show) {
+                Utilities.Hide(document.getElementById("Legend"));
+                IView.order_layer.show();
+                IView.location_layer.hide();
+                //if (IView.myLocations.length === 0) return;
+                //let points = [];
+                //for(let location of IView.myLocations)
+                //{
+                //  let point = [];
+                //  point.push(location.point_to_use.Longitude);
+                //  point.push(location.point_to_use.Latitude);
+                //  points.push(point);
+                //}
+                //var polylineJson = {
+                //  "paths": [points], "spatialReference": { "wkid": 4326 }
+                //};
+                //require(["esri/geometry/Extent", "esri/SpatialReference", "esri/geometry/Polyline"],
+                //  function (Extent, SpatialReference, Polyline)
+                //  {
+                //    var polyline = new Polyline(polylineJson);            
+                //    let expanded = polyline.getExtent().expand(2);
+                //    m.setExtent(expanded, true);
+                //  });
+            }
+            else {
+                Utilities.Show(document.getElementById("Legend"));
+                IView.order_layer.hide();
+                IView.location_layer.show();
+                //m.setExtent(d);
+            }
+        };
         MapController.prototype.UpdateUnitLayer = function (units) {
-            //if (locations.length === 0) return;
             require([
                 "esri/layers/GraphicsLayer",
                 "esri/geometry/Point",
@@ -131,7 +176,7 @@ var IView;
                     g = new Graphic(wmPin, icon);
                     g.setInfoTemplate(iT);
                     IView.unit_layer.add(g);
-                    textSymbol = new TextSymbol(u.Name); //esri.symbol.TextSymbol(data.Records[i].UnitName);
+                    textSymbol = new TextSymbol(u.Assigned_Inspector.length > 0 ? u.Assigned_Inspector : u.Name); //esri.symbol.TextSymbol(data.Records[i].UnitName);
                     textSymbol.setColor(new dojo.Color([0, 100, 0]));
                     textSymbol.setOffset(0, -20);
                     textSymbol.setAlign(TextSymbol.ALIGN_MIDDLE);
@@ -141,7 +186,6 @@ var IView;
                     textSymbol.setFont(font);
                     graphicText = new Graphic(wmPin, textSymbol);
                     IView.unit_layer.add(graphicText);
-                    //g.setInfoTemplate(iT);
                 };
                 var pin, wmPin, iT, icon, g, textSymbol, font, graphicText;
                 for (var _i = 0, units_1 = units; _i < units_1.length; _i++) {
@@ -210,144 +254,80 @@ var IView;
                     }
                     //g.setInfoTemplate(iT);
                 }
-                IView.location_layer.show();
+                //IView.location_layer.show();
             });
         };
-        //public CreateLayers(inspectorData: Array<Inspector>, day: string, completed: boolean): Array<any>
-        //{
-        //  if (inspectorData.length === 0) return [];
-        //  var layers: Array<any>;
-        //  require([
-        //    "esri/layers/GraphicsLayer",
-        //    "esri/geometry/Point",
-        //    "esri/symbols/SimpleMarkerSymbol",
-        //    "esri/graphic",
-        //    "esri/SpatialReference",
-        //    "esri/Color",
-        //    "esri/InfoTemplate",
-        //    "esri/geometry/webMercatorUtils"],
-        //    function (
-        //      GraphicsLayer,
-        //      arcgisPoint,
-        //      SimpleMarkerSymbol,
-        //      Graphic,
-        //      SpatialReference,
-        //      Color,
-        //      InfoTemplate,
-        //      webMercatorUtils)
-        //    {
-        //      layers = inspectorData.map(
-        //        function (i: Inspector)
-        //        {
-        //          var l = new GraphicsLayer();
-        //          l.id = i.Name + '-' + day + '-' + completed;
-        //          l.inspector = i.Id;
-        //          l.completed = completed;
-        //          l.day = day;
-        //          l.color = i.Color;
-        //          l.numberInspections = i.Inspections.length;
-        //          var c = Color.fromHex(i.Color);
-        //          // ak is now a list of unique lookup keys for this user.
-        //          var ak = i.Inspections.map(function (n) { return n.LookupKey });
-        //          ak = ak.filter(function (v, i) { return ak.indexOf(v) == i });
-        //          ak.forEach(function (n: string) //loop through each unique lookupkey
-        //          {
-        //            var inspections: Array<Inspection> = i.Inspections.filter(function (v)
-        //            {
-        //              return v.LookupKey == n;
-        //            });
-        //            // Need to get total number o                
-        //            let p: Point = inspections[0].PointToUse;
-        //            var compactAddress = inspections[0].StreetAddressCombined + '<br/> ' +
-        //              inspections[0].City + ', ' + inspections[0].Zip;
-        //            if (!p.IsValid)
-        //            {
-        //              console.log('Invalid data', n, i);
-        //            }
-        //            if (p.IsValid)
-        //            {
-        //              var iT = new InfoTemplate();
-        //              iT.setTitle('Address: ${CompactAddress}');
-        //              //iT.setContent(IView.mapAddressClick);
-        //              var s = new SimpleMarkerSymbol({
-        //                "color": c,
-        //                "size": 12, // + inspections.length * 3
-        //                "angle": 0,
-        //                "xoffset": 0,
-        //                "yoffset": -5,
-        //                "type": "esriSMS",
-        //                "style": "esriSMSCircle",
-        //                "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
-        //              });
-        //              var inspection = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
-        //              var wmInspection = webMercatorUtils.geographicToWebMercator(inspection); 
-        //              var g = new Graphic(wmInspection, s);
-        //              g.setAttributes({                    
-        //                "CompactAddress": compactAddress,
-        //                "LookupKey": n
-        //              });
-        //              g.setInfoTemplate(iT);
-        //              l.add(g);
-        //            }
-        //          });
-        //          //l.visible = isVisible;
-        //          return l;
-        //        });
-        //    });
-        //  return layers;
-        //}
-        //public ApplyLayers(layers: Array<any>)
-        //{
-        //  var mapController = this;
-        //  this.map.addLayers(layers);      
-        //}
-        //public ToggleLayers(inspectorId: number, day: string, isComplete:boolean, visible: boolean)
-        //{
-        //  let m = this.map;
-        //  this.map.graphicsLayerIds.forEach(function (layerId)
-        //  {
-        //    let l = m.getLayer(layerId);
-        //    if (l.inspector === inspectorId && l.day === day && l.completed === isComplete)
-        //    {
-        //      if (visible)
-        //      {
-        //        l.show();
-        //      }
-        //      else
-        //      {
-        //        l.hide();
-        //      }
-        //    }
-        //  });
-        //}
-        //public ToggleLayersByDay(day: string, isComplete:boolean):void
-        //{
-        //  let m = this.map;
-        //  m.graphicsLayerIds.forEach(function (layerId)
-        //  {
-        //    let l = m.getLayer(layerId);
-        //    if (l.day === day && l.completed === isComplete)
-        //    {
-        //      l.show();
-        //    }
-        //    else
-        //    {
-        //      l.hide();
-        //    }
-        //  });
-        //}
-        //public ClearLayers()
-        //{
-        //  let m = this.map;
-        //  if (!m.graphicsLayerIds) return;
-        //  while (m.graphicsLayerIds.length > 0)
-        //  {
-        //    for (let glid of m.graphicsLayerIds)
-        //    {
-        //      m.removeLayer(m.getLayer(glid));
-        //    }
-        //  }
-        //}
+        MapController.prototype.UpdateMyLocationLayer = function (locations) {
+            //if (locations.length === 0) return;
+            require([
+                "esri/layers/GraphicsLayer",
+                "esri/geometry/Point",
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/graphic",
+                "esri/SpatialReference",
+                "esri/Color",
+                "esri/geometry/webMercatorUtils",
+                "esri/geometry/Polyline"
+            ], function (GraphicsLayer, arcgisPoint, SimpleMarkerSymbol, SimpleLineSymbol, Graphic, SpatialReference, Color, webMercatorUtils, Polyline) {
+                locations.sort(function (j, k) { return k.order - j.order; });
+                if (IView.order_layer === undefined) {
+                    IView.order_layer = new GraphicsLayer();
+                    IView.order_layer.id = "myLocations";
+                    IView.order_layer.hide();
+                }
+                var this_layer = IView.order_layer;
+                this_layer.clear();
+                // let's create a line between each point
+                var points = [];
+                for (var i = 0; i < locations.length; i++) {
+                    var point = [];
+                    point.push(locations[i].point_to_use.Longitude);
+                    point.push(locations[i].point_to_use.Latitude);
+                    points.push(point);
+                }
+                var polylineJson = {
+                    "paths": [points], "spatialReference": { "wkid": 4326 }
+                };
+                var polyline = new Polyline(polylineJson);
+                var polylineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new dojo.Color([0, 0, 0], 255), 3);
+                var myLineGraphic = new Graphic(polyline, polylineSymbol, null, null);
+                this_layer.add(myLineGraphic);
+                var _loop_2 = function (l) {
+                    var p = l.point_to_use;
+                    pin = new arcgisPoint([p.Longitude, p.Latitude], new SpatialReference({ wkid: 4326 }));
+                    wmPin = webMercatorUtils.geographicToWebMercator(pin);
+                    var s = new SimpleMarkerSymbol({
+                        "color": Color.fromHex(!l.unordered ? "#FFFFFF" : "#FFDD57"),
+                        "size": 26,
+                        "angle": 0,
+                        "xoffset": 0,
+                        "yoffset": 6.5,
+                        "type": "esriSMS",
+                        "style": "esriSMSCircle",
+                        "outline": { "color": [0, 0, 0, 255], "width": 1, "type": "esriSLS", "style": "esriSLSSolid" }
+                    });
+                    g = new Graphic(wmPin, s);
+                    g.setAttributes({
+                        "LookupKey": l.lookup_key
+                    });
+                    this_layer.add(g);
+                    l.GetSortedIcon().then(function (icon) {
+                        g = new Graphic(wmPin, icon); //l.icons[0]);
+                        g.setAttributes({
+                            "LookupKey": l.lookup_key
+                        });
+                        this_layer.add(g);
+                    });
+                };
+                var pin, wmPin, g;
+                // now let's add locations to the layer.
+                for (var _i = 0, locations_2 = locations; _i < locations_2.length; _i++) {
+                    var l = locations_2[_i];
+                    _loop_2(l);
+                }
+            });
+        };
         MapController.prototype.FindItemsInExtent = function (extent) {
             var mapController = this;
             var m = this.map;
@@ -383,7 +363,6 @@ var IView;
             return lookupKeys;
         };
         MapController.prototype.CenterAndZoom = function (p) {
-            var mapController = this;
             var m = this.map;
             require(["esri/geometry/Point"], function (Point) {
                 var pt = new Point([p.Longitude, p.Latitude]);
@@ -391,7 +370,6 @@ var IView;
             });
         };
         MapController.prototype.CenterOnPoint = function (p) {
-            var mapController = this;
             var m = this.map;
             require(["esri/geometry/Point"], function (Point) {
                 var pt = new Point([p.Longitude, p.Latitude]);

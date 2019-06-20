@@ -12,6 +12,7 @@ namespace IView
     Latitude: number;
     Unit_Icon_URL: string;
     Unit_Status_Icon_URL: string;
+    Assigned_Inspector: string; 
   }
   export class Unit implements IUnit
   {
@@ -21,6 +22,7 @@ namespace IView
     public Latitude: number;
     public Unit_Icon_URL: string;
     public Unit_Status_Icon_URL: string;
+    public Assigned_Inspector: string = "";
 
     constructor() { }
 
@@ -35,7 +37,7 @@ namespace IView
 
         }, function (e)
           {
-            console.log('error getting units');
+            console.log('error getting units', e);
             IView.allUnits = [];
           });
     }

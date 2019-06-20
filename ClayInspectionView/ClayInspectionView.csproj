@@ -114,6 +114,14 @@
     <Content Include="Content\bundle.min.css">
       <DependentUpon>bundle.css</DependentUpon>
     </Content>
+    <Content Include="Content\dom_autoscroller\bundle.es.js" />
+    <Content Include="Content\dom_autoscroller\bundle.js" />
+    <Content Include="Content\dom_autoscroller\dom-autoscroller.js" />
+    <Content Include="Content\dom_autoscroller\dom-autoscroller.min.js" />
+    <Content Include="Content\dragula\dragula.css" />
+    <Content Include="Content\dragula\dragula.js" />
+    <Content Include="Content\dragula\dragula.min.css" />
+    <Content Include="Content\dragula\dragula.min.js" />
     <Content Include="Content\favico-iv.png" />
     <Content Include="Content\main.css" />
     <Content Include="Content\myBulma.css" />
@@ -140,7 +148,7 @@
     <Content Include="fonts\glyphicons-halflings-regular.woff" />
     <Content Include="fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="fonts\glyphicons-halflings-regular.eot" />
-    <Content Include="bower.json" />
+    <None Include="bower.json.old" />
     <None Include="bower_components\bulma\.bower.json" />
     <None Include="bower_components\bulma\BACKERS.md" />
     <None Include="bower_components\bulma\bower.json" />
@@ -213,6 +221,10 @@
       <DependentUpon>compilerconfig.json</DependentUpon>
     </None>
     <Content Include="Content\Utilities.scss" />
+    <Content Include="Content\dom_autoscroller\bundle.es.js.map" />
+    <Content Include="Content\dom_autoscroller\bundle.js.map" />
+    <Content Include="Content\dom_autoscroller\dom-autoscroller.js.map" />
+    <None Include="Properties\PublishProfiles\FolderProfile.pubxml" />
     <None Include="Properties\PublishProfiles\InternalProduction.pubxml" />
     <None Include="Scripts\jquery-1.9.1.intellisense.js" />
     <Content Include="Scripts\jquery-1.9.1.js" />
@@ -239,6 +251,7 @@
     <Compile Include="Models\Constants.cs" />
     <Compile Include="Models\myCache.cs" />
     <Compile Include="Models\Point.cs" />
+    <Compile Include="Models\ReorderData.cs" />
     <Compile Include="Models\Unit.cs" />
     <Compile Include="Models\UserAccess.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -265,10 +278,12 @@
     <TypeScriptCompile Include="Scripts\Inspection.ts" />
     <TypeScriptCompile Include="Scripts\Inspector.ts" />
     <TypeScriptCompile Include="Scripts\Location.ts" />
+    <TypeScriptCompile Include="Scripts\LocationDistance.ts" />
     <TypeScriptCompile Include="Scripts\LocationHash.ts" />
     <TypeScriptCompile Include="Scripts\map.ts" />
     <TypeScriptCompile Include="Scripts\MenuItem.ts" />
     <TypeScriptCompile Include="Scripts\Point.ts" />
+    <TypeScriptCompile Include="Scripts\ReorderData.ts" />
     <TypeScriptCompile Include="Scripts\Typings\arcgis-js-api.d.ts" />
     <TypeScriptCompile Include="Scripts\Typings\es6-promise\es6-promise.d.ts" />
     <TypeScriptCompile Include="Scripts\UI.ts" />

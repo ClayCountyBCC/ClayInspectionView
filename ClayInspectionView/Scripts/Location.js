@@ -1,7 +1,8 @@
 var IView;
 (function (IView) {
     var Location = /** @class */ (function () {
-        function Location(inspections) {
+        function Location(inspections, myInspections) {
+            if (myInspections === void 0) { myInspections = false; }
             this.lookup_key = "";
             this.point_to_use = null;
             this.icons = [];
@@ -22,25 +23,71 @@ var IView;
             this.RPL = false;
             this.CPL = false;
             this.Fire = false;
+            this.order = 0;
+            this.unordered = true;
             this.inspections = inspections;
             if (inspections.length === 0)
                 return;
             var i = inspections[0];
             this.lookup_key = i.LookupKey;
             this.point_to_use = i.PointToUse;
-            this.UpdateFlags();
-            this.CreateIcons();
-            this.AddValidInspectors(IView.allInspectors);
+            if (!myInspections) {
+                this.UpdateFlags();
+                this.CreateIcons();
+                this.AddValidInspectors(IView.allInspectors);
+            }
+            else {
+                // let's check each inspection to pull out the max index and set that as the sort order.
+                this.location_distance = new IView.LocationDistance(this.point_to_use);
+                this.order = 0;
+                for (var _i = 0, inspections_1 = inspections; _i < inspections_1.length; _i++) {
+                    var i_1 = inspections_1[_i];
+                    if (i_1.Sort_Order > this.order)
+                        this.order = i_1.Sort_Order;
+                }
+                this.unordered = this.order === 0;
+                if (this.unordered)
+                    this.order = 999;
+            }
         }
+        Location.prototype.CreateSortedIcon = function () {
+            // this is our base function that we'll use to simplify our icon creation.
+            var d = new dojo.Deferred();
+            var currentLocation = this;
+            require(["esri/symbols/TextSymbol", "esri/Color", "esri/symbols/Font"], function (TextSymbol, Color, Font) {
+                var textSymbol = new TextSymbol(currentLocation.order.toString());
+                textSymbol.setColor(new Color([0, 0, 0]));
+                textSymbol.rotated = false;
+                textSymbol.setOffset(0, 0);
+                textSymbol.setAlign(TextSymbol.ALIGN_MIDDLE);
+                //textSymbol.haloColor = new Color([255, 255, 255]);
+                //textSymbol.haloSize = 3;
+                var font = new Font();
+                font.setSize("20pt");
+                font.setWeight(esri.symbol.Font.WEIGHT_BOLD);
+                textSymbol.setFont(font);
+                d.resolve(textSymbol);
+            });
+            return d.then(function (k) { return k; });
+        };
+        Location.prototype.GetSortedIcon = function () {
+            return this.CreateSortedIcon();
+        };
         Location.prototype.UpdateFlags = function () {
             // this will update the has_commercial, residential, and private provider flags.
             // they'll be set to false, then we just loop through them all and update them to true
-            // if we find any      
+            // if we find any
             this.assigned_inspectors = [];
             for (var _i = 0, _a = this.inspections; _i < _a.length; _i++) {
                 var i = _a[_i];
-                if (!i.CanBeAssigned)
+                if (!IView.contractor_check) {
+                    if (!i.CanBeAssigned)
+                        this.can_be_bulk_assigned = false;
+                }
+                else {
                     this.can_be_bulk_assigned = false;
+                    i.CanBeAssigned = false;
+                }
                 if (i.IsCommercial) {
                     this.has_commercial = true;
                 }
@@ -99,7 +146,6 @@ var IView;
             //    fire
             // Some people can have combinations, like Commercial / Electrical, and not others.
             if (!this.can_be_bulk_assigned) {
-                console.log('this cannot be bulk assigned');
                 return;
             }
             var current = this;
@@ -160,7 +206,6 @@ var IView;
                 icon.then(function (j) {
                     test.icons.push(j);
                 });
-                //this.icons.push(icon);
             };
             var this_1 = this;
             for (var _i = 0, _a = this.assigned_inspectors; _i < _a.length; _i++) {
@@ -207,8 +252,8 @@ var IView;
             Utilities.Set_Text(document.getElementById("inspectionCount"), inspectionCount);
             var lookupKeys = [];
             IView.filteredLocations = [];
-            for (var _i = 0, inspections_1 = inspections; _i < inspections_1.length; _i++) {
-                var i = inspections_1[_i];
+            for (var _i = 0, inspections_2 = inspections; _i < inspections_2.length; _i++) {
+                var i = inspections_2[_i];
                 if (lookupKeys.indexOf(i.LookupKey) === -1)
                     lookupKeys.push(i.LookupKey);
             }
@@ -223,12 +268,45 @@ var IView;
             IView.dataLoaded = true;
             IView.BuildAndLoadInitialLayers();
         };
+        Location.CreateMyLocations = function (inspections) {
+            if (inspections.length === 0)
+                return;
+            var lookupKeys = [];
+            var locations = [];
+            if (inspections.length === 0)
+                return [];
+            for (var _i = 0, inspections_3 = inspections; _i < inspections_3.length; _i++) {
+                var i = inspections_3[_i];
+                if (lookupKeys.indexOf(i.LookupKey) === -1)
+                    lookupKeys.push(i.LookupKey);
+            }
+            var _loop_3 = function (key) {
+                var filtered = inspections.filter(function (k) { return k.LookupKey === key; });
+                locations.push(new Location(filtered, true));
+            };
+            for (var _a = 0, lookupKeys_2 = lookupKeys; _a < lookupKeys_2.length; _a++) {
+                var key = lookupKeys_2[_a];
+                _loop_3(key);
+            }
+            locations.sort(function (j, k) { return j.order - k.order; }); // now that we've ordered it, let's get the locations in the right order.
+            var order = 0;
+            for (var i = 0; i < locations.length; i++) {
+                if (!locations[i].unordered) {
+                    locations[i].order = ++order; // all ordered locations are base 1, not base 0. 
+                }
+                //  //locations[i].CreateSortedIcon().then(function (k)
+                //  //{
+                //  //  locations[i].icons.push(k);
+                //  //});
+            }
+            return locations;
+        };
         Location.prototype.LocationView = function () {
             var title = document.getElementById("locationAddress");
             Utilities.Clear_Element(title);
             Utilities.Set_Text(title, this.Address());
             var bulkassignContainer = document.getElementById("bulkAssignInspectionsContainer");
-            if (this.can_be_bulk_assigned) {
+            if (this.can_be_bulk_assigned && !IView.contractor_check) {
                 Utilities.Show(bulkassignContainer);
                 this.UpdateBulkAssignmentDropdown();
             }
@@ -263,6 +341,8 @@ var IView;
                     notes_row = document.createElement("tr");
                 }
                 tbody.appendChild(this.CreateInspectionRow(i, notes_row));
+                if (i.PreviousInspectionRemarks.length > 0)
+                    tbody.appendChild(this.CreatePreviouslyFailedInspectionRow(i.PreviousInspectionRemarks));
                 if (notes_row !== null)
                     tbody.appendChild(notes_row);
             }
@@ -273,7 +353,19 @@ var IView;
             var tr = document.createElement("tr");
             if (inspection.MasterPermitNumber.length > 0) {
                 var href = "/InspectionScheduler/#permit=" + inspection.MasterPermitNumber;
-                tr.appendChild(this.CreateTableCellLink(inspection.MasterPermitNumber, href, "has-text-left"));
+                var MasterTd = this.CreateTableCellLink(inspection.MasterPermitNumber, href, "has-text-left");
+                var imsButton = document.createElement("a");
+                imsButton.classList.add("button");
+                imsButton.classList.add("is-small");
+                imsButton.classList.add("is-success");
+                imsButton.style.marginLeft = ".5em";
+                imsButton.style.fontStyle = "italic";
+                imsButton.target = "_blank";
+                imsButton.rel = "noopener";
+                imsButton.appendChild(document.createTextNode("IMS"));
+                imsButton.href = inspection.MasterPermitIMSLink;
+                MasterTd.appendChild(imsButton);
+                tr.appendChild(MasterTd);
                 var td = document.createElement("td");
                 td.colSpan = 7;
                 td.classList.add("has-text-left");
@@ -293,22 +385,25 @@ var IView;
         Location.prototype.CreateInspectionTableHeading = function () {
             var thead = document.createElement("thead");
             var tr = document.createElement("tr");
-            tr.appendChild(this.CreateTableCell(true, "Permit"));
-            tr.appendChild(this.CreateTableCell(true, "Scheduled"));
-            tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
+            tr.appendChild(this.CreateTableCell(true, "Permit", "", "15%"));
+            tr.appendChild(this.CreateTableCell(true, "Scheduled", "", "15%"));
+            tr.appendChild(this.CreateTableCell(true, "Inspection Type", "", "20%"));
             var button_column = this.CreateTableCell(true, "");
             button_column.style.width = "5%";
             tr.appendChild(button_column);
-            tr.appendChild(this.CreateTableCell(true, "Kind"));
-            tr.appendChild(this.CreateTableCell(true, "Private Provider"));
-            tr.appendChild(this.CreateTableCell(true, "Status"));
-            tr.appendChild(this.CreateTableCell(true, "Assigned"));
+            tr.appendChild(this.CreateTableCell(true, "Kind", "", "10%"));
+            tr.appendChild(this.CreateTableCell(true, "Private Provider", "", "10%"));
+            tr.appendChild(this.CreateTableCell(true, "Status", "", "15%"));
+            tr.appendChild(this.CreateTableCell(true, "Assigned", "", "15%"));
             thead.appendChild(tr);
             return thead;
         };
-        Location.prototype.CreateTableCell = function (header, value, className) {
+        Location.prototype.CreateTableCell = function (header, value, className, width) {
             if (className === void 0) { className = ""; }
+            if (width === void 0) { width = ""; }
             var td = document.createElement(header ? "th" : "td");
+            if (width.length > 0)
+                td.style.width = width;
             if (className.length > 0)
                 td.classList.add(className);
             td.appendChild(document.createTextNode(value));
@@ -321,6 +416,7 @@ var IView;
                 td.classList.add(className);
             var link = document.createElement("a");
             link.target = "_blank";
+            link.rel = "noopener";
             link.href = href;
             link.appendChild(document.createTextNode(value));
             td.appendChild(link);
@@ -329,7 +425,19 @@ var IView;
         Location.prototype.CreateInspectionRow = function (inspection, notes_row) {
             var tr = document.createElement("tr");
             var href = "/InspectionScheduler/#permit=" + inspection.PermitNo + "&inspectionid=" + inspection.InspReqID;
-            tr.appendChild(this.CreateTableCellLink(inspection.PermitNo, href, "has-text-right"));
+            var td = this.CreateTableCellLink(inspection.PermitNo, href, "has-text-right");
+            var imsButton = document.createElement("a");
+            imsButton.classList.add("button");
+            imsButton.classList.add("is-small");
+            imsButton.classList.add("is-success");
+            imsButton.style.marginLeft = ".5em";
+            imsButton.style.fontStyle = "italic";
+            imsButton.target = "_blank";
+            imsButton.rel = "noopener";
+            imsButton.appendChild(document.createTextNode("IMS"));
+            imsButton.href = inspection.IMSLink;
+            td.appendChild(imsButton);
+            tr.appendChild(td);
             tr.appendChild(this.CreateTableCell(false, Utilities.Format_Date(inspection.ScheduledDate)));
             tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription, "has-text-left"));
             var button_td = document.createElement("td");
@@ -369,14 +477,29 @@ var IView;
             tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
             tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));
-            if (inspection.IsCompleted) {
+            if (inspection.IsCompleted || IView.contractor_check) {
                 tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
             }
             else {
-                var td = document.createElement("td");
-                td.appendChild(this.CreateInspectorDropdown(inspection));
-                tr.appendChild(td);
+                var td_1 = document.createElement("td");
+                td_1.appendChild(this.CreateInspectorDropdown(inspection));
+                tr.appendChild(td_1);
             }
+            return tr;
+        };
+        Location.prototype.CreatePreviouslyFailedInspectionRow = function (Remarks) {
+            var tr = document.createElement("tr");
+            var blankTD = document.createElement("td");
+            blankTD.appendChild(document.createTextNode(""));
+            tr.appendChild(blankTD);
+            var messageTD = document.createElement("td");
+            messageTD.appendChild(document.createTextNode("Failed Last Inspection"));
+            messageTD.colSpan = 2;
+            tr.appendChild(messageTD);
+            var remarksTD = document.createElement("td");
+            remarksTD.appendChild(document.createTextNode(Remarks));
+            remarksTD.colSpan = 5;
+            tr.appendChild(remarksTD);
             return tr;
         };
         Location.prototype.CreateInspectorDropdown = function (inspection) {
@@ -422,6 +545,255 @@ var IView;
                 o.appendChild(document.createTextNode(i.Name));
                 select.appendChild(o);
             }
+        };
+        Location.HandleMyLocations = function (inspections) {
+            if (inspections.length === 0) {
+                IView.myLocations = [];
+                Location.UpdateMyLocations();
+                return;
+            }
+            var myLocations = Location.CreateMyLocations(inspections);
+            //console.log('my locations', myLocations);
+            var ordered = myLocations.filter(function (j) { return j.unordered === false; });
+            if (IView.myLocations.length === 0 && ordered.length === 0) {
+                // fresh
+                //console.log('fresh');
+                myLocations = Location.UpdateLocationDistances(myLocations, true);
+                var furthest_locations_distance = 0;
+                var furthest_locations = [];
+                for (var i = 0; i < myLocations.length; i++) {
+                    if (myLocations[i].location_distance.furthest_location_distance > furthest_locations_distance) {
+                        furthest_locations = [];
+                        furthest_locations_distance = myLocations[i].location_distance.furthest_location_distance;
+                        furthest_locations.push(myLocations[i].location_distance.furthest_location);
+                        furthest_locations.push(myLocations[i].lookup_key);
+                    }
+                }
+                IView.myLocations = Location.SortByProximity(myLocations, furthest_locations[0]);
+            }
+            else {
+                //console.log('not fresh');
+                myLocations = Location.UpdateLocationDistances(myLocations, false);
+                if (IView.myLocations.length === 0 && ordered.length > 0) {
+                    IView.myLocations = myLocations;
+                    Location.HandleUnorderedLocations();
+                }
+                else {
+                    Location.RemoveMissingFromCurrent(myLocations);
+                    Location.AddNewLocations(myLocations);
+                }
+                // let's add the new ones to the list, remove any that aren't there anymore
+            }
+            Location.UpdateMyLocations();
+        };
+        Location.UpdateLocationDistances = function (locations, fresh) {
+            for (var i = 0; i < locations.length; i++) {
+                if (fresh)
+                    locations[i].unordered = false;
+                for (var j = 0; j < locations.length; j++) {
+                    if (i !== j) {
+                        locations[i].location_distance.calculate_distance(locations[j].point_to_use, locations[j].lookup_key);
+                    }
+                }
+            }
+            return locations;
+        };
+        Location.UpdateMyLocations = function () {
+            IView.myLocations.sort(function (j, k) { return j.order - k.order; });
+            Location.PopulateMyLocations(IView.myLocations);
+            IView.mapController.UpdateMyLocationLayer(IView.myLocations);
+        };
+        Location.RemoveMissingFromCurrent = function (new_locations) {
+            var locations_to_remove = [];
+            for (var _i = 0, _a = IView.myLocations; _i < _a.length; _i++) {
+                var location_1 = _a[_i];
+                var found = false;
+                for (var _b = 0, new_locations_1 = new_locations; _b < new_locations_1.length; _b++) {
+                    var new_location = new_locations_1[_b];
+                    if (new_location.lookup_key === location_1.lookup_key) {
+                        found = true;
+                    }
+                }
+                if (!found) // this location was removed
+                 {
+                    locations_to_remove.push(location_1.lookup_key);
+                }
+            }
+            for (var _c = 0, locations_to_remove_1 = locations_to_remove; _c < locations_to_remove_1.length; _c++) {
+                var key = locations_to_remove_1[_c];
+                var index = Location.GetLocationIndex(key, IView.myLocations);
+                if (index !== -1)
+                    IView.myLocations.splice(index, 1);
+            }
+        };
+        Location.GetLocationIndex = function (lookup_key, LocationsToSearch) {
+            for (var i = 0; i < LocationsToSearch.length; i++) {
+                if (LocationsToSearch[i].lookup_key === lookup_key)
+                    return i;
+            }
+            return -1;
+        };
+        Location.AddNewLocations = function (new_locations) {
+            var added = false;
+            for (var _i = 0, new_locations_2 = new_locations; _i < new_locations_2.length; _i++) {
+                var new_location = new_locations_2[_i];
+                var found = false;
+                for (var _a = 0, _b = IView.myLocations; _a < _b.length; _a++) {
+                    var current_location_1 = _b[_a];
+                    if (new_location.lookup_key === current_location_1.lookup_key) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    new_location.unordered = true;
+                    IView.myLocations.push(new_location);
+                    new_location.order = 999;
+                    added = true;
+                    //console.log('adding', new_location);
+                    //let my_order = new_location.location_distance.GetBestOrderToInsert(IView.myLocations);          
+                    //for (let l of IView.myLocations)
+                    //{
+                    //  if (l.order >= my_order && !l.unordered)
+                    //  {
+                    //    l.order++;
+                    //  }
+                    //}
+                    //new_location.order = my_order;
+                }
+            }
+            if (added) {
+                for (var _c = 0, _d = IView.myLocations; _c < _d.length; _c++) {
+                    var l = _d[_c];
+                    if (l.unordered)
+                        l.order = 999;
+                }
+                IView.myLocations.sort(function (j, k) { return j.order - k.order; });
+                IView.myLocations = Location.UpdateLocationDistances(IView.myLocations, false);
+                Location.HandleUnorderedLocations();
+            }
+        };
+        Location.HandleUnorderedLocations = function () {
+            for (var _i = 0, _a = IView.myLocations; _i < _a.length; _i++) {
+                var l = _a[_i];
+                if (l.unordered) {
+                    var my_order = l.location_distance.GetBestOrderToInsert(IView.myLocations);
+                    //console.log('setting order', l.lookup_key, my_order);
+                    for (var _b = 0, _c = IView.myLocations; _b < _c.length; _b++) {
+                        var location_2 = _c[_b];
+                        if (location_2.order >= my_order && location_2.order < 998) {
+                            location_2.order++;
+                        }
+                    }
+                    l.order = my_order;
+                }
+            }
+        };
+        Location.PopulateMyLocations = function (locations) {
+            var container = document.getElementById("sortableInspections");
+            Utilities.Clear_Element(container);
+            if (locations.length === 0) {
+                var li = document.createElement("li");
+                li.appendChild(document.createTextNode("No incomplete inspections were found."));
+                li.style.padding = "1em 1em 1em 1em";
+                container.appendChild(li);
+            }
+            else {
+                for (var _i = 0, locations_1 = locations; _i < locations_1.length; _i++) {
+                    var l = locations_1[_i];
+                    container.appendChild(Location.CreateMyLocationRow(l));
+                }
+            }
+        };
+        Location.CreateMyLocationRow = function (location) {
+            var li = document.createElement("li");
+            li.id = location.lookup_key;
+            li.classList.add("columns");
+            //li.classList.add("item");
+            //li.classList.add("dropzone");
+            //li.classList.add("occupied");
+            li.style.borderTop = "none"; //"dotted 1px #333333";
+            li.style.borderBottom = "none"; //"dotted 1px #000000";
+            li.style.margin = "0 auto";
+            li.style.marginBottom = ".25em";
+            if (location.unordered) {
+                li.classList.add("has-background-warning");
+            }
+            else {
+                li.classList.add("has-background-grey-lighter");
+            }
+            var index = document.createElement("span");
+            index.classList.add("column");
+            index.classList.add("is-1");
+            index.classList.add("has-text-centered");
+            index.style.fontWeight = "bolder";
+            index.appendChild(document.createTextNode(location.order.toString()));
+            li.appendChild(index);
+            var address = document.createElement("span");
+            address.classList.add("column");
+            address.classList.add("is-8");
+            address.appendChild(document.createTextNode(location.Address()));
+            li.appendChild(address);
+            var permitCount = document.createElement("span");
+            permitCount.classList.add("column");
+            permitCount.classList.add("is-1");
+            permitCount.classList.add("has-text-centered");
+            permitCount.appendChild(document.createTextNode(location.inspections.length.toString()));
+            li.appendChild(permitCount);
+            var view = document.createElement("span");
+            view.classList.add("column");
+            view.classList.add("is-2");
+            view.classList.add("has-text-centered");
+            var button = document.createElement("button");
+            button.classList.add("button");
+            button.classList.add("is-small");
+            button.appendChild(document.createTextNode("View"));
+            button.onclick = function () {
+                IView.last_selected_graphic = null;
+                IView.last_symbol_color = null;
+                IView.current_location = location;
+                console.log('location found', location);
+                IView.mapController.CenterOnPoint(location.point_to_use);
+                location.LocationView();
+            };
+            view.appendChild(button);
+            li.appendChild(view);
+            return li;
+        };
+        Location.SortByProximity = function (locations, starting_lookup_key) {
+            if (starting_lookup_key.length === 0 || locations.length <= 2)
+                return locations;
+            var ordered_locations = [];
+            var used_lookup_keys = [];
+            used_lookup_keys.push(starting_lookup_key);
+            var first_location = locations[Location.GetLocationIndex(starting_lookup_key, locations)];
+            ordered_locations.push(first_location);
+            var second_location = locations[Location.GetLocationIndex(first_location.location_distance.closest_location, locations)];
+            ordered_locations.push(second_location);
+            used_lookup_keys.push(second_location.lookup_key);
+            var location = second_location;
+            var lookup_key = "";
+            var index = 0;
+            var i = 0;
+            while (used_lookup_keys.length < locations.length || i < 50) {
+                lookup_key = location.location_distance.GetClosestUnused(used_lookup_keys);
+                if (lookup_key.length == 0)
+                    break;
+                index = Location.GetLocationIndex(lookup_key, locations);
+                if (index === -1)
+                    break;
+                location = locations[index];
+                ordered_locations.push(location);
+                used_lookup_keys.push(lookup_key);
+                i++;
+            }
+            for (var i_2 = 0; i_2 < ordered_locations.length; i_2++) {
+                ordered_locations[i_2].order = i_2 + 1;
+                if (ordered_locations[i_2].unordered)
+                    ordered_locations[i_2].unordered = false;
+            }
+            return ordered_locations;
+        };
+        Location.SaveMyLocations = function () {
         };
         return Location;
     }());

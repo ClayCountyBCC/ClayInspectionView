@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "dragula@3.7.2",
+      "destination": "Content/dragula/"
+    },
+    {
+      "library": "draggable@1.0.0-beta.8",
+      "destination": "Content/draggable/"
+    }
+  ]
+}

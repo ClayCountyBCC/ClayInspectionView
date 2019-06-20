@@ -6880,18 +6880,50 @@ label.panel-block {
   }
 }*/
 
-#map 
+#sortableInspections
+{
+  width: 100%;
+  padding: 0 0 1em 1em;
+  overflow: auto;
+  height: calc(100% - 78px);
+}
+
+#sortableInspections li
+{
+  position: relative;
+  list-style: none;
+  margin-top: .25em;
+  background-color: lightgrey;
+  cursor: grab;
+}
+
+#fancyContainer
 {
   height: calc(100% - 52px);
-  width: calc(100%);
+  width: 100%;
+  margin: 0 0 0 0;  
+}
+
+#myInspections
+{
+  padding: 0 0 0 0;
+  overflow: hidden;
+}
+
+#map 
+{
+  height: 100%;
+  width: 100%;
+  padding: 0 0 0 0;
 }
 
 #HomeButton
 {
-  position: absolute;
-  top: 144px;
+  position: relative;
+  top: 100px;
   left: 20px;
   z-index: 30;
+  height: 0;
 }
 #Legend
 {
@@ -7073,3 +7105,25 @@ ol {
 {
   z-index: 51 !important;
 }*/
+.gu-mirror {
+  position: fixed !important;
+  margin: 0 !important;
+  z-index: 9999 !important;
+  opacity: 0.8;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+  filter: alpha(opacity=80);
+}
+.gu-hide {
+  display: none !important;
+}
+.gu-unselectable {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+.gu-transit {
+  opacity: 0.2;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)";
+  filter: alpha(opacity=20);
+}

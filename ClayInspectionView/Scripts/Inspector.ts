@@ -24,6 +24,7 @@ namespace IView
     Fire: boolean;
     PrivateProvider: boolean;
     Inspections: Array<Inspection>;
+    contractor: boolean;
     CurrentCount: number;
   }
   export class Inspector implements IInspector
@@ -45,15 +46,17 @@ namespace IView
     public Fire: boolean = false;
     public PrivateProvider: boolean = false;
     public Inspections: Array<Inspection>;
+    public contractor: boolean;
     public CurrentCount: number = 0;
 
     constructor()
     {
     }
 
-    public static GetAllInspectors(): void
+    public static GetAllInspectors():void 
     {
       Utilities.Toggle_Loading_Button("refreshButton", true);
+      Utilities.Toggle_Loading_Button("myRefreshButton", true);
       Utilities.Toggle_Loading_Button("filterButton", true);
 
       let path = Utilities.Get_Path("/inspectionview");
@@ -63,15 +66,29 @@ namespace IView
           let initialRun = IView.allInspectors.length === 0;
           console.log('inspectors', inspectors);
           IView.allInspectors = inspectors;
-          Inspector.BuildBulkAssignDropdown(inspectors);
+          IView.contractor_check = Inspector.ContractInspectorCheck(inspectors);
+          if (IView.contractor_check)
+          {
+            Inspector.HandleContractInspectors();
+          }
+          else
+          {
+            Inspector.BuildBulkAssignDropdown(inspectors);
+          }
+          
           Inspection.GetInspections();          
           if (initialRun)
           {
             Inspector.BuildInspectorList();
+            if (!IView.contractor_check)
+            {
+              
+              Inspector.GetInspectorsToEdit();
+            }
             IView.LoadDefaultsFromCookie();
             window.setInterval(Inspection.GetInspections, 60 * 5 * 1000);
             window.setInterval(Unit.GetUnits, 60 * 1000);
-            Inspector.GetInspectorsToEdit();
+            
           }
 
         }, function (e)
@@ -80,6 +97,18 @@ namespace IView
           IView.allInspectors = [];
           });
 
+    }
+
+    private static ContractInspectorCheck(inspectors: Array<Inspector>): boolean
+    {
+      let contractors = inspectors.filter(function (i) { return i.contractor === true; });
+      return contractors.length === inspectors.length;
+    }
+
+    private static HandleContractInspectors():void
+    {
+      Utilities.Hide("toggleBulkAssign");
+      Utilities.Hide("BulkAssignContainer");
     }
 
     public static GetInspectorsToEdit(): void

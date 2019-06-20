@@ -25,6 +25,7 @@ var IView;
         }
         Inspector.GetAllInspectors = function () {
             Utilities.Toggle_Loading_Button("refreshButton", true);
+            Utilities.Toggle_Loading_Button("myRefreshButton", true);
             Utilities.Toggle_Loading_Button("filterButton", true);
             var path = Utilities.Get_Path("/inspectionview");
             Utilities.Get(path + "API/Inspectors/List")
@@ -32,19 +33,35 @@ var IView;
                 var initialRun = IView.allInspectors.length === 0;
                 console.log('inspectors', inspectors);
                 IView.allInspectors = inspectors;
-                Inspector.BuildBulkAssignDropdown(inspectors);
+                IView.contractor_check = Inspector.ContractInspectorCheck(inspectors);
+                if (IView.contractor_check) {
+                    Inspector.HandleContractInspectors();
+                }
+                else {
+                    Inspector.BuildBulkAssignDropdown(inspectors);
+                }
                 IView.Inspection.GetInspections();
                 if (initialRun) {
                     Inspector.BuildInspectorList();
+                    if (!IView.contractor_check) {
+                        Inspector.GetInspectorsToEdit();
+                    }
                     IView.LoadDefaultsFromCookie();
                     window.setInterval(IView.Inspection.GetInspections, 60 * 5 * 1000);
                     window.setInterval(IView.Unit.GetUnits, 60 * 1000);
-                    Inspector.GetInspectorsToEdit();
                 }
             }, function (e) {
                 console.log('error getting inspectors');
                 IView.allInspectors = [];
             });
+        };
+        Inspector.ContractInspectorCheck = function (inspectors) {
+            var contractors = inspectors.filter(function (i) { return i.contractor === true; });
+            return contractors.length === inspectors.length;
+        };
+        Inspector.HandleContractInspectors = function () {
+            Utilities.Hide("toggleBulkAssign");
+            Utilities.Hide("BulkAssignContainer");
         };
         Inspector.GetInspectorsToEdit = function () {
             var path = Utilities.Get_Path("/inspectionview");

@@ -83,6 +83,8 @@ namespace ClayInspectionView.Models
           return Unit.GetInspectionUnits();
         case "inspectors":
           return Inspector.Get();
+        case "contractinspectors":
+          return Inspector.GetContractInspectors();
         case "useraccess":
           return UserAccess.GetAllUserAccess();
         default:

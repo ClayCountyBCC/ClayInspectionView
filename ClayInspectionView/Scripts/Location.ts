@@ -24,6 +24,8 @@ namespace IView
     RPL: boolean;
     CPL: boolean;
     Fire: boolean;
+    order: number;    
+    unordered: boolean;    
   }
 
   export class Location implements ILocation
@@ -48,8 +50,11 @@ namespace IView
     public RPL: boolean = false;
     public CPL: boolean = false;
     public Fire: boolean = false;
+    public order: number = 0;    
+    public unordered: boolean = true;    
+    public location_distance: LocationDistance;
 
-    constructor(inspections: Array<Inspection>)
+    constructor(inspections: Array<Inspection>, myInspections: boolean = false)
     {
       this.inspections = inspections;
       if (inspections.length === 0) return;
@@ -59,21 +64,75 @@ namespace IView
 
       this.point_to_use = i.PointToUse;
 
-      this.UpdateFlags();
+      if (!myInspections)
+      {
+        this.UpdateFlags();
 
-      this.CreateIcons();      
-      this.AddValidInspectors(IView.allInspectors);
+        this.CreateIcons();
+        this.AddValidInspectors(IView.allInspectors);
+      }
+      else
+      {
+        // let's check each inspection to pull out the max index and set that as the sort order.
+        this.location_distance = new LocationDistance(this.point_to_use);
+        this.order = 0;
+        
+        for (let i of inspections)
+        {
+          if (i.Sort_Order > this.order) this.order = i.Sort_Order;
+        }
+        this.unordered = this.order === 0;
+        if (this.unordered) this.order = 999;
+      }
+    }
+
+    private CreateSortedIcon(): any
+    {
+      // this is our base function that we'll use to simplify our icon creation.
+      var d = new dojo.Deferred();
+      let currentLocation = this;
+      require(["esri/symbols/TextSymbol", "esri/Color", "esri/symbols/Font"],
+        function (TextSymbol, Color, Font)
+        {
+          var textSymbol = new TextSymbol(currentLocation.order.toString());
+          textSymbol.setColor(new Color([0, 0, 0]));
+          textSymbol.rotated = false;
+          textSymbol.setOffset(0, 0);
+          textSymbol.setAlign(TextSymbol.ALIGN_MIDDLE);
+          //textSymbol.haloColor = new Color([255, 255, 255]);
+          //textSymbol.haloSize = 3;
+          var font = new Font();
+          font.setSize("20pt");
+          font.setWeight(esri.symbol.Font.WEIGHT_BOLD);
+          textSymbol.setFont(font);
+          d.resolve(textSymbol);
+        });
+      return d.then(function (k) { return k; });
+    }
+
+    public GetSortedIcon(): any
+    {
+      return this.CreateSortedIcon();
     }
 
     private UpdateFlags()
     {
       // this will update the has_commercial, residential, and private provider flags.
       // they'll be set to false, then we just loop through them all and update them to true
-      // if we find any      
+      // if we find any
       this.assigned_inspectors = [];
       for (let i of this.inspections)
       {
-        if (!i.CanBeAssigned) this.can_be_bulk_assigned = false;
+        if (!IView.contractor_check)
+        {
+          if (!i.CanBeAssigned) this.can_be_bulk_assigned = false;
+        }
+        else
+        {
+          this.can_be_bulk_assigned = false;
+          i.CanBeAssigned = false;
+        }
+        
 
         if (i.IsCommercial)
         {
@@ -134,7 +193,6 @@ namespace IView
       // Some people can have combinations, like Commercial / Electrical, and not others.
       if (!this.can_be_bulk_assigned)
       {
-        console.log('this cannot be bulk assigned');
         return;
       }
       let current = this;
@@ -251,7 +309,7 @@ namespace IView
       ];
     }
 
-    public static CreateLocations(inspections: Array<Inspection>)
+    public static CreateLocations(inspections: Array<Inspection>):void
     {
       let inspectionCount = inspections.length.toString();
       Utilities.Set_Text(document.getElementById("inspectionCount"), inspectionCount);
@@ -271,13 +329,48 @@ namespace IView
       IView.BuildAndLoadInitialLayers();
     }
 
+    public static CreateMyLocations(inspections: Array<Inspection>): Array<Location>
+    {
+      if (inspections.length === 0) return;
+      var lookupKeys: Array<string> = [];
+      var locations: Array<Location> = [];
+
+      if (inspections.length === 0) return [];
+
+      for (let i of inspections)
+      {
+        if (lookupKeys.indexOf(i.LookupKey) === -1) lookupKeys.push(i.LookupKey);
+      }
+      for (let key of lookupKeys)
+      {
+        let filtered = inspections.filter(function (k) { return k.LookupKey === key; });
+        locations.push(new Location(filtered, true));
+      }
+      locations.sort(function (j, k) { return j.order - k.order }); // now that we've ordered it, let's get the locations in the right order.
+
+      let order = 0;
+      for (let i = 0; i < locations.length; i++)
+      {
+        if (!locations[i].unordered)
+        {
+          locations[i].order = ++order; // all ordered locations are base 1, not base 0. 
+        }
+      //  //locations[i].CreateSortedIcon().then(function (k)
+      //  //{
+      //  //  locations[i].icons.push(k);
+      //  //});
+      }     
+
+      return locations;
+    }
+       
     public LocationView():void
     {
       let title = document.getElementById("locationAddress");
       Utilities.Clear_Element(title);
       Utilities.Set_Text(title, this.Address());
       let bulkassignContainer = document.getElementById("bulkAssignInspectionsContainer");
-      if (this.can_be_bulk_assigned)
+      if (this.can_be_bulk_assigned && !IView.contractor_check)
       {
         Utilities.Show(bulkassignContainer);
         this.UpdateBulkAssignmentDropdown();
@@ -319,6 +412,7 @@ namespace IView
           notes_row = document.createElement("tr");
         }
         tbody.appendChild(this.CreateInspectionRow(i, notes_row));
+        if (i.PreviousInspectionRemarks.length > 0) tbody.appendChild(this.CreatePreviouslyFailedInspectionRow(i.PreviousInspectionRemarks));
         if (notes_row !== null) tbody.appendChild(notes_row);
         
       }
@@ -332,7 +426,19 @@ namespace IView
       if (inspection.MasterPermitNumber.length > 0)
       {
         let href = "/InspectionScheduler/#permit=" + inspection.MasterPermitNumber;
-        tr.appendChild(this.CreateTableCellLink(inspection.MasterPermitNumber, href, "has-text-left"));
+        let MasterTd = this.CreateTableCellLink(inspection.MasterPermitNumber, href, "has-text-left");
+        let imsButton = document.createElement("a");
+        imsButton.classList.add("button");
+        imsButton.classList.add("is-small");
+        imsButton.classList.add("is-success");
+        imsButton.style.marginLeft = ".5em";
+        imsButton.style.fontStyle = "italic";
+        imsButton.target = "_blank";
+        imsButton.rel = "noopener";
+        imsButton.appendChild(document.createTextNode("IMS"));
+        imsButton.href = inspection.MasterPermitIMSLink;
+        MasterTd.appendChild(imsButton);
+        tr.appendChild(MasterTd);
         let td = document.createElement("td");
         td.colSpan = 7;
         td.classList.add("has-text-left");
@@ -355,23 +461,24 @@ namespace IView
     {
       let thead = document.createElement("thead");
       let tr = document.createElement("tr");
-      tr.appendChild(this.CreateTableCell(true, "Permit"));
-      tr.appendChild(this.CreateTableCell(true, "Scheduled"));
-      tr.appendChild(this.CreateTableCell(true, "Inspection Type"));
+      tr.appendChild(this.CreateTableCell(true, "Permit", "", "15%"));
+      tr.appendChild(this.CreateTableCell(true, "Scheduled", "", "15%"));
+      tr.appendChild(this.CreateTableCell(true, "Inspection Type", "", "20%"));
       let button_column = this.CreateTableCell(true, "")
       button_column.style.width = "5%";
       tr.appendChild(button_column);
-      tr.appendChild(this.CreateTableCell(true, "Kind"));
-      tr.appendChild(this.CreateTableCell(true, "Private Provider"));
-      tr.appendChild(this.CreateTableCell(true, "Status"));
-      tr.appendChild(this.CreateTableCell(true, "Assigned"));
+      tr.appendChild(this.CreateTableCell(true, "Kind", "", "10%"));
+      tr.appendChild(this.CreateTableCell(true, "Private Provider", "", "10%"));
+      tr.appendChild(this.CreateTableCell(true, "Status", "", "15%"));
+      tr.appendChild(this.CreateTableCell(true, "Assigned", "", "15%"));
       thead.appendChild(tr);
       return thead;
     }
 
-    private CreateTableCell(header: boolean, value: string, className: string = ""): HTMLTableCellElement
+    private CreateTableCell(header: boolean, value: string, className: string = "", width: string = ""): HTMLTableCellElement
     {
       let td = document.createElement(header ? "th" : "td");
+      if (width.length > 0) td.style.width = width;
       if (className.length > 0) td.classList.add(className);
       td.appendChild(document.createTextNode(value));
       return td;
@@ -383,6 +490,7 @@ namespace IView
       if (className.length > 0) td.classList.add(className);
       let link = document.createElement("a");
       link.target = "_blank";
+      link.rel = "noopener";
       link.href = href;
       link.appendChild(document.createTextNode(value))
       td.appendChild(link);
@@ -391,9 +499,21 @@ namespace IView
 
     private CreateInspectionRow(inspection: Inspection, notes_row: HTMLTableRowElement): HTMLTableRowElement
     {
-      let tr = document.createElement("tr")
+      let tr = document.createElement("tr");
       let href = "/InspectionScheduler/#permit=" + inspection.PermitNo + "&inspectionid=" + inspection.InspReqID;
-      tr.appendChild(this.CreateTableCellLink(inspection.PermitNo, href, "has-text-right"));
+      let td = this.CreateTableCellLink(inspection.PermitNo, href, "has-text-right");
+      let imsButton = document.createElement("a");
+      imsButton.classList.add("button");
+      imsButton.classList.add("is-small");
+      imsButton.classList.add("is-success");
+      imsButton.style.marginLeft = ".5em";
+      imsButton.style.fontStyle = "italic";
+      imsButton.target = "_blank";
+      imsButton.rel = "noopener";
+      imsButton.appendChild(document.createTextNode("IMS"));
+      imsButton.href = inspection.IMSLink;
+      td.appendChild(imsButton);
+      tr.appendChild(td);
       tr.appendChild(this.CreateTableCell(false, Utilities.Format_Date(inspection.ScheduledDate)));
       tr.appendChild(this.CreateTableCell(false, inspection.InspectionCode + ' ' + inspection.InspectionDescription, "has-text-left"));
       let button_td = document.createElement("td");
@@ -437,7 +557,7 @@ namespace IView
       tr.appendChild(this.CreateTableCell(false, inspection.IsCommercial ? "Commercial" : "Residential"));
       tr.appendChild(this.CreateTableCell(false, inspection.IsPrivateProvider ? "Yes" : "No"));
       tr.appendChild(this.CreateTableCell(false, inspection.IsCompleted ? "Completed" : "Incomplete"));
-      if (inspection.IsCompleted)
+      if (inspection.IsCompleted || IView.contractor_check)
       {
         tr.appendChild(this.CreateTableCell(false, inspection.InspectorName));
       }
@@ -448,6 +568,23 @@ namespace IView
         tr.appendChild(td);
       }
       
+      return tr;
+    }
+
+    private CreatePreviouslyFailedInspectionRow(Remarks: string): HTMLTableRowElement
+    {
+      let tr = document.createElement("tr");
+      let blankTD = document.createElement("td");
+      blankTD.appendChild(document.createTextNode(""));
+      tr.appendChild(blankTD);
+      let messageTD = document.createElement("td");
+      messageTD.appendChild(document.createTextNode("Failed Last Inspection"));
+      messageTD.colSpan = 2;
+      tr.appendChild(messageTD);
+      let remarksTD = document.createElement("td");
+      remarksTD.appendChild(document.createTextNode(Remarks));
+      remarksTD.colSpan = 5;
+      tr.appendChild(remarksTD);
       return tr;
     }
 
@@ -501,6 +638,315 @@ namespace IView
         select.appendChild(o);
       }
     }
+
+    public static HandleMyLocations(inspections: Array<Inspection>): void
+    {
+      if (inspections.length === 0)
+      {
+        IView.myLocations = [];
+        Location.UpdateMyLocations();
+        return;
+      }
+      let myLocations = Location.CreateMyLocations(inspections);
+      //console.log('my locations', myLocations);
+      let ordered = myLocations.filter(function (j) { return j.unordered === false; });
+      if (IView.myLocations.length === 0 && ordered.length === 0)
+      {
+        // fresh
+        //console.log('fresh');
+        myLocations = Location.UpdateLocationDistances(myLocations, true);
+        let furthest_locations_distance: number = 0;
+        let furthest_locations: Array<string> = [];
+        for (let i = 0; i < myLocations.length; i++)
+        {
+          if (myLocations[i].location_distance.furthest_location_distance > furthest_locations_distance)
+          {
+            furthest_locations = [];
+            furthest_locations_distance = myLocations[i].location_distance.furthest_location_distance;
+            furthest_locations.push(myLocations[i].location_distance.furthest_location);
+            furthest_locations.push(myLocations[i].lookup_key);
+          }
+        }
+
+        IView.myLocations = Location.SortByProximity(myLocations, furthest_locations[0]);
+      }
+      else
+      {
+        //console.log('not fresh');
+        myLocations = Location.UpdateLocationDistances(myLocations, false);
+        if (IView.myLocations.length === 0 && ordered.length > 0)
+        {
+          IView.myLocations = myLocations;          
+          Location.HandleUnorderedLocations();
+          
+        }
+        else
+        {
+          Location.RemoveMissingFromCurrent(myLocations);
+          Location.AddNewLocations(myLocations);
+        }
+        // let's add the new ones to the list, remove any that aren't there anymore
+
+      }
+      Location.UpdateMyLocations();
+    }
+
+    public static UpdateLocationDistances(locations: Array<Location>, fresh: boolean): Array<Location>
+    {
+      for (let i = 0; i < locations.length; i++)
+      {
+        if (fresh) locations[i].unordered = false;
+
+        for (let j = 0; j < locations.length; j++)
+        {
+          if (i !== j)
+          {
+            locations[i].location_distance.calculate_distance(locations[j].point_to_use, locations[j].lookup_key);
+          }
+        }
+      }
+      return locations;
+    }
+
+    public static UpdateMyLocations()
+    {
+      IView.myLocations.sort(function (j, k) { return j.order - k.order; });
+      Location.PopulateMyLocations(IView.myLocations);
+      mapController.UpdateMyLocationLayer(IView.myLocations);
+      
+    }
+
+    private static RemoveMissingFromCurrent(new_locations: Array<Location>)
+    {
+      let locations_to_remove: Array<string> = [];
+      for (let location of IView.myLocations)
+      {
+        let found: boolean = false;
+        for (let new_location of new_locations)
+        {
+          if (new_location.lookup_key === location.lookup_key)
+          {
+            found = true;
+          }
+        }
+        if (!found) // this location was removed
+        {
+          locations_to_remove.push(location.lookup_key);
+        }
+      }
+      for (let key of locations_to_remove)
+      {
+        let index = Location.GetLocationIndex(key, IView.myLocations);
+        if (index !== -1) IView.myLocations.splice(index, 1);
+      }
+    }
+
+    public static GetLocationIndex(lookup_key: string, LocationsToSearch: Array<Location>): number
+    {
+      for (let i = 0; i < LocationsToSearch.length; i++)
+      {
+        if (LocationsToSearch[i].lookup_key === lookup_key) return i;
+      }
+      return -1;
+    }
+
+    private static AddNewLocations(new_locations: Array<Location>)
+    {
+      let added = false;
+      for (let new_location of new_locations)
+      {
+        let found: boolean = false;
+        for (let current_location of IView.myLocations)
+        {
+          if (new_location.lookup_key === current_location.lookup_key)
+          {
+            found = true;
+          }
+        }
+        if (!found)
+        {
+          new_location.unordered = true;
+          IView.myLocations.push(new_location);
+          new_location.order = 999;
+          added = true;
+          //console.log('adding', new_location);
+          //let my_order = new_location.location_distance.GetBestOrderToInsert(IView.myLocations);          
+          //for (let l of IView.myLocations)
+          //{
+          //  if (l.order >= my_order && !l.unordered)
+          //  {
+          //    l.order++;
+          //  }
+          //}
+          //new_location.order = my_order;
+        }
+      }
+      if (added)
+      {
+        for (let l of IView.myLocations)
+        {
+          if (l.unordered) l.order = 999;
+        }
+        IView.myLocations.sort(function (j, k) { return j.order - k.order; });
+        IView.myLocations = Location.UpdateLocationDistances(IView.myLocations, false);
+        Location.HandleUnorderedLocations();
+      }
+
+    }
+
+    private static HandleUnorderedLocations()
+    {
+      for (let l of IView.myLocations)
+      {
+        if (l.unordered)
+        {
+          let my_order = l.location_distance.GetBestOrderToInsert(IView.myLocations);
+          //console.log('setting order', l.lookup_key, my_order);
+          for (let location of IView.myLocations)
+          {
+            if (location.order >= my_order && location.order < 998)
+            {
+              location.order++;
+            }
+          }
+          l.order = my_order;
+        }
+
+      }
+
+    }
+
+    private static PopulateMyLocations(locations: Array<Location>): void
+    {
+      let container = document.getElementById("sortableInspections");
+      Utilities.Clear_Element(container);
+      if (locations.length === 0)
+      {
+        let li = document.createElement("li");
+        li.appendChild(document.createTextNode("No incomplete inspections were found."));
+        li.style.padding = "1em 1em 1em 1em";
+        container.appendChild(li);
+      }
+      else
+      {
+        for (let l of locations)
+        {
+          container.appendChild(Location.CreateMyLocationRow(l));
+        }
+      }
+
+    }
+
+    private static CreateMyLocationRow(location: Location): HTMLElement
+    {
+      let li = document.createElement("li");
+      li.id = location.lookup_key;
+      li.classList.add("columns");
+      //li.classList.add("item");
+      //li.classList.add("dropzone");
+      //li.classList.add("occupied");
+      li.style.borderTop = "none"; //"dotted 1px #333333";
+      li.style.borderBottom = "none"; //"dotted 1px #000000";
+      li.style.margin = "0 auto";
+      li.style.marginBottom = ".25em";
+      if (location.unordered)
+      {
+        li.classList.add("has-background-warning");
+      }
+      else
+      {
+        li.classList.add("has-background-grey-lighter");
+      }
+
+      let index = document.createElement("span");
+      index.classList.add("column");
+      index.classList.add("is-1");
+      index.classList.add("has-text-centered");
+      index.style.fontWeight = "bolder";
+      index.appendChild(document.createTextNode(location.order.toString()));
+      li.appendChild(index);
+
+      let address = document.createElement("span");
+      address.classList.add("column");
+      address.classList.add("is-8");
+      address.appendChild(document.createTextNode(location.Address()));
+      li.appendChild(address);
+
+      let permitCount = document.createElement("span");
+      permitCount.classList.add("column");
+      permitCount.classList.add("is-1");
+      permitCount.classList.add("has-text-centered");
+      permitCount.appendChild(document.createTextNode(location.inspections.length.toString()));
+      li.appendChild(permitCount);
+
+      let view = document.createElement("span");
+      view.classList.add("column");
+      view.classList.add("is-2");
+      view.classList.add("has-text-centered");
+      let button = document.createElement("button");
+      button.classList.add("button");
+      button.classList.add("is-small");
+      button.appendChild(document.createTextNode("View"));
+      button.onclick = function ()
+      {
+        IView.last_selected_graphic = null;
+        IView.last_symbol_color = null;
+        IView.current_location = location;
+        console.log('location found', location);
+        IView.mapController.CenterOnPoint(location.point_to_use);
+        location.LocationView();
+      }
+      view.appendChild(button);
+      li.appendChild(view);      
+
+      return li;
+    }
+
+    public static SortByProximity(locations: Array<Location>, starting_lookup_key: string): Array<Location>
+    {
+      if (starting_lookup_key.length === 0 || locations.length <= 2) return locations;
+      let ordered_locations: Array<Location> = [];
+
+      let used_lookup_keys: Array<string> = [];
+      used_lookup_keys.push(starting_lookup_key);
+
+      let first_location = locations[Location.GetLocationIndex(starting_lookup_key, locations)];
+      ordered_locations.push(first_location);
+      let second_location = locations[Location.GetLocationIndex(first_location.location_distance.closest_location, locations)];
+      ordered_locations.push(second_location);
+
+      used_lookup_keys.push(second_location.lookup_key);
+
+      let location = second_location;
+      let lookup_key = "";
+      let index: number = 0;
+      let i = 0;
+      while (used_lookup_keys.length < locations.length || i < 50)
+      {
+        
+        lookup_key = location.location_distance.GetClosestUnused(used_lookup_keys);
+        if (lookup_key.length == 0) break;
+        index = Location.GetLocationIndex(lookup_key, locations);
+        if (index === -1) break;
+        location = locations[index];        
+        ordered_locations.push(location);
+        used_lookup_keys.push(lookup_key);
+        i++;
+      }
+      for (let i = 0; i < ordered_locations.length; i++)
+      {
+        ordered_locations[i].order = i + 1;
+        if (ordered_locations[i].unordered) ordered_locations[i].unordered = false;
+      }
+      return ordered_locations;
+    }
+
+    public static SaveMyLocations()
+    {
+
+    }
+
+
 
   }
 

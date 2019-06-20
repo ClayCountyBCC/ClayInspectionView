@@ -53,16 +53,21 @@ namespace ClayInspectionView.Models
         LEFT OUTER JOIN bpASSOC_PERMIT A ON A.PermitNo = IR.PermitNo
         LEFT OUTER JOIN FireInspections FI ON IR.InspectionCode = FI.InspCd
         WHERE 
-          InspReqID IN @Ids
+          InspReqID IN @Ids          
           AND IR.ResultADC IS NULL -- if it is completed, let's make it unassignable
         )
 
         UPDATE IR
-        SET Inspector = I.Intl
+        SET 
+          Inspector = I.Intl, 
+          Sort_Order = NULL
         FROM bpINS_REQUEST IR   
         INNER JOIN InspectionData ID ON IR.InspReqID = ID.InspReqId
         INNER JOIN bp_INSPECTORS I ON I.ID=@InspectorId
         WHERE 
+          1 = 1
+          AND ISNULL(IR.Inspector, '') != I.Intl
+          AND 
           (
           (ID.RBL = 1 AND I.RBL = 1) OR
           (ID.RME = 1 AND I.RME = 1) OR
@@ -100,13 +105,10 @@ namespace ClayInspectionView.Models
 
       string query = @"
         UPDATE bpINS_REQUEST
-          SET Inspector = NULL
+          SET Inspector = NULL, Sort_Order = NULL
         WHERE InspReqID IN @Ids";
       Constants.Exec_Query(query, dp, Constants.csWATSC);
     }
-
-
-
 
   }
 }

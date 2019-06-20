@@ -11,7 +11,7 @@
   <!--<link href="Content/bulma.min.css" rel="stylesheet" />
   <link href="Content/main.css" rel="stylesheet" />
   <link href="Content/Utilities.min.css" rel="stylesheet" />-->
-  <link href="Content/bundle.css?20190312-0952" rel="stylesheet" />
+  <link href="Content/bundle.css?20190525-1528" rel="stylesheet" />
 </head>
 <body>
   <nav class="navbar is-light hide-for-print" role="navigation" aria-label="main navigation">
@@ -27,6 +27,12 @@
 
         </div>
         <div class="navbar-end">
+          <div class="navbar-item">
+            <button onclick="IView.ToggleMyInspections(this);"
+                    class="button">
+              My Inspections
+            </button>
+          </div>
           <div class="navbar-item has-dropdown is-hoverable">
             <a class="navbar-link">
               Options
@@ -46,7 +52,8 @@
                       class="button navbar-item is-info">
                 Filters
               </button>
-              <button style="width: 100%; background-color: darkorange; color: white; border-radius: 0;"
+              <button id="toggleBulkAssign"
+                      style="width: 100%; background-color: darkorange; color: white; border-radius: 0;"
                       onclick="IView.Toggle_Bulk_Assign();"
                       type="button"
                       class="navbar-item button">
@@ -55,7 +62,7 @@
               <button style="width: 100%; border-radius: 0;"
                       id="editInspectors"
                       type="button"
-                      onclick="IView.ShowInspectors()"
+                      onclick="IView.ShowInspectors();"
                       class="button navbar-item hide is-warning">
                 Edit Inspectors
               </button>
@@ -66,41 +73,91 @@
     </div>
   </nav>
 
-  <div id="map">
-    <div id="HomeButton"></div>
-    <div class="box"
-         id="Legend">
-      <div style="margin-bottom: 1em;"
-           id="BulkAssignContainer">
-        <div class="field">
-          <div class="control">
-            <div class="select">
-              <select class="is-small"
-                      id="bulkAssignSelect">                
-              </select>
+  <div id="fancyContainer"
+       class="columns show-flex">
+    <div class="hide is-one-third"
+         id="myInspections">
 
+      <div style="padding: 1em 1em .25em 1em; margin-bottom: .25em;"
+           class="level">
+        <div class="level-left">
+          <div class="level-item">
+            <div>
+              <p class="heading">Recalculate Route By Proximity using</p>
+              <p class="buttons">
+                <button onclick="IView.ReorderLocations();"
+                        style="margin-right: .5em;"
+                        class="is-info button level-item">
+                  First Address
+                </button>
+
+                <button onclick="IView.ReverseOrderLocations();"
+                        style="margin-right: .5em;"
+                        class="is-info button level-item">
+                  Last Address
+                </button>
+              </p>
             </div>
           </div>
-
         </div>
-        <div class="field">
-          <div style="justify-content: center;"
-               class="control is-flex">
-            <button onclick="IView.DrawToggle();"
-                    class="button is-warning is-small"
-                    id="bulkAssignButton">
-              Bulk Assign
-            </button>
+        <div class="level-right">
+          <button id="myRefreshButton"
+                  onclick="IView.Inspection.GetInspections()"
+                  style="margin-right: .5em; margin-left: .5em;"
+                  class="is-success button level-item">
+            Refresh
+          </button>
+
+          <button onclick="IView.ReorderData.Save(this);"
+                  style="margin-left: .5em;"
+                  class="is-warning button level-item">
+            Save
+          </button>
+        </div>
+      </div>
+
+      <ol id="sortableInspections"></ol>
+    </div>
+
+    <div class="column"
+         id="map">
+      <div id="HomeButton"></div>
+      <div class="box"
+           id="Legend">
+        <div style="margin-bottom: 1em;"
+             id="BulkAssignContainer">
+          <div class="field">
+            <div class="control">
+              <div class="select">
+                <select class="is-small"
+                        id="bulkAssignSelect"></select>
+
+              </div>
+            </div>
+
+          </div>
+          <div class="field">
+            <div style="justify-content: center;"
+                 class="control is-flex">
+              <button onclick="IView.DrawToggle();"
+                      class="button is-warning is-small"
+                      id="bulkAssignButton">
+                Bulk Assign
+              </button>
+              <button onclick="IView.CancelDrawToggle()"
+                      id="cancelBulkAssign"
+                      class="hide is-warning is-small">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="hide"
-           id="bulkAssignError">
+        <div class="hide"
+             id="bulkAssignError">
 
+        </div>
+        <ol id="InspectorList"></ol>
       </div>
-      <ol id="InspectorList">
-
-      </ol>
     </div>
   </div>
 
@@ -301,7 +358,6 @@
     </div>
   </div>
 
-
   <div class="modal"
        id="inspectorEdit">
     <div onclick="IView.CloseModals();"
@@ -354,9 +410,7 @@
               <th></th>
             </tr>
           </thead>
-          <tbody id="inspectorControlList">
-
-          </tbody>
+          <tbody id="inspectorControlList"></tbody>
           <tfoot>
             <tr>
               <td>
@@ -438,8 +492,7 @@
     });
 
   </script>
-
-  <script src="Scripts/bundle.js?20190312-0952"></script>
+  <script src="Scripts/bundle.js?20190525-1528"></script>
 </body>
 
 </html>

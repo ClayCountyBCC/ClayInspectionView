@@ -1,15 +1,47 @@
-﻿#map 
+﻿#sortableInspections
+{
+  width: 100%;
+  padding: 0 0 1em 1em;
+  overflow: auto;
+  height: calc(100% - 78px);
+}
+
+#sortableInspections li
+{
+  position: relative;
+  list-style: none;
+  margin-top: .25em;
+  background-color: lightgrey;
+  cursor: grab;
+}
+
+#fancyContainer
 {
   height: calc(100% - 52px);
-  width: calc(100%);
+  width: 100%;
+  margin: 0 0 0 0;  
+}
+
+#myInspections
+{
+  padding: 0 0 0 0;
+  overflow: hidden;
+}
+
+#map 
+{
+  height: 100%;
+  width: 100%;
+  padding: 0 0 0 0;
 }
 
 #HomeButton
 {
-  position: absolute;
-  top: 144px;
+  position: relative;
+  top: 100px;
   left: 20px;
   z-index: 30;
+  height: 0;
 }
 #Legend
 {
