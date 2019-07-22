@@ -11,10 +11,11 @@
   <!--<link href="Content/bulma.min.css" rel="stylesheet" />
   <link href="Content/main.css" rel="stylesheet" />
   <link href="Content/Utilities.min.css" rel="stylesheet" />-->
-  <link href="Content/bundle.css?20190525-1528" rel="stylesheet" />
+  <link href="Content/bundle.css?20190721-2100" rel="stylesheet" />
 </head>
 <body>
-  <nav class="navbar is-light hide-for-print" role="navigation" aria-label="main navigation">
+  <nav style="z-index: 1000;"
+       class="navbar is-light hide-for-print" role="navigation" aria-label="main navigation">
     <div class="container">
       <div class="navbar-brand">
         <a class="navbar-item has-text-weight-bold is-size-4"
@@ -40,33 +41,32 @@
             <div class="navbar-dropdown">
               <button style="width: 100%; border-radius: 0;"
                       id="refreshButton"
-                      type="button"
-                      onclick="IView.Inspection.GetInspections()"
-                      class="button navbar-item is-success">
+                 onclick="IView.Inspection.GetInspections()"
+                 class="button navbar-item is-success">
                 Refresh Inspections
               </button>
               <button style="width: 100%; border-radius: 0;"
                       id="filterButton"
-                      type="button"
                       onclick="IView.ShowFilters()"
                       class="button navbar-item is-info">
                 Filters
               </button>
-              <button id="toggleBulkAssign"
-                      style="width: 100%; background-color: darkorange; color: white; border-radius: 0;"
+              <button style="width: 100%; border-radius: 0; background-color: darkorange; color: white;"
+                      id="toggleBulkAssign"
                       onclick="IView.Toggle_Bulk_Assign();"
-                      type="button"
                       class="navbar-item button">
                 Toggle Bulk Assign
-              </button>
-              <button style="width: 100%; border-radius: 0;"
-                      id="editInspectors"
-                      type="button"
-                      onclick="IView.ShowInspectors();"
-                      class="button navbar-item hide is-warning">
-                Edit Inspectors
-              </button>
-            </div>
+                </button>
+
+                <hr class="navbar-divider" />
+                <button style="width: 100%; border-radius: 0;"
+                        id="editInspectors"
+                        onclick="IView.ShowInspectors();"
+                        class="button navbar-item hide is-warning">
+                  Edit Inspectors
+                </button>
+
+</div>
           </div>
         </div>
       </div>

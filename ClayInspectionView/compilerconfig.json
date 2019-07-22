@@ -8,7 +8,7 @@
     "inputFile": "Content/Utilities.scss"
   },
   {
-    "outputFile": "content/myBulma.css",
-    "inputFile": "bower_components/bulma/myBulma.sass"
+    "outputFile": "Content/myBulma.css",
+    "inputFile": "Content/myBulma.sass"
   }
 ]

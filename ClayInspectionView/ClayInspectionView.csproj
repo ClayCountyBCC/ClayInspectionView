@@ -97,7 +97,6 @@
     <Content Include=".gitignore" />
     <None Include="bower_components\bulma\css\bulma.css" />
     <None Include="bower_components\bulma\css\bulma.min.css" />
-    <None Include="bower_components\bulma\myBulma.sass" />
     <None Include="bower_components\fetch\fetch.js" />
     <None Include="bower_components\promise-polyfill\dist\polyfill.js" />
     <None Include="bower_components\promise-polyfill\dist\polyfill.min.js" />
@@ -224,6 +223,7 @@
     <Content Include="Content\dom_autoscroller\bundle.es.js.map" />
     <Content Include="Content\dom_autoscroller\bundle.js.map" />
     <Content Include="Content\dom_autoscroller\dom-autoscroller.js.map" />
+    <Content Include="Content\myBulma.sass" />
     <None Include="Properties\PublishProfiles\FolderProfile.pubxml" />
     <None Include="Properties\PublishProfiles\InternalProduction.pubxml" />
     <None Include="Scripts\jquery-1.9.1.intellisense.js" />
