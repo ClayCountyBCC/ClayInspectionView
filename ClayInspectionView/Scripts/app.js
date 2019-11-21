@@ -68,18 +68,24 @@ var IView;
         // need to get the first child of sortableinspections container
         // get that element's id
         // then run location.sortbyproximity on it    
-        var e = document.getElementById("sortableInspections").firstChild;
+        var e = document.getElementById("sortableInspections");
         if (e.childElementCount < 1)
             return;
-        IView.myLocations = IView.Location.SortByProximity(IView.myLocations, e.id);
+        var c = e.firstElementChild;
+        if (c === null)
+            return;
+        IView.myLocations = IView.Location.SortByProximity(IView.myLocations, c.id);
         IView.Location.UpdateMyLocations();
     }
     IView.ReorderLocations = ReorderLocations;
     function ReverseOrderLocations() {
-        var e = document.getElementById("sortableInspections").lastChild;
+        var e = document.getElementById("sortableInspections");
         if (e.childElementCount < 1)
             return;
-        IView.myLocations = IView.Location.SortByProximity(IView.myLocations, e.id);
+        var c = e.lastElementChild;
+        if (c === null)
+            return;
+        IView.myLocations = IView.Location.SortByProximity(IView.myLocations, c.id);
         IView.Location.UpdateMyLocations();
     }
     IView.ReverseOrderLocations = ReverseOrderLocations;

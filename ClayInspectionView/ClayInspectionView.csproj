@@ -141,8 +141,6 @@
       <DependentUpon>bundle.js</DependentUpon>
     </Content>
     <Content Include="Scripts\es6-promise.min.js" />
-    <Content Include="Scripts\bootstrap.js" />
-    <Content Include="Scripts\bootstrap.min.js" />
     <Content Include="fonts\glyphicons-halflings-regular.woff2" />
     <Content Include="fonts\glyphicons-halflings-regular.woff" />
     <Content Include="fonts\glyphicons-halflings-regular.ttf" />

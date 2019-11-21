@@ -904,7 +904,7 @@ namespace IView
 
     public static SortByProximity(locations: Array<Location>, starting_lookup_key: string): Array<Location>
     {
-      if (starting_lookup_key.length === 0 || locations.length <= 2) return locations;
+      if (starting_lookup_key === undefined || starting_lookup_key.length === 0 || locations.length <= 2) return locations;
       let ordered_locations: Array<Location> = [];
 
       let used_lookup_keys: Array<string> = [];

@@ -760,7 +760,7 @@ var IView;
             return li;
         };
         Location.SortByProximity = function (locations, starting_lookup_key) {
-            if (starting_lookup_key.length === 0 || locations.length <= 2)
+            if (starting_lookup_key === undefined || starting_lookup_key.length === 0 || locations.length <= 2)
                 return locations;
             var ordered_locations = [];
             var used_lookup_keys = [];

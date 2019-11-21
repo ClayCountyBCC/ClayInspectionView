@@ -100,17 +100,21 @@ namespace IView
     // need to get the first child of sortableinspections container
     // get that element's id
     // then run location.sortbyproximity on it    
-    let e = <HTMLElement>document.getElementById("sortableInspections").firstChild;
+    let e = <HTMLElement>document.getElementById("sortableInspections");
     if (e.childElementCount < 1) return;
-    IView.myLocations = Location.SortByProximity(IView.myLocations, e.id);
+    let c = e.firstElementChild;
+    if (c === null) return;
+    IView.myLocations = Location.SortByProximity(IView.myLocations, c.id);
     Location.UpdateMyLocations();
   }
 
   export function ReverseOrderLocations(): void
   {
-    let e = <HTMLElement>document.getElementById("sortableInspections").lastChild;
+    let e = <HTMLElement>document.getElementById("sortableInspections");
     if (e.childElementCount < 1) return;
-    IView.myLocations = Location.SortByProximity(IView.myLocations, e.id);
+    let c = e.lastElementChild;
+    if (c === null) return;    
+    IView.myLocations = Location.SortByProximity(IView.myLocations, c.id);
     Location.UpdateMyLocations();
   }
 
